@@ -1,0 +1,22 @@
+*.iml
+.gradle/
+build/
+**/build/
+local.properties
+.idea/
+.kotlin/
+.cxx/
+captures/
+.externalNativeBuild/
+
+# Claves de firma y configuracion local (NUNCA subir)
+*.jks
+*.keystore
+keystore.properties
+gradle.properties
+
+# Archivos de sesion del agente
+session-*.md
+
+# Salidas del arnés de diagnóstico del importador (nunca subir PDFs reales ni volcados)
+tools/pdf-dumps/
