@@ -1,5 +1,6 @@
 package com.example.campuspocket.feature.notes.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,16 +10,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -33,6 +31,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,12 +43,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.FolderChipsRow
+import com.example.campuspocket.core.designsystem.components.LoadingShimmer
+import com.example.campuspocket.core.designsystem.components.NoteCard
+import com.example.campuspocket.core.designsystem.components.StaggeredNotesGrid
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
 
@@ -64,9 +71,9 @@ fun NotesScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showNewFolder by remember { mutableStateOf(false) }
     var renamingFolder by remember { mutableStateOf<FolderEntity?>(null) }
-    var deleteFolder by remember { mutableStateOf<FolderEntity?>(null) }
     var deletingNote by remember { mutableStateOf<NoteEntity?>(null) }
     var movingNote by remember { mutableStateOf<NoteEntity?>(null) }
+    var deletingFolder by remember { mutableStateOf<FolderEntity?>(null) }
 
     Scaffold(
         modifier = modifier,
@@ -76,9 +83,10 @@ fun NotesScreen(
                     OutlinedTextField(
                         value = state.query,
                         onValueChange = viewModel::setQuery,
+                        label = { Text(stringResource(R.string.search)) },
                         placeholder = { Text(stringResource(R.string.search)) },
                         singleLine = true,
-                        trailingIcon = { Icon(Icons.Filled.Search, null) },
+                        trailingIcon = { Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search)) },
                         modifier = Modifier.fillMaxWidth().padding(end = 8.dp)
                     )
                 }
@@ -88,12 +96,12 @@ fun NotesScreen(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
                 ExtendedFloatingActionButton(
                     onClick = { showNewFolder = true },
-                    icon = { Icon(Icons.Filled.Add, null) },
+                    icon = { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.notes_new_folder)) },
                     text = { Text(stringResource(R.string.notes_new_folder)) }
                 )
                 ExtendedFloatingActionButton(
                     onClick = onNewNote,
-                    icon = { Icon(Icons.Filled.Edit, null) },
+                    icon = { Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.note_title)) },
                     text = { Text(stringResource(R.string.note_title)) }
                 )
             }
@@ -101,104 +109,41 @@ fun NotesScreen(
     ) { inner ->
         when {
             state.isLoading -> Box(Modifier.fillMaxSize().padding(inner), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                LoadingShimmer()
             }
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (state.folders.isNotEmpty()) {
-                    item(key = "hdr_folders") {
-                        Text(
-                            text = stringResource(R.string.notes_folders),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+            else -> {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (state.folders.isNotEmpty()) {
+                        FolderChipsRow(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            folders = state.folders,
+                            selectedFolderId = state.currentFolderId,
+                            onFolderClick = { folderId ->
+                                viewModel.enterFolder(folderId)
+                            }
                         )
                     }
-                    items(state.folders, key = { "f" + it.id }) { folder ->
-                        Card(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.enterFolder(folder.id) }
-                        ) {
-                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        folder.name.first().uppercase(),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                                Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                                    Text(folder.name, style = MaterialTheme.typography.titleMedium)
-                                }
-                                // renombrar
-                                IconButton(onClick = { renamingFolder = folder }) {
-                                    Icon(Icons.Filled.Edit, null)
-                                }
-                                // eliminar
-                                IconButton(onClick = { deleteFolder = folder }) {
-                                    Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error)
-                                }
-                            }
-                        }
-                    }
-                }
-                if (state.notes.isNotEmpty()) {
-                    item(key = "hdr_notes") {
-                        Text(
-                            text = stringResource(R.string.notes_list),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    
+                    if (state.notes.isNotEmpty()) {
+                        StaggeredNotesGrid(
+                            modifier = Modifier.weight(1f),
+                            notes = state.notes,
+                            onNoteClick = onOpenNote,
+                            onPinToggle = { noteId, pinned -> viewModel.togglePin(noteId, pinned) },
+                            onDelete = { note -> deletingNote = note },
+                            onMove = { note -> movingNote = note }
                         )
-                    }
-                    items(state.notes, key = { "n" + it.id }) { note ->
-                        Card(Modifier.fillMaxWidth().clickable { onOpenNote(note.id) }) {
-                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        text = note.title.ifBlank { stringResource(R.string.notes_empty_title) },
-                                        style = MaterialTheme.typography.titleMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = note.content.take(80).replace('\n', ' '),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                IconButton(onClick = { viewModel.togglePin(note.id, !note.pinned) }) {
-                                    Icon(
-                                        Icons.Filled.Star,
-                                        null,
-                                        tint = if (note.pinned) Color(0xFFF5A623) else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                IconButton(onClick = { deletingNote = note }) {
-                                    Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error)
-                                }
-                                IconButton(onClick = { movingNote = note }) {
-                                    Icon(Icons.Filled.MoreVert, null)
-                                }
-                            }
-                        }
-                    }
-                }
-                if (state.folders.isEmpty() && state.notes.isEmpty()) {
-                    item(key = "vacio") {
-                        Text(
-                            text = stringResource(R.string.empty_notes),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 12.dp)
+                    } else if (state.folders.isEmpty()) {
+                        EmptyStateCard(
+                            modifier = Modifier.weight(1f),
+                            title = stringResource(R.string.empty_notes),
+                            message = stringResource(R.string.empty_notes),
+                            icon = painterResource(R.drawable.ic_notes),
+                            actionText = stringResource(R.string.note_title),
+                            onAction = onNewNote
                         )
                     }
                 }
@@ -208,21 +153,21 @@ fun NotesScreen(
 
     // Nueva carpeta
     if (showNewFolder) {
-        var name by remember { mutableStateOf("") }
+        var folderName by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showNewFolder = false },
             title = { Text(stringResource(R.string.notes_new_folder)) },
             text = {
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
+                    value = folderName,
+                    onValueChange = { folderName = it },
                     label = { Text(stringResource(R.string.notes_folder_name)) },
                     singleLine = true
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.createFolder(name, null)
+                    viewModel.createFolder(folderName, null)
                     showNewFolder = false
                 }) { Text(stringResource(R.string.save)) }
             },
@@ -232,20 +177,20 @@ fun NotesScreen(
 
     // Renombrar carpeta
     renamingFolder?.let { folder ->
-        var name by remember(folder.id) { mutableStateOf(folder.name) }
+        var folderNewName by remember(folder.id) { mutableStateOf(folder.name) }
         AlertDialog(
             onDismissRequest = { renamingFolder = null },
             title = { Text(folder.name) },
             text = {
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
+                    value = folderNewName,
+                    onValueChange = { folderNewName = it },
                     singleLine = true
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.renameFolder(folder.id, name)
+                    viewModel.renameFolder(folder.id, folderNewName)
                     renamingFolder = null
                 }) { Text(stringResource(R.string.save)) }
             },
@@ -253,10 +198,10 @@ fun NotesScreen(
         )
     }
 
-    // Eliminar carpeta (explica qué pasa con subcarpetas y notas)
-    deleteFolder?.let { folder ->
+    // Eliminar carpeta
+    deletingFolder?.let { folder ->
         AlertDialog(
-            onDismissRequest = { deleteFolder = null },
+            onDismissRequest = { deletingFolder = null },
             title = { Text(folder.name) },
             text = {
                 Text(
@@ -266,10 +211,10 @@ fun NotesScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteFolder(folder.id)
-                    deleteFolder = null
+                    deletingFolder = null
                 }) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = { deleteFolder = null }) { Text(stringResource(R.string.cancel)) } }
+            dismissButton = { TextButton(onClick = { deletingFolder = null }) { Text(stringResource(R.string.cancel)) } }
         )
     }
 
@@ -289,7 +234,7 @@ fun NotesScreen(
         )
     }
 
-    // Mover a carpeta (simple: quitar o a raíz; para mover a una carpeta existente usar el menú)
+    // Mover a carpeta
     movingNote?.let { note ->
         AlertDialog(
             onDismissRequest = { movingNote = null },
@@ -303,5 +248,18 @@ fun NotesScreen(
             },
             dismissButton = { TextButton(onClick = { movingNote = null }) { Text(stringResource(R.string.cancel)) } }
         )
+    }
+}
+
+@Composable
+@Preview(name = "NotesScreen", showBackground = true)
+fun PreviewNotesScreen() {
+    CampusTheme {
+        Surface {
+            NotesScreen(
+                onOpenNote = {},
+                onNewNote = {}
+            )
+        }
     }
 }

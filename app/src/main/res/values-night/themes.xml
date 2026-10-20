@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Variante oscura de la ventana (evita destello claro antes de Compose). -->
+    <style name="Theme.CampusPocket" parent="android:Theme.Material.NoActionBar" />
+</resources>

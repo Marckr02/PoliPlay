@@ -37,6 +37,7 @@ data class CourseFormUiState(
     val name: String = "",
     val section: String = "",
     val teacher: String = "",
+    val colorArgb: Int = Course.DEFAULT_COLOR,
     val sessions: List<SessionFormState> = emptyList(),
     @StringRes val codeError: Int? = null,
     @StringRes val nameError: Int? = null,
@@ -75,6 +76,7 @@ class CourseFormViewModel @Inject constructor(
                             name = course.name,
                             section = course.section,
                             teacher = course.teacher.orEmpty(),
+                            colorArgb = course.colorArgb,
                             sessions = course.sessions.map { s ->
                                 SessionFormState(
                                     day = s.dayOfWeek,
@@ -95,6 +97,7 @@ class CourseFormViewModel @Inject constructor(
     fun onNameChange(value: String) = _uiState.update { it.copy(name = value, nameError = null) }
     fun onSectionChange(value: String) = _uiState.update { it.copy(section = value, sectionError = null) }
     fun onTeacherChange(value: String) = _uiState.update { it.copy(teacher = value) }
+    fun onColorChange(color: Int) = _uiState.update { it.copy(colorArgb = color) }
 
     fun addSession() = _uiState.update {
         it.copy(sessions = it.sessions + SessionFormState(), sessionsError = null)
@@ -144,6 +147,7 @@ class CourseFormViewModel @Inject constructor(
             name = state.name.trim(),
             section = state.section.trim(),
             teacher = state.teacher.trim().ifBlank { null },
+            colorArgb = state.colorArgb,
             sessions = validatedSessions.map { session ->
                 // Ya validado: day/start/end no son nulos y el formato es correcto.
                 ClassSession(

@@ -18,6 +18,7 @@ import java.io.IOException
  * cambios finales), así que las versiones viejas se crean A MANO con su DDL real:
  * - v1: 13 tablas CON `settings` y SIN `index_budgets_categoryId`/`index_transactions_refundOfId`.
  * - v2: las 13 tablas finales SIN `anchorDayOfMonth` en `scheduled_payments`.
+ * - v3: como v2 + `anchorDayOfMonth` (Fase 5B).
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -80,9 +81,54 @@ class MigrationTest {
         context.deleteDatabase(DB_2)
     }
 
+    /** v3 -> v4: `transactions.subtype` y tabla `monthly_budgets` con índice único por mes. */
+    @Test
+    @Throws(IOException::class)
+    fun migracionRealDe3a4() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.deleteDatabase(DB_3)
+
+        SQLiteDatabase.openOrCreateDatabase(context.getDatabasePath(DB_3), null).use { raw ->
+            raw.execSQL("PRAGMA foreign_keys=OFF")
+            V3_DDL.forEach { raw.execSQL(it) }
+            raw.version = 3
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_3, 4, true, Migrations.MIGRATION_3_4)
+
+        db.query("PRAGMA table_info(`transactions`)").use { cursor ->
+            val names = mutableListOf<String>()
+            while (cursor.moveToNext()) names += cursor.getString(1)
+            assertTrue("Falta `subtype` tras la migración", names.contains("subtype"))
+        }
+        db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='monthly_budgets'").use {
+            assertTrue("Falta `monthly_budgets`", it.moveToFirst())
+        }
+        db.query(
+            "SELECT name FROM sqlite_master WHERE type='index' " +
+                "AND name='index_monthly_budgets_yearMonth'"
+        ).use {
+            assertTrue("Falta el índice único de monthly_budgets", it.moveToFirst())
+        }
+
+        // El índice es único por mes.
+        db.execSQL("INSERT INTO `monthly_budgets` (`yearMonth`, `amountCents`) VALUES ('2026-10', 100)")
+        val duplicate = try {
+            db.execSQL("INSERT INTO `monthly_budgets` (`yearMonth`, `amountCents`) VALUES ('2026-10', 200)")
+            false
+        } catch (e: Exception) {
+            true
+        }
+        assertTrue("El mes debe ser único", duplicate)
+
+        db.close()
+        context.deleteDatabase(DB_3)
+    }
+
     private companion object {
         const val DB_1 = "migration-test-1"
         const val DB_2 = "migration-test-2"
+        const val DB_3 = "migration-test-3"
 
         /** v2 vieja: DDL exacto del schemas/2.json (sin anchorDayOfMonth en scheduled_payments). */
         val V2_DDL = listOf(
@@ -125,6 +171,19 @@ class MigrationTest {
             "CREATE INDEX IF NOT EXISTS `index_notes_courseId` ON `notes` (`courseId`)",
             "CREATE INDEX IF NOT EXISTS `index_notes_taskId` ON `notes` (`taskId`)"
         )
+
+        /** v3: v2 + `anchorDayOfMonth` al final de `scheduled_payments`. */
+        val V3_DDL = V2_DDL.map { sql ->
+            if (sql.startsWith("CREATE TABLE IF NOT EXISTS `scheduled_payments`")) {
+                // La columna va antes de las FOREIGN KEY (SQLite no permite columnas tras ellas).
+                sql.replace(
+                    ", FOREIGN KEY(`accountId`)",
+                    ", `anchorDayOfMonth` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`accountId`)"
+                )
+            } else {
+                sql
+            }
+        }
 
         /** v1 vieja: como v2 + `settings`, sin los dos índices que añade 1->2. */
         val V1_DDL = V2_DDL.toMutableList().apply {

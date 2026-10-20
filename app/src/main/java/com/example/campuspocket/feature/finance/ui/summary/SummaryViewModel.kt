@@ -4,14 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.feature.finance.data.CategoryKind
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
+import com.example.campuspocket.feature.finance.domain.BudgetPace
 import com.example.campuspocket.feature.finance.domain.ComputeAccountBalances
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
+import com.example.campuspocket.feature.finance.domain.MonthPace
 import com.example.campuspocket.feature.finance.domain.PaymentDomain
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
 import java.time.YearMonth
@@ -25,6 +31,7 @@ data class SummaryUiState(
     val topCategories: List<GetMonthSummary.CategoryRow> = emptyList(),
     val donutSlices: List<Pair<Int, Long>> = emptyList(),
     val upcomingPayments: List<ScheduledPaymentEntity> = emptyList(),
+    val pace: MonthPace? = null,
     val isLoading: Boolean = true
 )
 
@@ -35,22 +42,33 @@ class SummaryViewModel @Inject constructor(
     financeRepository: FinanceRepository
 ) : ViewModel() {
 
+    /** Emite la fecha actual y se vuelve a emitir al cambiar de día (revisa cada minuto). */
+    private val todayFlow: Flow<LocalDate> = flow {
+        while (true) {
+            emit(LocalDate.now())
+            delay(60_000L)
+        }
+    }.distinctUntilChanged()
+
     @Suppress("UNCHECKED_CAST")
     val uiState: StateFlow<SummaryUiState> = combine(
         computeAccountBalances.observe(),
         financeRepository.observeActiveCategories(),
         financeRepository.observeTransactions(),
         financeRepository.observeAllBudgets(),
-        financeRepository.observeAllScheduledPayments()
+        financeRepository.observeAllScheduledPayments(),
+        financeRepository.observeMonthlyBudgets(),
+        todayFlow
     ) { values ->
         val balances = values[0] as List<com.example.campuspocket.feature.finance.domain.AccountBalance>
         val categories = values[1] as List<com.example.campuspocket.feature.finance.domain.model.Category>
         val transactions = values[2] as List<com.example.campuspocket.feature.finance.domain.model.Transaction>
         val budgets = values[3] as List<com.example.campuspocket.feature.finance.data.BudgetEntity>
         val payments = values[4] as List<ScheduledPaymentEntity>
+        val monthlyBudgets = values[5] as List<com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity>
+        val today = values[6] as LocalDate
 
-        val month = YearMonth.now()
-        val today = LocalDate.now()
+        val month = YearMonth.from(today)
 
         val expenseCategories = categories
             .filter { it.kind == CategoryKind.EXPENSE }
@@ -72,6 +90,15 @@ class SummaryViewModel @Inject constructor(
         val activePayments = payments.filter { it.active }
         val totalBalance = balances.filter { it.account.includeInTotal }.sumOf { it.balanceCents }
 
+        val monthlyBudgetCents = monthlyBudgets
+            .firstOrNull { it.yearMonth == month.toString() }
+            ?.amountCents
+        val pace = BudgetPace.compute(
+            today = today,
+            budgetCents = monthlyBudgetCents,
+            spentCents = summary.totalSpentCents
+        )
+
         SummaryUiState(
             availableCents = summary.availableCents,
             totalBalanceCents = totalBalance,
@@ -81,6 +108,7 @@ class SummaryViewModel @Inject constructor(
             donutSlices = summary.rows.filter { it.netSpentCents > 0 }.take(5)
                 .map { it.colorArgb to it.netSpentCents },
             upcomingPayments = PaymentDomain.upcomingPayments(payments, today),
+            pace = pace,
             isLoading = false
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SummaryUiState())

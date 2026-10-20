@@ -39,9 +39,10 @@ class BackupJsonTest {
                 CategoryData(1, "Comida", "EXPENSE", "restaurant", 0xFFE5484D.toInt(), false)
             ),
             budgets = listOf(BudgetData(1, "2026-10", 1, 100_000)),
+            monthlyBudgets = listOf(MonthlyBudgetData(1, "2026-10", 250_000)),
             transactions = listOf(
                 TransactionData(1, "EXPENSE", 300, "2026-10-01", 1, null, 1, "almuerzo", null, null, 1_793_000_000_000),
-                TransactionData(2, "TRANSFER", 2_000, "2026-10-02", 1, 2, null, null, null, null, 1_793_000_001_000)
+                TransactionData(2, "TRANSFER", 2_000, "2026-10-02", 2, 1, null, null, null, null, 1_793_000_001_000, "RETIRO_CAJERO")
             ),
             scheduledPayments = listOf(
                 ScheduledPaymentData(1, "Netflix", 1_500, 1, 1, "MONTHLY", "2026-10-15", 0, 3, true)
@@ -55,7 +56,7 @@ class BackupJsonTest {
     )
 
     @Test
-    fun `ida y vuelta conserva las 13 tablas con ids y fechas`() {
+    fun `ida y vuelta conserva las 14 tablas con ids y fechas`() {
         val original = sampleBackup()
 
         val text = json.encodeToString(original)
@@ -65,6 +66,8 @@ class BackupJsonTest {
         assertEquals(1, parsed.formatVersion)
         assertEquals(BACKUP_DB_VERSION, parsed.dbVersion)
         assertEquals("2026-10-04T12:00:00Z", parsed.exportedAt)
+        assertEquals(250_000L, parsed.tables.monthlyBudgets.single().amountCents)
+        assertEquals("RETIRO_CAJERO", parsed.tables.transactions.last().subtype)
     }
 
     @Test

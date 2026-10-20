@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.finance.domain
 
 import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
@@ -19,10 +20,16 @@ class GetMonthSummaryTest {
     private val end = LocalDate.of(2026, 10, 31)
 
     private fun tx(
-        id: Long, type: TransactionType, categoryId: Long?, amountCents: Long, date: LocalDate = start
+        id: Long,
+        type: TransactionType,
+        categoryId: Long?,
+        amountCents: Long,
+        date: LocalDate = start,
+        subtype: TransactionSubtype? = null
     ) = Transaction(
         id = id,
         type = type,
+        subtype = subtype,
         amountCents = amountCents,
         date = date,
         accountId = 1,
@@ -40,7 +47,10 @@ class GetMonthSummaryTest {
             tx(1, TransactionType.EXPENSE, 1, 10_000),
             tx(2, TransactionType.EXPENSE, 1, 5_000),
             tx(3, TransactionType.REFUND, 1, 2_000),       // resta
-            tx(4, TransactionType.TRANSFER, null, 99_000), // ignora aunque tenga cuenta
+            tx(
+                4, TransactionType.TRANSFER, null, 99_000,
+                subtype = TransactionSubtype.RETIRO_CAJERO
+            ), // retiro/transferencia: ignora aunque tenga cuenta
             tx(5, TransactionType.EXPENSE, 2, 3_000)
         )
         val result = GetMonthSummary.compute(

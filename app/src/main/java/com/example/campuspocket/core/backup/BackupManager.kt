@@ -15,7 +15,7 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 const val BACKUP_FORMAT_VERSION = 1
-const val BACKUP_DB_VERSION = 3   // esquema actual de Room (v3, con anchorDayOfMonth)
+const val BACKUP_DB_VERSION = 4   // esquema actual de Room (v4: subtype + monthly_budgets)
 const val BACKUP_MIN_DB_VERSION = 2   // aceptamos también respaldos de la v2
 
 /** Por qué un respaldo no sirve (la UI lo traduce con strings.xml). */
@@ -30,7 +30,7 @@ enum class BackupImportIssue {
 class BackupImportException(val issue: BackupImportIssue) : Exception("Respaldo no válido: $issue")
 
 /**
- * Exporta e importa el respaldo JSON completo (las 13 tablas, con ids).
+ * Exporta e importa el respaldo JSON completo (las 14 tablas, con ids).
  * La importación es todo-o-nada: valida ANTES de tocar nada y corre en UNA
  * transacción de Room (si algo falla, la base de datos queda intacta).
  */
@@ -53,6 +53,7 @@ class BackupManager @Inject constructor(
             accounts = db.accountDao().observeAll().firstList().map { it.toBackup() },
             categories = db.categoryDao().observeAll().firstList().map { it.toBackup() },
             budgets = db.budgetDao().getAll().map { it.toBackup() },
+            monthlyBudgets = db.monthlyBudgetDao().getAll().map { it.toBackup() },
             transactions = db.transactionDao().observeAll().firstList().map { it.toBackup() },
             scheduledPayments = db.scheduledPaymentDao().observeAll().firstList().map { it.toBackup() },
             folders = db.folderDao().observeAll().firstList().map { it.toBackup() },
@@ -103,6 +104,10 @@ class BackupManager @Inject constructor(
             )
             return migrated.copy(dbVersion = BACKUP_DB_VERSION)
         }
+        if (file.dbVersion == 3) {
+            // Los campos nuevos de la v4 son opcionales: subtype = null y monthly_budgets vacío.
+            return file.copy(dbVersion = BACKUP_DB_VERSION)
+        }
         return file
     }
 
@@ -118,9 +123,9 @@ class BackupManager @Inject constructor(
 
             // Borrado (hijos antes que padres).
             listOf(
-                "transactions", "budgets", "task_reminders", "tasks", "class_sessions",
-                "courses", "notes", "scheduled_payments", "folders", "import_hints",
-                "categories", "accounts", "semesters"
+                "transactions", "monthly_budgets", "budgets", "task_reminders", "tasks",
+                "class_sessions", "courses", "notes", "scheduled_payments", "folders",
+                "import_hints", "categories", "accounts", "semesters"
             ).forEach { table ->
                 db.openHelper.writableDatabase.execSQL("DELETE FROM `$table`")
             }
@@ -139,6 +144,7 @@ class BackupManager @Inject constructor(
             t.tasks.forEach { db.taskDao().insert(it.toEntity()) }
             t.taskReminders.forEach { db.taskReminderDao().insert(it.toEntity()) }
             t.budgets.forEach { db.budgetDao().insert(it.toEntity()) }
+            t.monthlyBudgets.forEach { db.monthlyBudgetDao().insert(it.toEntity()) }
             t.transactions.forEach { db.transactionDao().insert(it.toEntity()) }
         }
     }

@@ -14,7 +14,8 @@ Registro de decisiones de diseño y arquitectura. Fecha del registro: octubre 20
 - **Fase 6 (notas): ✅ completada.** Lista con carpetas anidadas (círculo con inicial, no iconos de librería), búsqueda con LIKE escapado, editor Markdown propio (título, negrita, cursiva, código, listas, casillas tocables; sin Markwon), autoguardado con debounce + al salir (nota vacía no se guarda; updatedAt solo si cambia), vínculos a materia/tarea mostrados en sus detalles (FK SET_NULL conserva la nota). Respaldo JSON ya las incluía desde la Fase 4.5. Esquema v3 sin tocar. 119 JVM + 21 instrumentadas en emulador. Nueva columna `scheduled_payments.anchorDayOfMonth` con `version=3` + `MIGRATION_2_3` y test real. WorkManager a las 8:00. Pestañas de Finanzas: Resumen/Cuentas/Presupuestos/Calendario/Historial. Hoja "+" con 5 tipos (Pago abre su formulario propio). Alertas 80/100 guardadas en DataStore con clave `budget_alert:{yearMonth}:{categoryId}`.
 - **Regla 5A**: instrumentadas en emulador; el teléfono NO se toca salvo confirmación explícita del usuario (se instala con `adb -s emulator-5554 install`). Cuentas agrupadas por tipo con saldo calculado (Flow), categorías con círculo de color + inicial, transacciones de cuatro tipos con validaciones puras, historial con filtros. Verificada con 94 JVM + 14 instrumentadas en dispositivo. Esquema Room sin tocar (v2 congelado).
 - **Fase 4.5 (respaldo JSON, adelanto de la 7): ✅ completada.**
-- **Fase 7 (ajustes, seguridad, pulido): ✅ completada.** Ajustes reales en DataStore (tema sistema/claro/oscuro, canales de notificación, permiso de notificaciones y alarmas exactas, selector de semestre, acerca de), banner de 30 días/descartable 7, bloqueo biométrico opcional con credencial del dispositivo y tiempo configurable (si el dispositivo no tiene credencial, no activa), tema oscuro ya profundo (dona/barras/calendar/negativos usan colores del tema), accesibilidad con contentDescription, estados vacíos con acción, lintDebug en verde, README. `Modo de bloqueo` probado en el emulador (rostro simulado no se puede probar automáticamente; el toggle y política sí). Exportar/importar en Ajustes, formato versionado con las 13 tablas, validación antes de tocar nada, transacción única todo-o-nada. 101 JVM + 16 instrumentadas.
+- **Fase 7 (ajustes, seguridad, pulido): ✅ completada.** Ajustes reales en DataStore (tema sistema/claro/oscuro, canales de notificación, permiso de notificaciones y alarmas exactas, selector de semestre, acerca de), banner de 30 días/descartable 7, bloqueo biométrico opcional con credencial del dispositivo y tiempo configurable (si el dispositivo no tiene credencial, no activa), tema oscuro ya profundo (dona/barras/calendar/negativos usan colores del tema), accesibilidad con contentDescription, estados vacíos con acción, lintDebug en verde, README. `Modo de bloqueo` probado en el emulador (rostro simulado no se puede probar automáticamente; el toggle y política sí). Exportar/importar en Ajustes, formato versionado con las 13 tablas de entonces (hoy 14), validación antes de tocar nada, transacción única todo-o-nada. 101 JVM + 16 instrumentadas.
+- **Fase 8 (retiro en cajero y ritmo del presupuesto total): ✅ completada.** Retiro = transferencia atómica `TRANSFER`/`RETIRO_CAJERO` desde una cuenta de ahorros activa hacia Efectivo; monto > 0 múltiplo de 5 USD, sin sobregiro, sin gasto ni comisión. Historial con etiqueta “Retiro en cajero”, origen → destino y filtro propio. Presupuesto total mensual en tabla independiente `monthly_budgets` (único por `yearMonth`, sin arrastre); tarjeta en Presupuestos y tarjeta de ritmo en Resumen con esperado vs. real, marca del día, barra topada al 100 % y sugerencia si falta. Esquema v4 con `MIGRATION_3_4`; respaldo v4 de 14 tablas compatible con v2/v3. 158 JVM + 41 instrumentadas.
 
 ## Cómo verificar
 
@@ -82,9 +83,12 @@ Registro de decisiones de diseño y arquitectura. Fecha del registro: octubre 20
   OJO: `room-testing` arrastra `kotlinx-serialization-json 1.8.1` contra `core 1.7.3`
   (fijado por savedstate) y esa discordancia rompe con `AbstractMethodError`; se fuerza
   json-jvm/json a 1.7.3 solo en el classpath de androidTest.
-- **Esquema v2 CONGELADO.** `app/schemas/2.json` no se regenera ni se edita a mano. A partir
-  de aquí, cualquier cambio de entidad exige: `version = 3` en `AppDatabase`, una
-  `Migration` en `Migrations` y su prueba instrumentada (como `MigrationTest`).
+- **Esquema actual v4.** Los snapshots `app/schemas/1..4.json` no se regeneran ni se editan a
+  mano. Cualquier cambio de entidad exige: `version = 5` en `AppDatabase`, una `Migration`
+  en `Migrations` y su prueba instrumentada (como `MigrationTest`).
+- **v3 → v4 (Fase 8).** `transactions.subtype` nullable (sin tocar filas viejas) y tabla
+  `monthly_budgets` (`id`, `yearMonth` TEXT, `amountCents` INTEGER) con índice único por
+  `yearMonth`. `MigrationTest` cubre la migración real 3→4.
 - Nota histórica del desarrollo: `app/schemas/1.json` se regeneró durante la limpieza y
   ya no refleja el primer v1 instalado en el dispositivo; por eso el usuario desinstala una
   vez antes de probar. El `MigrationTest` NO usa ese `1.json`: crea la "v1 antigua" con DDL
@@ -120,15 +124,43 @@ Registro de decisiones de diseño y arquitectura. Fecha del registro: octubre 20
 - **Montos: entrada estilo cajero en TODA la app** (transacciones y saldo/deuda inicial de cuenta): teclado numérico, el usuario solo escribe dígitos y cada dígito entra por la derecha (0,05 → 0,54 → 5,40). Se guardan centavos directamente; `Money.toLocalDecimalString` formatea la vista (es_EC, coma decimal).
 - El FAB "+" de Finanzas abre siempre la hoja de los 4 tipos (en ambas pestañas); "Nueva cuenta" vive en la cabecera de Cuentas.
 
+### Finanzas (Fase 8)
+
+- **Retiro en cajero = transferencia especial.** Se guarda UNA fila `TRANSFER` con
+  `subtype = RETIRO_CAJERO`, sin categoría y sin comisión. Como los saldos se derivan de
+  las transacciones, la misma fila descuenta de ahorros y acredita a Efectivo; el
+  repositorio valida y escribe dentro de `db.withTransaction` (sin sobregiro, sin rastro
+  si falla). Origen: solo cuentas `SAVINGS` activas. Destino: la cuenta activa llamada
+  “Efectivo” (sin distinguir mayúsculas) o, si no existe, la primera `CASH` activa.
+- **Múltiplo de 5 = 500 centavos.** Coincide con los chips $5/$10/$15; “Otro” acepta solo
+  dígitos. Los errores se muestran junto al control y desaparecen al editar.
+- **Presupuesto total mensual independiente.** `monthly_budgets` tiene un monto por
+  `yearMonth` (índice único), no se suma a los presupuestos por categoría y no se copia
+  al mes siguiente. Se define/edita desde la tarjeta de Presupuestos en modo mes; en modo
+  semestre se oculta.
+- **Ritmo (`BudgetPace`, dominio puro).** `esperadoPct = día/díasDelMes`,
+  `realPct = gastado/presupuesto`; el gasto es el neto de reembolsos del resumen mensual
+  (excluye transferencias/retiros y pagos no ejecutados). Las comparaciones usan valores
+  sin redondear; la UI muestra porcentajes a 1 decimal half-up y montos a 2. La barra
+  topa el relleno al 100 %, muestra el porcentaje real completo y una marca vertical del
+  esperado. Sin presupuesto (ausente o ≤ 0) se oculta la tarjeta y se sugiere definirlo.
+- **Recálculo reactivo.** `SummaryViewModel` combina transacciones, presupuestos,
+  presupuesto total y un flujo de fecha que revisa cada minuto: se actualiza al abrir,
+  editar un gasto, cambiar el presupuesto y cambiar de día/mes.
+- **Cambio de UI mínimo:** como la app no tiene un selector de tipo dentro de
+  Transferencias (el tipo se elige en la hoja “+” del FAB), “Retiro en cajero” se agregó
+  como quinta acción de esa hoja. Historial gana etiqueta y chip de filtro. No se añadió
+  notificación de ritmo: el estado vive solo en la tarjeta del Resumen.
+
 ### Otras
 
 ### Otras
 - `allowBackup = false` (el respaldo propio en JSON llega en la Fase 7).
 ### Respaldo (Fase 4.5, adelanto de la 7)
 - **Ajustes real** (ya no placeholder): "Exportar datos" (SAF `CreateDocument`, aviso de "no cifrado" antes) e "Importar datos" (SAF `OpenDocument`). Fecha del último respaldo en DataStore (`last_backup_at`).
-- **Formato JSON versionado** (`core/backup`): `formatVersion`, `dbVersion`, `exportedAt` (ISO) y las **13 tablas con sus ids**. `kotlinx-serialization` (plugin con la misma versión de Kotlin, `json 1.8.1` — se fuerza 1.8.1 también en release).
-- **Importar = todo-o-nada**: valida formato y versión ANTES de tocar nada; confirmación del usuario; borrado e inserción en UNA transacción de Room con `PRAGMA defer_foreign_keys` (las FKs se verifican al commit; si falla, se revierte). Un archivo inválido deja todo intacto.
-- Pruebas: JVM ida/vuelta (`BackupJsonTest`) + instrumentada `BackupManagerTest` (exportar→borrar→importar idéntico; inválido no cambia nada).
+- **Formato JSON versionado** (`core/backup`): `formatVersion` 1, `dbVersion` 4, `exportedAt` (ISO) y las **14 tablas con sus ids**, incluido `monthly_budgets` y `transactions.subtype`. `kotlinx-serialization` (plugin con la misma versión de Kotlin, `json 1.8.1` — se fuerza 1.8.1 también en release).
+- **Importar = todo-o-nada**: valida formato y versión ANTES de tocar nada; confirmación del usuario; borrado e inserción en UNA transacción de Room con `PRAGMA defer_foreign_keys` (las FKs se verifican al commit; si falla, se revierte). Un archivo inválido deja todo intacto. Se aceptan `dbVersion` 2 y 3: v2 deriva `anchorDayOfMonth`; v3 deja `subtype = null` y `monthly_budgets` vacío. Una versión superior se rechaza.
+- Pruebas: JVM ida/vuelta (`BackupJsonTest`, `BackupVersioningTest`) + instrumentada `BackupManagerTest` (exportar→borrar→importar idéntico, incluido retiro y presupuesto total; inválido no cambia nada).
 - **Regla operativa nueva**: las instrumentadas se ejecutan en el teléfono SOLO con confirmación explícita del usuario (pueden sobreescribir sus datos al reinstalar).
 
 ### Otras

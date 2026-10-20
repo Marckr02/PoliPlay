@@ -11,7 +11,11 @@ import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
 import androidx.room.withTransaction
 import com.example.campuspocket.feature.finance.data.BudgetDao
+import com.example.campuspocket.feature.finance.data.MonthlyBudgetDao
+import com.example.campuspocket.feature.finance.domain.CashAccountRules
 import com.example.campuspocket.feature.finance.domain.PaymentDomain
+import com.example.campuspocket.feature.finance.domain.WithdrawalResult
+import com.example.campuspocket.feature.finance.domain.WithdrawalRules
 import com.example.campuspocket.feature.finance.domain.BudgetAlertChecker
 import kotlinx.coroutines.flow.first
 import androidx.datastore.core.DataStore
@@ -33,6 +37,7 @@ class FinanceRepositoryImpl @Inject constructor(
     private val categoryDao: CategoryDao,
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao,
+    private val monthlyBudgetDao: MonthlyBudgetDao,
     private val scheduledPaymentDao: ScheduledPaymentDao,
     private val db: AppDatabase,
     private val dataStore: DataStore<Preferences>,
@@ -199,6 +204,80 @@ class FinanceRepositoryImpl @Inject constructor(
     override suspend fun deleteBudget(yearMonth: String, categoryId: Long) {
         withContext(ioDispatcher) {
             budgetDao.getByMonthAndCategory(yearMonth, categoryId)?.let { budgetDao.delete(it) }
+        }
+    }
+
+    // ---- Presupuesto total del mes (Fase 8B) -------------------------------
+
+    override fun observeMonthlyBudgets() = monthlyBudgetDao.observeAll()
+
+    override suspend fun getMonthlyBudget(yearMonth: String) =
+        withContext(ioDispatcher) { monthlyBudgetDao.getByMonth(yearMonth) }
+
+    override suspend fun upsertMonthlyBudget(yearMonth: String, amountCents: Long) {
+        withContext(ioDispatcher) {
+            val existing = monthlyBudgetDao.getByMonth(yearMonth)
+            if (existing != null) {
+                monthlyBudgetDao.update(existing.copy(amountCents = amountCents))
+            } else {
+                monthlyBudgetDao.insert(
+                    com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                        yearMonth = yearMonth,
+                        amountCents = amountCents
+                    )
+                )
+            }
+        }
+    }
+
+    override suspend fun deleteMonthlyBudget(yearMonth: String) {
+        withContext(ioDispatcher) {
+            monthlyBudgetDao.getByMonth(yearMonth)?.let { monthlyBudgetDao.delete(it) }
+        }
+    }
+
+    // ---- Retiro en cajero (Fase 8A) ----------------------------------------
+
+    override suspend fun withdrawToCash(
+        savingsAccountId: Long,
+        amountCents: Long,
+        date: LocalDate
+    ): WithdrawalResult = withContext(ioDispatcher) {
+        db.withTransaction {
+            val sourceEntity = accountDao.getById(savingsAccountId)
+                ?.takeIf {
+                    !it.archived &&
+                        it.type == com.example.campuspocket.feature.finance.data.AccountType.SAVINGS.name
+                }
+            val cashAccount = CashAccountRules.pick(
+                accountDao.getActiveByType(
+                    com.example.campuspocket.feature.finance.data.AccountType.CASH.name
+                ).map(Account::fromEntity)
+            )
+
+            val sourceBalance = sourceEntity?.let { accountDao.getBalanceCents(it.id) }
+            val error = WithdrawalRules.validate(
+                amountCents = amountCents,
+                sourceBalanceCents = sourceBalance,
+                sourceName = sourceEntity?.name,
+                hasCashAccount = cashAccount != null
+            )
+            if (error != null) {
+                return@withTransaction WithdrawalResult.Failure(error, sourceEntity?.name)
+            }
+
+            val id = transactionDao.insert(
+                com.example.campuspocket.feature.finance.data.TransactionEntity(
+                    type = com.example.campuspocket.feature.finance.data.TransactionType.TRANSFER.name,
+                    subtype = com.example.campuspocket.feature.finance.data.TransactionSubtype.RETIRO_CAJERO.name,
+                    amountCents = amountCents,
+                    date = date,
+                    accountId = sourceEntity!!.id,
+                    targetAccountId = cashAccount!!.id,
+                    description = null
+                )
+            )
+            WithdrawalResult.Success(id)
         }
     }
 

@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.KeypadAmountInput
+import com.example.campuspocket.core.designsystem.components.TransactionTypeSegmentedButton
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.TransactionError
@@ -54,6 +56,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.tooling.preview.Preview
 
 private val DATE_FORMATTER: DateTimeFormatter =
     DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es"))
@@ -80,7 +83,9 @@ fun TransactionFormScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(transactionTypeLabelRes(state.type))) },
+                title = {
+                    Text(text = stringResource(transactionTypeLabelRes(state.type)))
+                },
                 navigationIcon = {
                     IconButton(onClick = onDone) {
                         Icon(
@@ -108,21 +113,21 @@ fun TransactionFormScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
-                value = state.amountDisplay,
-                onValueChange = viewModel::onAmountChange,
-                label = { Text(stringResource(R.string.transaction_amount)) },
-                prefix = { Text("$") },
-                isError = state.error == TransactionError.AMOUNT_NOT_POSITIVE,
-                supportingText = {
-                    if (state.error == TransactionError.AMOUNT_NOT_POSITIVE) {
-                        Text(stringResource(R.string.transaction_error_amount))
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+            KeypadAmountInput(
+                amount = state.amountDisplay,
+                onAmountChange = viewModel::onAmountChange,
+                error = state.error == TransactionError.AMOUNT_NOT_POSITIVE,
+                label = stringResource(R.string.transaction_amount)
             )
+
+            if (state.error == TransactionError.AMOUNT_NOT_POSITIVE) {
+                Text(
+                    text = stringResource(R.string.transaction_error_amount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
 
             AccountDropdown(
                 label = stringResource(
@@ -367,6 +372,16 @@ private fun AccountDropdown(
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+@Preview(name = "TransactionFormScreen", showBackground = true)
+fun PreviewTransactionFormScreen() {
+    com.example.campuspocket.core.designsystem.CampusTheme {
+        androidx.compose.material3.Surface {
+            TransactionFormScreen(onDone = {})
         }
     }
 }

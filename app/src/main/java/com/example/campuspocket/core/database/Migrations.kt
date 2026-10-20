@@ -35,5 +35,26 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /**
+     * v3 -> v4 (Fase 8):
+     * - `transactions.subtype` identifica el retiro en cajero (nullable, sin tocar filas viejas).
+     * - `monthly_budgets` guarda el presupuesto TOTAL de cada mes (independiente del de categorías).
+     */
+    val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `transactions` ADD COLUMN `subtype` TEXT")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `monthly_budgets` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`yearMonth` TEXT NOT NULL, " +
+                    "`amountCents` INTEGER NOT NULL)"
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_monthly_budgets_yearMonth` " +
+                    "ON `monthly_budgets` (`yearMonth`)"
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }

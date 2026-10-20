@@ -32,6 +32,7 @@ fun MarkdownPreview(
     modifier: Modifier = Modifier
 ) {
     val blocks = remember(markdown) { MarkdownParser.parse(markdown) }
+    val codeBackground = MaterialTheme.colorScheme.surfaceVariant
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         blocks.forEach { block ->
             when (block) {
@@ -43,14 +44,14 @@ fun MarkdownPreview(
                         else -> MaterialTheme.typography.titleMedium
                     }
                 )
-                is MarkdownParser.Paragraph -> Text(renderInline(block.text), style = MaterialTheme.typography.bodyMedium)
+                is MarkdownParser.Paragraph -> Text(renderInline(block.text, codeBackground), style = MaterialTheme.typography.bodyMedium)
                 is MarkdownParser.UnorderedListItem -> Row(Modifier.fillMaxWidth()) {
                     Text("•", modifier = Modifier.padding(end = 6.dp))
-                    Text(renderInline(block.text), style = MaterialTheme.typography.bodyMedium)
+                    Text(renderInline(block.text, codeBackground), style = MaterialTheme.typography.bodyMedium)
                 }
                 is MarkdownParser.OrderedListItem -> Row(Modifier.fillMaxWidth()) {
                     Text("${block.number}.", modifier = Modifier.padding(end = 6.dp))
-                    Text(renderInline(block.text), style = MaterialTheme.typography.bodyMedium)
+                    Text(renderInline(block.text, codeBackground), style = MaterialTheme.typography.bodyMedium)
                 }
                 is MarkdownParser.CodeBlock -> Text(
                     text = block.text,
@@ -67,7 +68,7 @@ fun MarkdownPreview(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(if (block.checked) "☑" else "☐", modifier = Modifier.padding(end = 6.dp))
-                    Text(renderInline(block.text), style = MaterialTheme.typography.bodyMedium)
+                    Text(renderInline(block.text, codeBackground), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -75,7 +76,7 @@ fun MarkdownPreview(
 }
 
 /** Negrita **...**, cursiva *...* o _..._ y código en línea `...` sobre AnnotatedString. */
-internal fun renderInline(text: String): AnnotatedString = buildAnnotatedString {
+internal fun renderInline(text: String, codeBackground: Color = Color(0x1A000000)): AnnotatedString = buildAnnotatedString {
     var i = 0
     while (i < text.length) {
         when {
@@ -89,7 +90,7 @@ internal fun renderInline(text: String): AnnotatedString = buildAnnotatedString 
             text.startsWith("`", i) -> {
                 val end = text.indexOf("`", i + 1)
                 if (end > i + 1) {
-                    pushStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = Color(0x1A000000)))
+                    pushStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground))
                     append(text.substring(i + 1, end))
                     pop()
                     i = end + 1

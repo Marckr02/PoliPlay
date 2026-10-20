@@ -21,7 +21,9 @@ data class BudgetsUiState(
     val yearMonth: YearMonth,
     val rows: List<GetMonthSummary.CategoryRow> = emptyList(),
     val isLoading: Boolean = true,
-    val semesterMode: Boolean = false
+    val semesterMode: Boolean = false,
+    /** Presupuesto total independiente del mes; null si no está definido. */
+    val monthlyBudgetCents: Long? = null
 ) {
     val totalBudgetCents: Long get() = rows.sumOf { it.budgetCents ?: 0L }
     val totalSpentCents: Long get() = rows.sumOf { it.netSpentCents }
@@ -45,8 +47,9 @@ class BudgetsViewModel @Inject constructor(
                 financeRepository.observeActiveCategories(),
                 financeRepository.observeTransactions(),
                 financeRepository.observeAllBudgets(),
-                _semesterMode
-            ) { categories, transactions, allBudgets, semester ->
+                _semesterMode,
+                financeRepository.observeMonthlyBudgets()
+            ) { categories, transactions, allBudgets, semester, monthlyBudgets ->
                 val expenseCategories = categories
                     .filter { it.kind == CategoryKind.EXPENSE }
                     .mapNotNull { c -> c.id?.let { it to c } }
@@ -64,7 +67,16 @@ class BudgetsViewModel @Inject constructor(
                         monthStart = month.atDay(1),
                         monthEnd = month.atEndOfMonth()
                     )
-                    BudgetsUiState(month, summary.rows, isLoading = false, semesterMode = false)
+                    val monthlyBudget = monthlyBudgets
+                        .firstOrNull { it.yearMonth == month.toString() }
+                        ?.amountCents
+                    BudgetsUiState(
+                        yearMonth = month,
+                        rows = summary.rows,
+                        isLoading = false,
+                        semesterMode = false,
+                        monthlyBudgetCents = monthlyBudget
+                    )
                 } else {
                     val months = GetMonthSummary.semesterMonths(month, null)
                     val monthKeys = months.map { it.toString() }.toSet()
@@ -101,6 +113,20 @@ class BudgetsViewModel @Inject constructor(
     fun deleteBudget(categoryId: Long) {
         viewModelScope.launch {
             financeRepository.deleteBudget(_yearMonth.value.toString(), categoryId)
+        }
+    }
+
+    /** Presupuesto total del mes (independiente de las categorías, sin arrastre). */
+    fun saveMonthlyBudget(amountCents: Long) {
+        if (amountCents <= 0L) return
+        viewModelScope.launch {
+            financeRepository.upsertMonthlyBudget(_yearMonth.value.toString(), amountCents)
+        }
+    }
+
+    fun deleteMonthlyBudget() {
+        viewModelScope.launch {
+            financeRepository.deleteMonthlyBudget(_yearMonth.value.toString())
         }
     }
 

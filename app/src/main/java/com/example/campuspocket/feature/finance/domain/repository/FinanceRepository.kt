@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.finance.domain.repository
 
 import com.example.campuspocket.feature.finance.data.TransactionDao
+import com.example.campuspocket.feature.finance.domain.WithdrawalResult
 import com.example.campuspocket.feature.finance.domain.model.Account
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
@@ -44,6 +45,22 @@ interface FinanceRepository {
     suspend fun getBudget(yearMonth: String, categoryId: Long): com.example.campuspocket.feature.finance.data.BudgetEntity?
     suspend fun upsertBudget(yearMonth: String, categoryId: Long, amountCents: Long)
     suspend fun deleteBudget(yearMonth: String, categoryId: Long)
+
+    // Presupuesto TOTAL del mes (Fase 8B). Independiente del de categorías.
+    fun observeMonthlyBudgets(): Flow<List<com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity>>
+    suspend fun getMonthlyBudget(yearMonth: String): com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity?
+    suspend fun upsertMonthlyBudget(yearMonth: String, amountCents: Long)
+    suspend fun deleteMonthlyBudget(yearMonth: String)
+
+    /**
+     * Retiro en cajero (Fase 8A): una transferencia atómica desde una cuenta de ahorros
+     * hacia la cuenta Efectivo. Valida saldo DENTRO de la transacción y no cuenta como gasto.
+     */
+    suspend fun withdrawToCash(
+        savingsAccountId: Long,
+        amountCents: Long,
+        date: LocalDate
+    ): WithdrawalResult
 
     // Pagos programados (Fase 5B).
     fun observeActiveScheduledPayments(): Flow<List<com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity>>

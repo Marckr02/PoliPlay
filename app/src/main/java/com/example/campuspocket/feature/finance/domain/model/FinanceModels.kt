@@ -5,6 +5,7 @@ import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.data.CategoryEntity
 import com.example.campuspocket.feature.finance.data.CategoryKind
 import com.example.campuspocket.feature.finance.data.TransactionEntity
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import java.time.LocalDate
 
@@ -73,6 +74,7 @@ data class Category(
 data class Transaction(
     val id: Long? = null,
     val type: TransactionType,
+    val subtype: TransactionSubtype? = null,
     val amountCents: Long,
     val date: LocalDate,
     val accountId: Long,
@@ -85,6 +87,7 @@ data class Transaction(
     fun toEntity(): TransactionEntity = TransactionEntity(
         id = id ?: 0,
         type = type.name,
+        subtype = subtype?.name,
         amountCents = amountCents,
         date = date,
         accountId = accountId,
@@ -99,6 +102,7 @@ data class Transaction(
         fun fromEntity(entity: TransactionEntity): Transaction = Transaction(
             id = entity.id,
             type = TransactionType.valueOf(entity.type),
+            subtype = entity.subtype?.let { runCatching { TransactionSubtype.valueOf(it) }.getOrNull() },
             amountCents = entity.amountCents,
             date = entity.date,
             accountId = entity.accountId,

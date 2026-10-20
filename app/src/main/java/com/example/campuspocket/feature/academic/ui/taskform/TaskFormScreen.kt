@@ -35,9 +35,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -61,12 +58,21 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.SegmentedControl
 import com.example.campuspocket.feature.academic.domain.model.Priority
 import com.example.campuspocket.feature.academic.ui.TimePickerDialog
 import com.example.campuspocket.feature.academic.ui.TimeText
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import androidx.compose.ui.tooling.preview.Preview
+
+private val Priority.resourceString: Int
+    get() = when (this) {
+        Priority.HIGH -> R.string.task_priority_high
+        Priority.MEDIUM -> R.string.task_priority_medium
+        Priority.LOW -> R.string.task_priority_low
+    }
 
 private val REMINDER_LABELS = mapOf(
     0 to R.string.reminder_at_time,
@@ -289,21 +295,12 @@ private fun TaskFormContent(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf(
-                        Priority.LOW to R.string.task_priority_low,
-                        Priority.MEDIUM to R.string.task_priority_medium,
-                        Priority.HIGH to R.string.task_priority_high
-                    ).forEachIndexed { index, (priority, labelRes) ->
-                        SegmentedButton(
-                            selected = state.priority == priority,
-                            onClick = { onPriorityChange(priority) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = 3)
-                        ) {
-                            Text(stringResource(labelRes))
-                        }
-                    }
-                }
+                SegmentedControl(
+                    options = listOf(Priority.LOW, Priority.MEDIUM, Priority.HIGH),
+                    selected = state.priority,
+                    onSelect = onPriorityChange,
+                    labelProvider = { stringResource(it.resourceString) }
+                )
             }
 
             Column {
@@ -312,7 +309,7 @@ private fun TaskFormContent(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                REMINDER_OFFSETS_MINUTES.forEach { minutes ->
+                listOf(0, 10, 60, 24 * 60).forEach { minutes ->
                     val labelRes = REMINDER_LABELS.getValue(minutes)
                     FilterChip(
                         selected = minutes in state.reminderMinutes,
@@ -537,3 +534,13 @@ private fun areNotificationsGranted(context: Context): Boolean =
 private fun canScheduleExactAlarms(context: Context): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+
+@Composable
+@Preview(name = "TaskFormScreen", showBackground = true)
+fun PreviewTaskFormScreen() {
+    com.example.campuspocket.core.designsystem.CampusTheme {
+        androidx.compose.material3.Surface {
+            TaskFormScreen(onDone = {})
+        }
+    }
+}

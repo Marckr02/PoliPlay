@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.FinanceValidators
 import com.example.campuspocket.feature.finance.domain.TransactionError
@@ -27,6 +28,8 @@ import javax.inject.Inject
 data class TransactionFormUiState(
     val transactionId: Long? = null,
     val type: TransactionType,
+    /** Subtipo (p. ej. retiro en cajero). Se conserva al editar; no se elige aquí. */
+    val subtype: TransactionSubtype? = null,
     /** Monto acumulado en centavos (entrada estilo cajero: solo dígitos). */
     val amountCents: Long = 0,
     val accountId: Long? = null,
@@ -99,6 +102,7 @@ class TransactionFormViewModel @Inject constructor(
                     _uiState.value.copy(
                         transactionId = tx.id,
                         type = tx.type,
+                        subtype = tx.subtype,
                         amountCents = tx.amountCents,
                         accountId = tx.accountId,
                         targetAccountId = tx.targetAccountId,
@@ -159,6 +163,7 @@ class TransactionFormViewModel @Inject constructor(
         val candidate = Transaction(
             id = state.transactionId,
             type = state.type,
+            subtype = state.subtype,
             amountCents = state.amountCents,
             date = state.date,
             accountId = state.accountId ?: 0L,

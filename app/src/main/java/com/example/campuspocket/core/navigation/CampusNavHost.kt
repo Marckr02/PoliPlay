@@ -1,13 +1,20 @@
 package com.example.campuspocket.core.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -23,12 +30,8 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.navArgument
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import com.example.campuspocket.R
-import com.example.campuspocket.core.designsystem.PendingScreen
 import com.example.campuspocket.feature.academic.ui.AcademicDestinations
 import com.example.campuspocket.feature.academic.ui.coursedetail.CourseDetailScreen
 import com.example.campuspocket.feature.academic.ui.courseform.CourseFormScreen
@@ -38,6 +41,7 @@ import com.example.campuspocket.feature.academic.ui.taskform.TaskFormScreen
 import com.example.campuspocket.feature.academic.ui.tasks.TasksScreen
 import com.example.campuspocket.feature.academic.ui.today.HoyScreen
 import com.example.campuspocket.feature.academic.ui.week.SemanaScreen
+import com.example.campuspocket.core.preferences.UserPreferences
 import com.example.campuspocket.feature.finance.ui.FinanceDestinations
 import com.example.campuspocket.feature.finance.ui.accounts.AccountDetailScreen
 import com.example.campuspocket.feature.finance.ui.accounts.AccountFormScreen
@@ -45,6 +49,8 @@ import com.example.campuspocket.feature.finance.ui.categories.CategoriesScreen
 import com.example.campuspocket.feature.finance.ui.categories.CategoryFormScreen
 import com.example.campuspocket.feature.finance.ui.home.FinanceHomeScreen
 import com.example.campuspocket.feature.finance.ui.transactions.TransactionFormScreen
+import com.example.campuspocket.feature.finance.ui.withdrawal.WithdrawalScreen
+import com.example.campuspocket.feature.home.ui.HomeScreen
 import com.example.campuspocket.feature.notes.ui.NoteEditorScreen
 import com.example.campuspocket.feature.notes.ui.NotesDestinations
 import com.example.campuspocket.feature.notes.ui.NotesScreen
@@ -54,9 +60,14 @@ import com.example.campuspocket.feature.settings.ui.SettingsScreen
  * Un solo NavHost; cada pestaña de la barra inferior es un grafo anidado
  * (navigation(route = destino)). Así la barra puede saber si la pestaña está
  * activa mirando la jerarquía del destino actual.
+ *
+ * La barra y los accesos se construyen a partir de los módulos activos
+ * (UserPreferences); si un módulo se desactiva mientras está abierto, se
+ * vuelve a Inicio sin borrar datos.
  */
 @Composable
 fun CampusNavHost(
+    preferences: UserPreferences,
     modifier: Modifier = Modifier,
     pendingTaskId: StateFlow<Long> = remember { MutableStateFlow(-1L) },
     onPendingTaskHandled: () -> Unit = {}
@@ -65,41 +76,81 @@ fun CampusNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
+    val currentTopLevel: TopLevelDestination? = currentDestination
+        ?.hierarchy
+        ?.mapNotNull { it.route }
+        ?.firstNotNullOfOrNull { route ->
+            TopLevelDestination.entries.firstOrNull { it.route == route }
+        }
+
+    val navigateToTopLevel: (String) -> Unit = { route ->
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     // Deep link desde una notificación: abre el detalle (formulario) de la tarea.
     val pendingTask by pendingTaskId.collectAsStateWithLifecycle()
     LaunchedEffect(pendingTask) {
         if (pendingTask != -1L) {
-            navController.navigate(AcademicDestinations.taskForm(pendingTask))
+            if (preferences.academicEnabled) {
+                navController.navigate(AcademicDestinations.taskForm(pendingTask))
+            }
             onPendingTaskHandled()
+        }
+    }
+
+    // Si el módulo abierto se desactiva en Ajustes, volver a Inicio de forma segura.
+    LaunchedEffect(currentTopLevel, preferences) {
+        val module = currentTopLevel?.module
+        if (module != null && !preferences.isModuleEnabled(module)) {
+            navController.navigate(TopLevelDestination.HOME.route) {
+                popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                launchSingleTop = true
+            }
         }
     }
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            NavigationBar {
-                TopLevelDestination.entries.forEach { destination ->
-                    val selected = currentDestination?.hierarchy
-                        ?.any { it.route == destination.route } == true
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(destination.iconRes),
-                                contentDescription = null
+            Column {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outline
+                )
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp
+                ) {
+                    TopLevelDestination.visibleFor(preferences).forEach { destination ->
+                        val selected = currentDestination?.hierarchy
+                            ?.any { it.route == destination.route } == true
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { navigateToTopLevel(destination.route) },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(destination.iconRes),
+                                    contentDescription = null
+                                )
+                            },
+                            label = {
+                                Text(
+                                    stringResource(destination.labelRes),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        },
-                        label = { Text(stringResource(destination.labelRes)) }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -109,6 +160,18 @@ fun CampusNavHost(
             startDestination = TopLevelDestination.start.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(TopLevelDestination.HOME.route) {
+                HomeScreen(
+                    preferences = preferences,
+                    onOpenModule = { module ->
+                        val route = TopLevelDestination.entries
+                            .first { it.module == module }
+                            .route
+                        navigateToTopLevel(route)
+                    },
+                    onOpenSettings = { navigateToTopLevel(TopLevelDestination.SETTINGS.route) }
+                )
+            }
             academicGraph(navController)
             financeGraph(navController)
             notesGraph(navController)
@@ -128,7 +191,8 @@ private fun NavGraphBuilder.academicGraph(navController: NavHostController) {
                 onNavigateToTasks = { navController.navigate(AcademicDestinations.TASKS) },
                 onOpenCourse = { courseId ->
                     navController.navigate(AcademicDestinations.courseDetail(courseId))
-                }
+                },
+                onAddTask = { navController.navigate(AcademicDestinations.taskForm()) }
             )
         }
         composable(AcademicDestinations.SEMANA) {
@@ -140,7 +204,8 @@ private fun NavGraphBuilder.academicGraph(navController: NavHostController) {
                 onNavigateToTasks = { navController.navigate(AcademicDestinations.TASKS) },
                 onOpenCourse = { courseId ->
                     navController.navigate(AcademicDestinations.courseDetail(courseId))
-                }
+                },
+                onAddTask = { navController.navigate(AcademicDestinations.taskForm()) }
             )
         }
         composable(AcademicDestinations.MATERIAS) {
@@ -215,7 +280,14 @@ private fun NavGraphBuilder.financeGraph(navController: NavHostController) {
                     navController.navigate(FinanceDestinations.transactionForm(type.name))
                 },
                 onAddPayment = { navController.navigate(FinanceDestinations.paymentForm()) },
-                onEditPayment = { id -> navController.navigate(FinanceDestinations.paymentForm(id)) }
+                onEditPayment = { id -> navController.navigate(FinanceDestinations.paymentForm(id)) },
+                onWithdrawal = { navController.navigate(FinanceDestinations.WITHDRAWAL) }
+            )
+        }
+        composable(FinanceDestinations.WITHDRAWAL) {
+            WithdrawalScreen(
+                onDone = { navController.popBackStack() },
+                onCreateAccount = { navController.navigate(FinanceDestinations.accountForm()) }
             )
         }
         composable(

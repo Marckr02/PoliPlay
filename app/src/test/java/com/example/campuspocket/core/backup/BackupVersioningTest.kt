@@ -26,24 +26,27 @@ class BackupVersioningTest {
           }
         }"""
         val file = readAndValidate(v2Json)
-        assertEquals(3, file.dbVersion) // normalizado a la actual
+        assertEquals(4, file.dbVersion) // normalizado a la actual
         assertEquals(31, file.tables.scheduledPayments.single().anchorDayOfMonth)
     }
 
     @Test
-    fun `un respaldo v3 se toma tal cual`() {
-        val v3 = BackupFile(
-            formatVersion = BACKUP_FORMAT_VERSION, dbVersion = BACKUP_DB_VERSION,
-            exportedAt = "2026-10-04T00:00:00Z",
-            tables = BackupTables(
-                scheduledPayments = listOf(
-                    ScheduledPaymentData(1, "Pago", 1_000, 1, 1, "MONTHLY", "2026-10-15", 0, 3, true)
-                )
-            )
-        )
-        val file = readAndValidate(json.encodeToString(v3))
-        assertEquals(BACKUP_DB_VERSION, file.dbVersion)
+    fun `un respaldo v3 se normaliza a v4 con los campos nuevos vacios`() {
+        val v3Json = """{
+          "formatVersion": 1, "dbVersion": 3, "exportedAt": "2026-10-04T00:00:00Z",
+          "tables": {
+            "semesters": [], "courses": [], "class_sessions": [], "tasks": [], "task_reminders": [],
+            "accounts": [], "categories": [], "budgets": [],
+            "transactions": [{"id":1,"type":"TRANSFER","amountCents":500,"date":"2026-10-03","accountId":2,"targetAccountId":1,"categoryId":null,"description":null,"refundOfId":null,"scheduledPaymentId":null,"createdAt":52}],
+            "scheduled_payments": [{"id":1,"name":"Pago","amountCents":1000,"accountId":1,"categoryId":1,"frequency":"MONTHLY","nextDueDate":"2026-10-15","anchorDayOfMonth":0,"remindDaysBefore":3,"active":true}],
+            "folders": [], "notes": [], "import_hints": []
+          }
+        }"""
+        val file = readAndValidate(v3Json)
+        assertEquals(4, file.dbVersion)
         assertEquals(0, file.tables.scheduledPayments.single().anchorDayOfMonth)
+        assertEquals(0, file.tables.monthlyBudgets.size)
+        assertEquals(null, file.tables.transactions.single().subtype)
     }
 
     @Test
@@ -72,6 +75,7 @@ class BackupVersioningTest {
                 }
             ), dbVersion = BACKUP_DB_VERSION)
         }
+        if (file.dbVersion == 3) return file.copy(dbVersion = BACKUP_DB_VERSION)
         return file
     }
 }

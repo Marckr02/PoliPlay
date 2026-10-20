@@ -33,9 +33,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.EditorModeTab
+import com.example.campuspocket.core.designsystem.components.MarkdownToolbar
 import com.example.campuspocket.feature.notes.domain.MarkdownActions
 import com.example.campuspocket.feature.notes.domain.MarkdownParser
 
@@ -77,9 +80,10 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { showPreview = !showPreview }) {
-                        Text(stringResource(if (showPreview) R.string.markdown_preview else R.string.markdown_preview))
-                    }
+                    EditorModeTab(
+                        showPreview = showPreview,
+                        onToggle = { showPreview = !showPreview }
+                    )
                     TextButton(onClick = { viewModel.togglePin() }) {
                         Text(stringResource(if (state.pinned) R.string.note_unpin else R.string.note_pin))
                     }
@@ -90,35 +94,16 @@ fun NoteEditorScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(inner)
         ) {
-            // Barra de formato (cada chip aplica una acción pura probada en JVM)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                val actions: List<Pair<String, (String, Int, Int) -> MarkdownActions.EditResult>> = listOf(
-                    "H" to { t, s, e -> MarkdownActions.prefixLines(t, s, e, "#") },
-                    "B" to { t, s, e -> MarkdownActions.wrap(t, s, e, "**") },
-                    "I" to { t, s, e -> MarkdownActions.wrap(t, s, e, "*") },
-                    "•" to { t, s, e -> MarkdownActions.prefixLines(t, s, e, "-") },
-                    "1." to { t, s, e -> MarkdownActions.prefixLines(t, s, e, "1.") },
-                    "☐" to { t, s, e -> MarkdownActions.prefixLines(t, s, e, "- [ ]") },
-                    "</>" to { t, s, e -> MarkdownActions.wrap(t, s, e, "`") },
-                    "```" to { t, s, e -> MarkdownActions.wrap(t, s, e, "```\n").let { r -> MarkdownActions.wrap(r.text, r.selectionStart, r.selectionEnd, "\n```") } }
-                )
-                actions.forEach { (label, action) ->
-                    FilterChip(
-                        selected = false,
-                        onClick = {
-                            val current = viewModel.uiState.value
-                            val result = action(current.content, current.selectionStart, current.selectionEnd)
-                            viewModel.onContentChange(result.text)
-                            viewModel.onSelectionChange(result.selectionStart, result.selectionEnd)
-                        },
-                        label = { Text(label) },
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                }
-            }
+            // Barra de formato
+            MarkdownToolbar(
+                modifier = Modifier.fillMaxWidth(),
+                onAction = { _, _, _ -> MarkdownActions.EditResult("", 0, 0) }, // Not used directly
+                currentContent = state.content,
+                selectionStart = state.selectionStart,
+                selectionEnd = state.selectionEnd,
+                onContentChange = viewModel::onContentChange,
+                onSelectionChange = viewModel::onSelectionChange
+            )
 
             if (showPreview) {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
@@ -146,4 +131,12 @@ fun NoteEditorScreen(
     }
 }
 
-
+@Composable
+@Preview(name = "NoteEditorScreen", showBackground = true)
+fun PreviewNoteEditorScreen() {
+    com.example.campuspocket.core.designsystem.CampusTheme {
+        androidx.compose.material3.Surface {
+            NoteEditorScreen(onDone = {})
+        }
+    }
+}

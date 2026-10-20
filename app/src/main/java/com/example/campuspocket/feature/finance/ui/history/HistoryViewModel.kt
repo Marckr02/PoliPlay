@@ -2,6 +2,7 @@ package com.example.campuspocket.feature.finance.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Account
 import com.example.campuspocket.feature.finance.domain.model.Category
@@ -23,6 +24,7 @@ data class HistoryFilters(
     val startDate: LocalDate? = null,
     val endDate: LocalDate? = null,
     val type: TransactionType? = null,
+    val subtype: TransactionSubtype? = null,
     val accountId: Long? = null,
     val categoryId: Long? = null,
     val query: String = ""
@@ -75,6 +77,10 @@ class HistoryViewModel @Inject constructor(
         filters.value = filters.value.copy(type = type)
     }
 
+    fun setSubtype(subtype: TransactionSubtype?) {
+        filters.value = filters.value.copy(subtype = subtype)
+    }
+
     fun setAccount(accountId: Long?) {
         filters.value = filters.value.copy(accountId = accountId)
     }
@@ -92,6 +98,7 @@ class HistoryViewModel @Inject constructor(
         fun applyFilters(transactions: List<Transaction>, f: HistoryFilters): List<Transaction> =
             transactions
                 .filter { f.type == null || it.type == f.type }
+                .filter { f.subtype == null || it.subtype == f.subtype }
                 .filter {
                     f.accountId == null || it.accountId == f.accountId || it.targetAccountId == f.accountId
                 }
@@ -100,6 +107,6 @@ class HistoryViewModel @Inject constructor(
                     f.query.isBlank() ||
                         it.description?.contains(f.query.trim(), ignoreCase = true) == true
                 }
-                .sortedWith(compareByDescending<Transaction> { it.date }.thenByDescending { it.createdAt })
+                .sortedWith(compareByDescending<Transaction> { it.date }.thenBy { it.id ?: 0L })
     }
 }

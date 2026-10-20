@@ -1,5 +1,6 @@
 package com.example.campuspocket.feature.finance.ui.accounts
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,15 +27,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.AccountsCarousel
+import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.domain.AccountBalance
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountsScreen(
     onOpenAccount: (Long) -> Unit,
@@ -70,43 +78,62 @@ fun AccountsScreen(
 
         when {
             state.isLoading -> {
-                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                LoadingShimmer(modifier = Modifier.weight(1f))
             }
 
             state.balances.isEmpty() -> {
-                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.empty_finance),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                EmptyStateCard(
+                    modifier = Modifier.weight(1f),
+                    title = stringResource(R.string.empty_finance),
+                    message = stringResource(R.string.empty_finance),
+                    icon = painterResource(R.drawable.ic_wallet),
+                    actionText = stringResource(R.string.finance_new_account),
+                    onAction = onAddAccount
+                )
             }
 
             else -> {
-                val grouped = state.balances.groupBy { it.account.type }
-                LazyColumn(
+                Column(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    AccountType.entries.forEach { type ->
-                        val group = grouped[type].orEmpty()
-                        if (group.isNotEmpty()) {
-                            item(key = "header_$type") {
-                                Text(
-                                    text = stringResource(accountTypeLabelRes(type)),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                            items(group, key = { it.account.id ?: 0L }) { balance ->
-                                AccountRow(
-                                    balance = balance,
-                                    onClick = { balance.account.id?.let(onOpenAccount) }
-                                )
+                    // Carrusel de cuentas principales
+                    Text(
+                        text = stringResource(R.string.finance_accounts),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                    AccountsCarousel(
+                        accounts = state.balances,
+                        onAccountClick = { balance ->
+                            balance.account.id?.let(onOpenAccount)
+                        }
+                    )
+
+                    // Lista agrupada por tipo
+                    val grouped = state.balances.groupBy { it.account.type }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AccountType.entries.forEach { type ->
+                            val group = grouped[type].orEmpty()
+                            if (group.isNotEmpty()) {
+                                item(key = "header_$type") {
+                                    Text(
+                                        text = stringResource(accountTypeLabelRes(type)),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                                    )
+                                }
+                                items(group, key = { it.account.id ?: 0L }) { balance ->
+                                    AccountRow(
+                                        balance = balance,
+                                        onClick = { balance.account.id?.let(onOpenAccount) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -165,4 +192,18 @@ internal fun accountTypeLabelRes(type: AccountType): Int = when (type) {
     AccountType.DEBIT -> R.string.account_type_debit
     AccountType.SAVINGS -> R.string.account_type_savings
     AccountType.CREDIT_CARD -> R.string.account_type_credit
+}
+
+@Composable
+@Preview(name = "AccountsScreen", showBackground = true)
+fun PreviewAccountsScreen() {
+    com.example.campuspocket.core.designsystem.CampusTheme {
+        androidx.compose.material3.Surface {
+            AccountsScreen(
+                onOpenAccount = {},
+                onAddAccount = {},
+                onManageCategories = {}
+            )
+        }
+    }
 }

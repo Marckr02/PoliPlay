@@ -97,6 +97,37 @@ class BudgetDaoTest {
     }
 
     @Test
+    fun presupuestoTotalEsUnoPorMesYNoSeArrastra() = runBlocking {
+        db.monthlyBudgetDao().insert(
+            com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                yearMonth = "2026-10", amountCents = 250_000
+            )
+        )
+        db.monthlyBudgetDao().insert(
+            com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                yearMonth = "2026-11", amountCents = 300_000
+            )
+        )
+
+        assertEquals(250_000L, db.monthlyBudgetDao().getByMonth("2026-10")?.amountCents)
+        assertEquals(300_000L, db.monthlyBudgetDao().getByMonth("2026-11")?.amountCents)
+        assertNull(db.monthlyBudgetDao().getByMonth("2026-12")) // sin arrastre
+        assertEquals(2, db.monthlyBudgetDao().getAll().size)
+
+        val ex = try {
+            db.monthlyBudgetDao().insert(
+                com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                    yearMonth = "2026-10", amountCents = 1
+                )
+            )
+            null
+        } catch (e: Exception) {
+            e
+        }
+        assertNotNull(ex) // índice único por mes
+    }
+
+    @Test
     fun upsertNoPisaElDelMesDistinto() = runBlocking {
         val catId = db.categoryDao().insert(CategoryEntity(name = "Comida", kind = CategoryKind.EXPENSE.name, iconKey = "category"))
         val a = db.budgetDao().insert(BudgetEntity(yearMonth = "2026-10", categoryId = catId, amountCents = 100_000))

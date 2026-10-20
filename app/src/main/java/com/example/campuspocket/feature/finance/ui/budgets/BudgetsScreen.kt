@@ -1,5 +1,6 @@
 package com.example.campuspocket.feature.finance.ui.budgets
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,30 +39,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BudgetProgressBar
+import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** Colores de la barra: azul normal, ámbar al 80 %, roja al pasar 100 %. */
-private val BudgetOk = Color(0xFF4C8DFF)
-private val BudgetWarn = Color(0xFFF5A623)
-private val BudgetOver = Color(0xFFE5484D)
-
-private fun barColor(percent: Float?): Color = when {
-    percent == null -> BudgetOk
-    percent > 1f -> BudgetOver
-    percent >= 0.8f -> BudgetWarn
-    else -> BudgetOk
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetsScreen(
     modifier: Modifier = Modifier,
@@ -68,6 +64,7 @@ fun BudgetsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var editingCategory by remember { mutableStateOf<GetMonthSummary.CategoryRow?>(null) }
+    var showTotalBudgetDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -105,9 +102,7 @@ fun BudgetsScreen(
         }
 
         if (state.isLoading) {
-            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            LoadingShimmer(modifier = Modifier.weight(1f))
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().weight(1f),
@@ -115,6 +110,16 @@ fun BudgetsScreen(
             ) {
                 val withBudget = state.rows.filter { it.budgetCents != null }
                 val withoutBudget = state.rows.filter { it.budgetCents == null }
+
+                if (!state.semesterMode) {
+                    item(key = "presupuesto_total") {
+                        MonthlyBudgetCard(
+                            amountCents = state.monthlyBudgetCents,
+                            spentCents = state.totalSpentCents,
+                            onClick = { showTotalBudgetDialog = true }
+                        )
+                    }
+                }
 
                 if (withBudget.isNotEmpty()) {
                     item(key = "hdr_definidos") {
@@ -146,11 +151,11 @@ fun BudgetsScreen(
                 }
                 if (state.rows.isEmpty()) {
                     item(key = "vacio") {
-                        Text(
-                            text = stringResource(R.string.empty_budgets),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp)
+                        EmptyStateCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            title = stringResource(R.string.empty_budgets),
+                            message = stringResource(R.string.empty_budgets),
+                            icon = painterResource(R.drawable.ic_wallet)
                         )
                     }
                 }
@@ -183,8 +188,124 @@ fun BudgetsScreen(
             } else null
         )
     }
+
+    if (showTotalBudgetDialog) {
+        MonthlyBudgetEditDialog(
+            amountCents = state.monthlyBudgetCents,
+            onDismiss = { showTotalBudgetDialog = false },
+            onSave = { cents ->
+                viewModel.saveMonthlyBudget(cents)
+                showTotalBudgetDialog = false
+            },
+            onDelete = if (state.monthlyBudgetCents != null) {
+                {
+                    viewModel.deleteMonthlyBudget()
+                    showTotalBudgetDialog = false
+                }
+            } else null
+        )
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MonthlyBudgetCard(
+    amountCents: Long?,
+    spentCents: Long,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.budget_total_month),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    text = if (amountCents != null) {
+                        Money.format(spentCents) + " / " + Money.format(amountCents)
+                    } else {
+                        stringResource(R.string.budget_total_define)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (amountCents != null) {
+                Text(
+                    text = Money.format(amountCents),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonthlyBudgetEditDialog(
+    amountCents: Long?,
+    onDismiss: () -> Unit,
+    onSave: (Long) -> Unit,
+    onDelete: (() -> Unit)?
+) {
+    var value by remember(amountCents) { mutableStateOf(amountCents ?: 0L) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                stringResource(
+                    if (amountCents == null) R.string.budget_total_define else R.string.budget_total_edit
+                )
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = Money.toLocalDecimalString(value),
+                onValueChange = { text ->
+                    value = text.filter(Char::isDigit).take(9).toLongOrNull() ?: 0L
+                },
+                label = { Text(stringResource(R.string.budget_amount)) },
+                prefix = { Text("$") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { if (value > 0) onSave(value) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            Row {
+                if (onDelete != null) {
+                    TextButton(
+                        onClick = onDelete,
+                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text(stringResource(R.string.delete))
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BudgetRow(
     row: GetMonthSummary.CategoryRow,
@@ -226,23 +347,11 @@ private fun BudgetRow(
             }
 
             if (row.budgetCents != null) {
-                // Barra de progreso con color por umbral
-                val pct = row.percent ?: 0f
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(pct.coerceAtMost(1f))
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(barColor(row.percent))
-                    )
-                }
+                BudgetProgressBar(
+                    progress = row.percent ?: 0f,
+                    spent = Money.format(row.netSpentCents),
+                    limit = Money.format(row.budgetCents!!)
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -261,7 +370,7 @@ private fun BudgetRow(
                                 Money.format(row.remainingCents ?: 0)
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = if ((row.remainingCents ?: 0) < 0) BudgetOver else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if ((row.remainingCents ?: 0) < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
@@ -324,4 +433,14 @@ private fun BudgetEditDialog(
             }
         }
     )
+}
+
+@Composable
+@Preview(name = "BudgetsScreen", showBackground = true)
+fun PreviewBudgetsScreen() {
+    com.example.campuspocket.core.designsystem.CampusTheme {
+        androidx.compose.material3.Surface {
+            BudgetsScreen()
+        }
+    }
 }

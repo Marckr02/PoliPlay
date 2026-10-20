@@ -37,14 +37,19 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            val props = Properties().apply {
-                File(rootProject.projectDir, "keystore.properties").inputStream().use { load(it) }
+        // Solo crea la config de release si existen keystore.jks y keystore.properties
+        val keystoreFile = File(rootProject.projectDir, "keystore.jks")
+        val propsFile = File(rootProject.projectDir, "keystore.properties")
+        if (keystoreFile.exists() && File(rootProject.projectDir, "keystore.properties").exists()) {
+            create("release") {
+                val props = Properties().apply {
+                    File(rootProject.projectDir, "keystore.properties").inputStream().use { load(it) }
+                }
+                storeFile = File(rootProject.projectDir, "keystore.jks")
+                storePassword = props.getProperty("storePassword") ?: ""
+                keyAlias = props.getProperty("keyAlias") ?: ""
+                keyPassword = props.getProperty("keyPassword") ?: ""
             }
-            storeFile = File(rootProject.projectDir, "keystore.jks")
-            storePassword = props.getProperty("storePassword")
-            keyAlias = props.getProperty("keyAlias")
-            keyPassword = props.getProperty("keyPassword")
         }
     }
 
@@ -55,8 +60,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Firma: lee del keystore.properties local (no se sube a ningún repo)
-            signingConfig = signingConfigs.getByName("release")
+            // Firma: solo si existen keystore.jks y keystore.properties
+            val keystoreFile = File(rootProject.projectDir, "keystore.jks")
+            val propsFile = File(rootProject.projectDir, "keystore.properties")
+            if (keystoreFile.exists() && File(rootProject.projectDir, "keystore.properties").exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -97,7 +106,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-process:2.8.4")
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
@@ -138,7 +147,7 @@ dependencies {
     implementation(libs.work)
 
     // Biometría para el bloqueo opcional (Fase 7)
-    implementation("androidx.biometric:biometric:1.1.0")
+    implementation(libs.androidx.biometric)
 
     // PDF
     implementation(libs.pdfbox.android)

@@ -22,6 +22,7 @@ data class NotesUiState(
     val query: String = "",
     val folders: List<FolderEntity> = emptyList(),
     val notes: List<NoteEntity> = emptyList(),
+    val currentFolderId: Long? = null,
     val isLoading: Boolean = true
 )
 
@@ -42,20 +43,20 @@ class NotesViewModel @Inject constructor(
             if (q.isNotBlank()) {
                 val escaped = "%" + escapeLikePattern(q.trim()) + "%"
                 combine(noteRepository.searchNotes(escaped), MutableStateFlow(emptyList<FolderEntity>())) { notes, folders ->
-                    NotesUiState(query = q, folders = folders, notes = notes, isLoading = false)
+                    NotesUiState(query = q, folders = folders, notes = notes, currentFolderId = folderId, isLoading = false)
                 }
             } else {
                 val foldersFlow = if (folderId == null) noteRepository.observeRootFolders() else noteRepository.observeChildFolders(folderId)
                 val notesFlow = if (folderId == null) noteRepository.observeNotesWithoutFolder() else noteRepository.observeNotesByFolder(folderId)
                 combine(foldersFlow, notesFlow) { folders, notes ->
-                    NotesUiState(query = "", folders = folders, notes = notes, isLoading = false)
+                    NotesUiState(query = "", folders = folders, notes = notes, currentFolderId = folderId, isLoading = false)
                 }
             }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, NotesUiState())
 
     fun setQuery(q: String) { query.value = q }
-    fun enterFolder(id: Long) { currentFolderId.value = id }
+    fun enterFolder(id: Long?) { currentFolderId.value = id }
     fun goUp() { currentFolderId.value = null }
     fun goRoot() { currentFolderId.value = null }
 

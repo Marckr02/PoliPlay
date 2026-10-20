@@ -8,7 +8,8 @@ import org.junit.runner.RunWith
 
 /**
  * Prueba de humo REAL: lanza la MainActivity completa de la app (con Hilt, Room, Nav).
- * Si alguna pestaña rompe al iniciar, el test falla.
+ * En una instalación nueva muestra el onboarding; en instalaciones con onboarding
+ * completado abre Inicio. Si algo rompe al iniciar, el test falla.
  */
 @RunWith(AndroidJUnit4::class)
 class SmokeTabsTest {
@@ -18,7 +19,7 @@ class SmokeTabsTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             // Si el proceso llega aquí, la app abrió correctamente.
             it.onActivity { activity ->
-                // La pestaña inicial (resumen académico) existe.
+                // La pantalla inicial (onboarding o Inicio) existe.
                 assert(activity.hasWindowFocus() || !activity.isFinishing)
             }
         }

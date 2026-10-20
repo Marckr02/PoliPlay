@@ -29,8 +29,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -68,7 +70,6 @@ fun ImportScheduleScreen(
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        // SAF: lectura puntual del documento elegido; no se piden permisos de red.
         val stream = context.contentResolver.openInputStream(uri)
         if (stream == null) viewModel.onStreamError() else viewModel.onPdfPicked(stream)
     }
@@ -116,6 +117,7 @@ fun ImportScheduleScreen(
             is ImportUiState.Review -> ReviewContent(
                 state = current,
                 viewModel = viewModel,
+                onDone = onDone,
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -159,6 +161,7 @@ private fun PickPdfView(
 private fun ReviewContent(
     state: ImportUiState.Review,
     viewModel: ImportScheduleViewModel,
+    onDone: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var editingSession by remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -166,20 +169,36 @@ private fun ReviewContent(
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                state.saveError?.let { errorRes ->
-                    Text(
-                        text = stringResource(errorRes),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                Button(
-                    onClick = viewModel::confirm,
-                    enabled = state.canSave && !state.isSaving,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.import_pdf_confirm))
+            Surface(
+                tonalElevation = 3.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.saveError?.let { errorRes ->
+                        Text(
+                            text = stringResource(errorRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onDone,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                        Button(
+                            onClick = viewModel::confirm,
+                            enabled = state.canSave && !state.isSaving,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.import_pdf_confirm))
+                        }
+                    }
                 }
             }
         }

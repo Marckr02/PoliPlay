@@ -8,6 +8,9 @@ import java.time.LocalDate
 
 enum class TransactionType { EXPENSE, INCOME, TRANSFER, REFUND }
 
+/** Marca especial dentro de un tipo. Hoy: transferencias que son retiros en cajero. */
+enum class TransactionSubtype { RETIRO_CAJERO }
+
 @Entity(
     tableName = "transactions",
     foreignKeys = [
@@ -54,6 +57,7 @@ enum class TransactionType { EXPENSE, INCOME, TRANSFER, REFUND }
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val type: String,
+    val subtype: String? = null,
     val amountCents: Long,
     val date: LocalDate,
     val accountId: Long,

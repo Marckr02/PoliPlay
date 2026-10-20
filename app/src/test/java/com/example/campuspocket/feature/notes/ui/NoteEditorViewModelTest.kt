@@ -69,7 +69,9 @@ class NoteEditorViewModelTest {
             if (idx >= 0) {
                 val prev = notes[idx]
                 if (prev.title != note.title || prev.content != note.content) {
-                    notes[idx] = note.copy(updatedAt = System.currentTimeMillis())
+                    // Monotónico: dos ediciones en el mismo milisegundo no deben empatar.
+                    val nextUpdatedAt = maxOf(System.currentTimeMillis(), prev.updatedAt + 1)
+                    notes[idx] = note.copy(updatedAt = nextUpdatedAt)
                 } else {
                     notes[idx] = note // updatedAt NO cambia si nada cambió
                 }

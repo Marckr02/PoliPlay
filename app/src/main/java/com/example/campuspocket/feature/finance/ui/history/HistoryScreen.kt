@@ -22,6 +22,7 @@ import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +47,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.ui.accounts.transactionTypeLabelRes
 import java.time.Instant
@@ -141,6 +143,20 @@ fun HistoryScreen(
             onSelect = viewModel::setCategory
         )
 
+        FilterChip(
+            selected = state.filters.subtype == TransactionSubtype.RETIRO_CAJERO,
+            onClick = {
+                viewModel.setSubtype(
+                    if (state.filters.subtype == TransactionSubtype.RETIRO_CAJERO) {
+                        null
+                    } else {
+                        TransactionSubtype.RETIRO_CAJERO
+                    }
+                )
+            },
+            label = { Text(stringResource(R.string.finance_withdrawal)) }
+        )
+
         when {
             state.isLoading -> {
                 Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -167,6 +183,9 @@ fun HistoryScreen(
                         HistoryRow(
                             tx = tx,
                             accountName = state.accounts[tx.accountId]?.name ?: "",
+                            targetAccountName = tx.targetAccountId
+                                ?.let { id -> state.accounts[id]?.name }
+                                .orEmpty(),
                             category = state.categories[tx.categoryId]?.name ?: "",
                             categoryColor = state.categories[tx.categoryId]?.colorArgb,
                             onClick = { tx.id?.let { onOpenTransaction(it, tx.type) } }
@@ -257,6 +276,7 @@ private fun <T> FilterDropdown(
 private fun HistoryRow(
     tx: com.example.campuspocket.feature.finance.domain.model.Transaction,
     accountName: String,
+    targetAccountName: String,
     category: String,
     categoryColor: Int?,
     onClick: () -> Unit,
@@ -282,13 +302,24 @@ private fun HistoryRow(
             Column(Modifier.weight(1f).padding(start = if (categoryColor != null) 12.dp else 0.dp)) {
                 Text(
                     text = tx.description?.takeIf { it.isNotBlank() }
-                        ?: stringResource(transactionTypeLabelRes(tx.type)),
+                        ?: if (tx.subtype == TransactionSubtype.RETIRO_CAJERO) {
+                            stringResource(R.string.finance_withdrawal)
+                        } else {
+                            stringResource(transactionTypeLabelRes(tx.type))
+                        },
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                val accountsLabel = if (tx.subtype == TransactionSubtype.RETIRO_CAJERO &&
+                    targetAccountName.isNotBlank()
+                ) {
+                    "$accountName → $targetAccountName"
+                } else {
+                    accountName
+                }
                 Text(
                     text = DATE_WITH_YEAR.format(tx.date) +
-                        " · " + accountName +
+                        " · " + accountsLabel +
                         (if (category.isNotBlank()) " · $category" else ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

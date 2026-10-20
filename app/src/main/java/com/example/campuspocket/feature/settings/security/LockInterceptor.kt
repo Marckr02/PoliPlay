@@ -12,7 +12,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.example.campuspocket.feature.settings.ui.SettingsViewModel
+import com.example.campuspocket.core.preferences.PreferenceKeys
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -52,8 +52,8 @@ object LockInterceptor {
             val prefs = EntryPointAccessors
                 .fromApplication(context.applicationContext, DsEntryPoint::class.java)
                 .dataStore().data.first()
-            if (prefs[SettingsViewModel.KEY_LOCK_ENABLED] != true) return@runBlocking
-            val timeoutSeconds = prefs[SettingsViewModel.KEY_LOCK_TIMEOUT] ?: 0
+            if (prefs[PreferenceKeys.LOCK_ENABLED] != true) return@runBlocking
+            val timeoutSeconds = prefs[PreferenceKeys.LOCK_TIMEOUT_SECONDS] ?: 0
             if (now >= wentBackgroundAt + timeoutSeconds * 1000L && context is FragmentActivity) {
                 showPrompt(context)
             }

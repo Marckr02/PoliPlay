@@ -25,6 +25,7 @@
     <string name="yes">Sí</string>
     <string name="no">No</string>
     <string name="ok">Aceptar</string>
+    <string name="action_continue">Continuar</string>
 
     <!-- Empty states -->
     <string name="module_pending">Aún no está disponible.</string>
@@ -241,11 +242,45 @@
     <string name="category_archive">Archivar</string>
     <string name="categories_manage">Categorías</string>
 
+    <!-- Finance (Fase 8A: retiro en cajero) -->
+    <string name="finance_withdrawal">Retiro en cajero</string>
+    <string name="withdrawal_from">Desde</string>
+    <string name="withdrawal_to">Hacia</string>
+    <string name="withdrawal_balance">Saldo: %1$s</string>
+    <string name="withdrawal_other">Otro</string>
+    <string name="withdrawal_other_amount">Otro monto</string>
+    <string name="withdrawal_confirm">Confirmar retiro</string>
+    <string name="withdrawal_success_title">Retiro registrado</string>
+    <string name="withdrawal_success">Retiro de %1$s registrado</string>
+    <string name="withdrawal_error_amount">Elige un monto</string>
+    <string name="withdrawal_error_multiple">El monto debe ser múltiplo de 5</string>
+    <string name="withdrawal_error_balance">Saldo insuficiente en %1$s</string>
+    <string name="withdrawal_error_cash">Crea tu cuenta Efectivo para registrar retiros</string>
+    <string name="withdrawal_error_savings">Crea una cuenta de ahorros para registrar retiros</string>
+    <string name="withdrawal_no_savings_title">Sin cuentas de ahorros</string>
+    <string name="withdrawal_no_savings_message">Necesitas una cuenta de ahorros para hacer un retiro en cajero.</string>
+    <string name="withdrawal_create_savings">Crear cuenta de ahorros</string>
+
+    <!-- Finance (Fase 8B: presupuesto total y ritmo) -->
+    <string name="budget_total_month">Presupuesto total del mes</string>
+    <string name="budget_total_define">Definir presupuesto</string>
+    <string name="budget_total_edit">Editar presupuesto total</string>
+    <string name="pace_card_title">Ritmo del mes</string>
+    <string name="pace_month_day">%1$s · día %2$d de %3$d</string>
+    <string name="pace_expected">Esperado</string>
+    <string name="pace_real">Real</string>
+    <string name="pace_below">Vas por debajo del ritmo esperado.</string>
+    <string name="pace_above">Vas por encima del ritmo esperado: %1$s de más.</string>
+    <string name="pace_no_budget_title">Sin presupuesto total</string>
+    <string name="pace_no_budget_message">Define un presupuesto total del mes para ver tu ritmo de gasto.</string>
+
     <!-- Notes -->
     <string name="notes_list">Notas</string>
     <string name="notes_folders">Carpetas</string>
     <string name="notes_pinned">Fijadas</string>
     <string name="notes_new_folder">Nueva carpeta</string>
+    <string name="new_folder">Nueva carpeta</string>
+    <string name="create_note">Nueva nota</string>
     <string name="notes_folder_name">Nombre de la carpeta</string>
     <string name="notes_folder_parent">Carpeta padre</string>
     <string name="note_title">Título</string>
@@ -266,6 +301,7 @@
     <string name="markdown_checklist">Lista de tareas</string>
     <string name="markdown_code">Código</string>
     <string name="markdown_preview">Vista previa</string>
+    <string name="markdown_edit">Editar</string>
 
     <!-- Settings -->
     <string name="settings_backup">Respaldo</string>
@@ -290,7 +326,7 @@
     <string name="settings_lock_1min">1 min</string>
     <string name="settings_lock_5min">5 min</string>
     <string name="settings_theme">Tema</string>
-    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_theme_system">Seguir sistema</string>
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
     <string name="settings_version">Versión</string>
@@ -321,4 +357,43 @@
     <string name="notification_channel_payments">Pagos programados</string>
     <string name="notification_channel_budget">Alertas de presupuesto</string>
     <string name="notification_channel_classes">Recordatorios de clases</string>
+
+    <!-- Inicio (lanzador de módulos) -->
+    <string name="nav_home">Inicio</string>
+    <string name="home_greeting_name">Hola, %1$s</string>
+    <string name="home_greeting_generic">Tu espacio de estudio y organización</string>
+    <string name="home_title">¿Qué quieres organizar hoy?</string>
+    <string name="module_academic_desc">Cursos, horarios y tareas</string>
+    <string name="module_finance_desc">Cuentas, gastos y presupuestos</string>
+    <string name="module_notes_desc">Apuntes e ideas</string>
+    <string name="home_open_settings">Personalizar mi espacio</string>
+    <string name="home_no_modules_title">Sin módulos activos</string>
+    <string name="home_no_modules_message">Activa al menos un módulo para empezar. Tus datos siguen guardados y volverán cuando lo reactives.</string>
+    <string name="home_choose_modules">Elegir módulos</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_step">Paso %1$d de %2$d</string>
+    <string name="onboarding_title_name">Personaliza tu espacio</string>
+    <string name="onboarding_message_name">¿Cómo te gustaría que te llamemos? Puedes cambiarlo después.</string>
+    <string name="onboarding_name_label">Nombre (opcional)</string>
+    <string name="onboarding_name_support">Solo se guarda en este dispositivo; nada se envía a internet.</string>
+    <string name="onboarding_continue">Continuar</string>
+    <string name="onboarding_later">Lo haré después</string>
+    <string name="onboarding_title_modules">Elige tus módulos</string>
+    <string name="onboarding_message_modules">Puedes cambiar esta selección más adelante.</string>
+    <string name="onboarding_start">Empezar</string>
+
+    <!-- Ajustes: perfil local y módulos -->
+    <string name="settings_profile">Mi perfil</string>
+    <string name="settings_profile_label">Nombre para mostrar</string>
+    <string name="settings_profile_local_note">Perfil local de este dispositivo; no es una cuenta en línea.</string>
+    <string name="settings_profile_clear">Borrar nombre</string>
+    <string name="settings_profile_saved">Nombre guardado</string>
+    <string name="settings_modules">Mis módulos</string>
+    <string name="settings_modules_note">Desactivar un módulo solo oculta su acceso; no borra sus datos.</string>
+    <string name="settings_appearance">Apariencia</string>
+    <string name="settings_channel_tasks">Tareas</string>
+    <string name="settings_channel_payments">Pagos</string>
+    <string name="settings_channel_budgets">Presupuestos</string>
+    <string name="settings_debug_review_now">Revisar ahora (debug)</string>
 </resources>

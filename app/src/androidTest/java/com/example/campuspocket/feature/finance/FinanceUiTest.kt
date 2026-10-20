@@ -25,8 +25,14 @@ import com.example.campuspocket.feature.finance.domain.repository.FinanceReposit
 import com.example.campuspocket.feature.finance.ui.FinanceDestinations
 import com.example.campuspocket.feature.finance.ui.accounts.AccountsScreen
 import com.example.campuspocket.feature.finance.ui.accounts.AccountsViewModel
+import com.example.campuspocket.feature.finance.ui.budgets.BudgetsScreen
+import com.example.campuspocket.feature.finance.ui.budgets.BudgetsViewModel
+import com.example.campuspocket.feature.finance.ui.summary.SummaryScreen
+import com.example.campuspocket.feature.finance.ui.summary.SummaryViewModel
 import com.example.campuspocket.feature.finance.ui.transactions.TransactionFormScreen
 import com.example.campuspocket.feature.finance.ui.transactions.TransactionFormViewModel
+import com.example.campuspocket.feature.finance.ui.withdrawal.WithdrawalScreen
+import com.example.campuspocket.feature.finance.ui.withdrawal.WithdrawalViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -35,6 +41,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * UI (Compose, dispositivo conectado): crear un gasto y que el saldo de la cuenta cambie.
@@ -52,34 +59,32 @@ class FinanceUiTest {
     fun crearGastoGuardaEnElRepositorio() {
         val repo = FakeFinanceRepository(listOf(account), listOf(category))
         var done = false
+        val vm = TransactionFormViewModel(
+            SavedStateHandle(
+                mapOf(
+                    FinanceDestinations.TRANSACTION_TYPE_ARG to TransactionType.EXPENSE.name,
+                    FinanceDestinations.TRANSACTION_ID_ARG to -1L
+                )
+            ),
+            repo
+        )
+        // Cuenta y categoría ya elegidas: este test se centra en el teclado y el guardado.
+        vm.onAccountChange(1L)
+        vm.onCategoryChange(1L)
 
         composeRule.setContent {
             CampusTheme {
                 TransactionFormScreen(
                     onDone = { done = true },
-                    viewModel = TransactionFormViewModel(
-                        SavedStateHandle(
-                            mapOf(
-                                FinanceDestinations.TRANSACTION_TYPE_ARG to TransactionType.EXPENSE.name,
-                                FinanceDestinations.TRANSACTION_ID_ARG to -1L
-                            )
-                        ),
-                        repo
-                    )
+                    viewModel = vm
                 )
             }
         }
 
-        // Monto estilo cajero: se reemplaza el "0,00" inicial por dígitos puros
-        composeRule.onAllNodes(hasSetTextAction())[0].performTextReplacement("450")
-        // Cuenta
-        composeRule.onNodeWithText("Cuenta").performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText("Efectivo").performClick()
-        // Categoría
-        composeRule.onNodeWithText("Categoría").performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText("Comida").performClick()
+        // Monto con el teclado en pantalla: 4,50 (450 centavos)
+        listOf("4", ".", "5", "0").forEach { key ->
+            composeRule.onNodeWithText(key).performClick()
+        }
         // Guardar
         composeRule.onNodeWithText("Guardar").performClick()
 
@@ -116,7 +121,136 @@ class FinanceUiTest {
         }
         composeRule.onAllNodes(hasText("Efectivo")).fetchSemanticsNodes()
             .also { assertTrue(it.isNotEmpty()) }
-        composeRule.onNodeWithText(expected).assertIsDisplayed()
+        // El saldo aparece en la fila y en el total: basta con que al menos uno se vea.
+        composeRule.onAllNodes(hasText(expected))[0].assertIsDisplayed()
+    }
+
+    @Test
+    fun definirPresupuestoTotalDelMesLoGuarda() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+
+        composeRule.setContent {
+            CampusTheme {
+                BudgetsScreen(viewModel = BudgetsViewModel(repo))
+            }
+        }
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Presupuesto total del mes"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Presupuesto total del mes").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onAllNodes(hasSetTextAction())[0].performTextReplacement("250000")
+        composeRule.onNodeWithText("Guardar").performClick()
+
+        composeRule.waitUntil(5_000) {
+            repo.monthlyBudgetsFlow.value.singleOrNull()?.amountCents == 250_000L
+        }
+    }
+
+    @Test
+    fun retiroEnCajeroConChipGuardaLaTransferencia() {
+        val cash = Account(id = 1, name = "Efectivo", type = AccountType.CASH, initialBalanceCents = 0)
+        val savings = Account(id = 2, name = "Ahorros", type = AccountType.SAVINGS, initialBalanceCents = 20_000)
+        val repo = FakeFinanceRepository(listOf(cash, savings), emptyList())
+        var done = false
+
+        composeRule.setContent {
+            CampusTheme {
+                WithdrawalScreen(
+                    onDone = { done = true },
+                    onCreateAccount = {},
+                    viewModel = WithdrawalViewModel(ComputeAccountBalances(repo), repo)
+                )
+            }
+        }
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Ahorros")).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("$10").performClick()
+        composeRule.onNodeWithText("Confirmar retiro").performClick()
+
+        composeRule.waitUntil(5_000) { repo.withdrawals.size == 1 }
+        assertEquals(2L to 1_000L, repo.withdrawals.single())
+        composeRule.onNodeWithText("Retiro registrado").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Aceptar").performClick()
+        composeRule.waitUntil(5_000) { done }
+    }
+
+    @Test
+    fun retiroConOtroMontoInvalidoMuestraErrorYNoGuarda() {
+        val cash = Account(id = 1, name = "Efectivo", type = AccountType.CASH, initialBalanceCents = 0)
+        val savings = Account(id = 2, name = "Ahorros", type = AccountType.SAVINGS, initialBalanceCents = 20_000)
+        val repo = FakeFinanceRepository(listOf(cash, savings), emptyList())
+
+        composeRule.setContent {
+            CampusTheme {
+                WithdrawalScreen(
+                    onDone = {},
+                    onCreateAccount = {},
+                    viewModel = WithdrawalViewModel(ComputeAccountBalances(repo), repo)
+                )
+            }
+        }
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Ahorros")).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Otro").performClick()
+        composeRule.onAllNodes(hasSetTextAction())[0].performTextReplacement("1200")
+        composeRule.onNodeWithText("Confirmar retiro").performClick()
+        composeRule.onNodeWithText("El monto debe ser múltiplo de 5").assertIsDisplayed()
+        assertTrue(repo.withdrawals.isEmpty())
+
+        // Corrige a $25 y confirma.
+        composeRule.onAllNodes(hasSetTextAction())[0].performTextReplacement("2500")
+        composeRule.onNodeWithText("Confirmar retiro").performClick()
+        composeRule.waitUntil(5_000) { repo.withdrawals.singleOrNull() == (2L to 2_500L) }
+    }
+
+    @Test
+    fun elRitmoDelMesCambiaAlRegistrarUnGasto() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+        repo.monthlyBudgetsFlow.value = listOf(
+            com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                yearMonth = YearMonth.now().toString(),
+                amountCents = 100_000
+            )
+        )
+
+        composeRule.setContent {
+            CampusTheme {
+                SummaryScreen(
+                    viewModel = SummaryViewModel(ComputeAccountBalances(repo), repo)
+                )
+            }
+        }
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Ritmo del mes")).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodes(hasText("Vas por debajo del ritmo esperado.", substring = true))
+            .fetchSemanticsNodes()
+            .also { assertTrue(it.isNotEmpty()) }
+
+        repo.transactionsFlow.value = repo.transactionsFlow.value + Transaction(
+            id = 99,
+            type = TransactionType.EXPENSE,
+            amountCents = 150_000,
+            date = LocalDate.now(),
+            accountId = 1,
+            categoryId = 1
+        )
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(
+                hasText("Vas por encima del ritmo esperado", substring = true)
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     // ---- Fake mínimo local (lectura/escritura en memoria) -------------------
@@ -131,7 +265,11 @@ class FinanceUiTest {
         val accountsFlow = MutableStateFlow(initialAccounts)
         val categoriesFlow = MutableStateFlow(initialCategories)
         val transactionsFlow = MutableStateFlow(initialTransactions)
+        val monthlyBudgetsFlow = MutableStateFlow(
+            emptyList<com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity>()
+        )
         val insertedTransactions = mutableListOf<Transaction>()
+        val withdrawals = mutableListOf<Pair<Long, Long>>()
 
         override fun observeActiveAccounts(): Flow<List<Account>> = accountsFlow
         override fun observeAccount(accountId: Long): Flow<Account?> =
@@ -199,6 +337,30 @@ class FinanceUiTest {
         override suspend fun getBudget(yearMonth: String, categoryId: Long) = null
         override suspend fun upsertBudget(yearMonth: String, categoryId: Long, amountCents: Long) = Unit
         override suspend fun deleteBudget(yearMonth: String, categoryId: Long) = Unit
+
+        override fun observeMonthlyBudgets() = monthlyBudgetsFlow
+        override suspend fun getMonthlyBudget(yearMonth: String) =
+            monthlyBudgetsFlow.value.firstOrNull { it.yearMonth == yearMonth }
+        override suspend fun upsertMonthlyBudget(yearMonth: String, amountCents: Long) {
+            monthlyBudgetsFlow.value = monthlyBudgetsFlow.value
+                .filterNot { it.yearMonth == yearMonth } +
+                com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                    yearMonth = yearMonth,
+                    amountCents = amountCents
+                )
+        }
+        override suspend fun deleteMonthlyBudget(yearMonth: String) {
+            monthlyBudgetsFlow.value = monthlyBudgetsFlow.value
+                .filterNot { it.yearMonth == yearMonth }
+        }
+        override suspend fun withdrawToCash(
+            savingsAccountId: Long,
+            amountCents: Long,
+            date: LocalDate
+        ): com.example.campuspocket.feature.finance.domain.WithdrawalResult {
+            withdrawals += savingsAccountId to amountCents
+            return com.example.campuspocket.feature.finance.domain.WithdrawalResult.Success(++nextTxId)
+        }
         // ---- Pagos programados (Fase 5B) ----
         override fun observeActiveScheduledPayments() = kotlinx.coroutines.flow.flowOf(emptyList<com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity>())
         override fun observeAllScheduledPayments() = kotlinx.coroutines.flow.flowOf(emptyList<com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity>())

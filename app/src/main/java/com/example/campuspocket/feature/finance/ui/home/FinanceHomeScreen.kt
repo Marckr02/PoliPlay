@@ -12,23 +12,24 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.ui.accounts.AccountsScreen
 import com.example.campuspocket.feature.finance.ui.budgets.BudgetsScreen
@@ -39,9 +40,6 @@ import com.example.campuspocket.feature.finance.ui.summary.SummaryScreen
 
 enum class FinanceTab { SUMMARY, ACCOUNTS, HISTORY, BUDGETS, CALENDAR, PAYMENTS }
 
-/**
- * Pestaña Finanzas: solo Cuentas e Historial (Resumen/Presupuestos/Calendario son Fase 5).
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinanceHomeScreen(
@@ -52,56 +50,82 @@ fun FinanceHomeScreen(
     onAddTransaction: (TransactionType) -> Unit,
     onAddPayment: () -> Unit,
     onEditPayment: (Long) -> Unit,
+    onWithdrawal: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var tab by rememberSaveable { mutableStateOf(FinanceTab.ACCOUNTS.name) }
     var showTypeSheet by remember { mutableStateOf(false) }
     val currentTab = FinanceTab.valueOf(tab)
 
+    val tabs = listOf(
+        FinanceTab.SUMMARY to R.string.finance_dashboard,
+        FinanceTab.ACCOUNTS to R.string.finance_accounts,
+        FinanceTab.HISTORY to R.string.finance_history,
+        FinanceTab.BUDGETS to R.string.finance_budgets,
+        FinanceTab.CALENDAR to R.string.finance_calendar,
+        FinanceTab.PAYMENTS to R.string.finance_scheduled
+    )
+
     Scaffold(
         modifier = modifier,
         floatingActionButton = {
-            // El "+" siempre abre la hoja de tipos de transacción, en ambas pestañas.
             ExtendedFloatingActionButton(
                 onClick = { showTypeSheet = true },
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                icon = { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.transaction_new)) },
                 text = { Text(stringResource(R.string.transaction_new)) }
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp)
+        CampusTheme {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
             ) {
-                listOf(
-                    FinanceTab.SUMMARY to R.string.finance_dashboard,
-                    FinanceTab.ACCOUNTS to R.string.finance_accounts,
-                    FinanceTab.HISTORY to R.string.finance_history,
-                    FinanceTab.BUDGETS to R.string.finance_budgets,
-                    FinanceTab.CALENDAR to R.string.finance_calendar,
-                    FinanceTab.PAYMENTS to R.string.finance_scheduled
-                ).forEachIndexed { index, (option, labelRes) ->
-                    SegmentedButton(
-                        selected = currentTab == option,
-                        onClick = { tab = option.name },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = 6)
-                    ) {
-                        Text(stringResource(labelRes))
+                ScrollableTabRow(
+                    selectedTabIndex = tabs.indexOfFirst { it.first == currentTab }.coerceAtLeast(0),
+                    edgePadding = 16.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    tabs.forEach { (option, labelRes) ->
+                        Tab(
+                            selected = currentTab == option,
+                            onClick = { tab = option.name },
+                            text = {
+                                Text(
+                                    text = stringResource(labelRes),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            }
+                        )
                     }
                 }
-            }
 
-            when (currentTab) {
-                FinanceTab.SUMMARY -> SummaryScreen()
-                FinanceTab.ACCOUNTS -> AccountsScreen(
-                    onOpenAccount = onOpenAccount,
-                    onAddAccount = onAddAccount,
-                    onManageCategories = onManageCategories
-                )
-                FinanceTab.HISTORY -> HistoryScreen(onOpenTransaction = onOpenTransaction)
-                FinanceTab.BUDGETS -> BudgetsScreen()
-                FinanceTab.CALENDAR -> CalendarScreen(onDaySelected = { _ -> })
-                FinanceTab.PAYMENTS -> PaymentsScreen(onBack = {}, onAddPayment = { onAddPayment() }, onEditPayment = { onEditPayment(it) })
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    when (currentTab) {
+                        FinanceTab.SUMMARY -> SummaryScreen(
+                            onDefineBudget = { tab = FinanceTab.BUDGETS.name }
+                        )
+                        FinanceTab.ACCOUNTS -> AccountsScreen(
+                            onOpenAccount = onOpenAccount,
+                            onAddAccount = onAddAccount,
+                            onManageCategories = onManageCategories
+                        )
+                        FinanceTab.HISTORY -> HistoryScreen(onOpenTransaction = onOpenTransaction)
+                        FinanceTab.BUDGETS -> BudgetsScreen()
+                        FinanceTab.CALENDAR -> CalendarScreen(onDaySelected = { _ -> })
+                        FinanceTab.PAYMENTS -> PaymentsScreen(
+                            onBack = {},
+                            onAddPayment = { onAddPayment() },
+                            onEditPayment = { onEditPayment(it) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -124,7 +148,6 @@ fun FinanceHomeScreen(
                         }
                 )
             }
-            // Pago programado (quinto)
             ListItem(
                 headlineContent = { Text(stringResource(R.string.finance_payment)) },
                 modifier = Modifier
@@ -133,6 +156,34 @@ fun FinanceHomeScreen(
                         showTypeSheet = false
                         onAddPayment()
                     }
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.finance_withdrawal)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        showTypeSheet = false
+                        onWithdrawal()
+                    }
+            )
+        }
+    }
+}
+
+@Composable
+@Preview(name = "FinanceHomeScreen", showBackground = true)
+fun PreviewFinanceHomeScreen() {
+    CampusTheme {
+        Surface {
+            FinanceHomeScreen(
+                onOpenAccount = {},
+                onAddAccount = {},
+                onManageCategories = {},
+                onOpenTransaction = { _, _ -> },
+                onAddTransaction = { _ -> },
+                onAddPayment = {},
+                onEditPayment = {},
+                onWithdrawal = {}
             )
         }
     }

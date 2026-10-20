@@ -16,177 +16,316 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.extended
+import com.example.campuspocket.core.designsystem.components.BudgetProgressBar
+import com.example.campuspocket.core.designsystem.components.CategoryExpenseChart
+import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.LoadingShimmer
+import com.example.campuspocket.core.designsystem.components.MonthlyOverviewCard
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
+import com.example.campuspocket.feature.finance.domain.MonthPace
+import java.time.format.TextStyle
+import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummaryScreen(
     modifier: Modifier = Modifier,
+    onDefineBudget: () -> Unit = {},
     viewModel: SummaryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (state.isLoading) {
-            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            // Disponible para gastar + dona
-            Card(Modifier.fillMaxWidth()) {
-                Column(
-                    Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.summary_available),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = Money.format(state.availableCents),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = if (state.availableCents < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                    )
-                    DonutChart(
-                        slices = state.donutSlices,
-                        modifier = Modifier.size(140.dp)
-                    )
-                }
-            }
-
-            // Balance actual -> proyectado
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = stringResource(R.string.finance_current_balance) + ": " + Money.format(state.totalBalanceCents),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = stringResource(R.string.summary_projected_balance) + ": " + Money.format(state.projectedBalanceCents),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.summary_projected_expense) + ": " + Money.format(state.projectedSpentCents),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Próximos pagos
-            if (state.upcomingPayments.isNotEmpty()) {
+    if (state.isLoading) {
+        LoadingShimmer(modifier = modifier.fillMaxSize())
+    } else {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(key = "available_card") {
                 Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Column(
+                        Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Text(
-                            text = stringResource(R.string.summary_upcoming_payments),
-                            style = MaterialTheme.typography.titleSmall
+                            text = stringResource(R.string.summary_available),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        state.upcomingPayments.forEach { p ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(
-                                    p.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    Money.format(p.amountCents) + " · " + p.nextDueDate.toString(),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        Text(
+                            text = Money.format(state.availableCents),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = if (state.availableCents < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        )
+                        CategoryExpenseChart(
+                            slices = state.donutSlices,
+                            modifier = Modifier.size(140.dp)
+                        )
+                    }
+                }
+            }
+
+            item(key = "overview_card") {
+                MonthlyOverviewCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    income = max(state.totalBalanceCents, 0L),
+                    expense = min(state.projectedSpentCents, 0L),
+                    net = state.projectedBalanceCents
+                )
+            }
+
+            item(key = "pace_card") {
+                val pace = state.pace
+                if (pace != null) {
+                    BudgetPaceCard(pace = pace, onEditBudget = onDefineBudget)
+                } else {
+                    BudgetPaceSuggestionCard(onDefineBudget = onDefineBudget)
+                }
+            }
+
+            if (state.upcomingPayments.isNotEmpty()) {
+                item(key = "payments_card") {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = stringResource(R.string.summary_upcoming_payments),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            state.upcomingPayments.forEach { p ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(
+                                        p.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        Money.format(p.amountCents) + " · " + p.nextDueDate.toString(),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Top categorías del mes
-            Text(
-                text = stringResource(R.string.summary_top_categories),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            if (state.topCategories.isEmpty()) {
+            item(key = "top_categories_header") {
                 Text(
-                    text = stringResource(R.string.empty_budgets),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.summary_top_categories),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 4.dp, start = 4.dp)
                 )
+            }
+
+            if (state.topCategories.isEmpty()) {
+                item(key = "empty_categories") {
+                    EmptyStateCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = stringResource(R.string.empty_budgets),
+                        message = stringResource(R.string.empty_budgets),
+                        icon = painterResource(R.drawable.ic_wallet)
+                    )
+                }
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(state.topCategories, key = { it.categoryId }) { row ->
-                        SummaryTopRow(row)
-                    }
+                items(state.topCategories, key = { it.categoryId }) { row ->
+                    CategoryBudgetRow(row)
                 }
             }
         }
     }
 }
 
-/** Dona dibujada a mano (Canvas): cada categoría un arco con su color; anillo gris detrás. */
+/**
+ * Indicador de ritmo del presupuesto total (Fase 8B): esperado vs. real, con
+ * marca del día actual sobre la barra. El relleno se limita al 100 %, pero el
+ * porcentaje real se muestra completo.
+ */
 @Composable
-private fun DonutChart(slices: List<Pair<Int, Long>>, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val stroke = size.minDimension * 0.16f
-        val total = slices.sumOf { it.second }.takeIf { it > 0 } ?: 1L
-        val diameter = size.minDimension
-        val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
-        val arcSize = Size(diameter, diameter)
+private fun BudgetPaceCard(
+    pace: MonthPace,
+    onEditBudget: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val statusColor = if (pace.isOver) MaterialTheme.colorScheme.error else MaterialTheme.extended.success
+    val monthName = pace.date.month
+        .getDisplayName(TextStyle.FULL, Locale.getDefault())
+        .replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
-        // anillo de fondo
-        drawArc(
-            color = Color(0xFFE0E0E0),
-            startAngle = 0f,
-            sweepAngle = 360f,
-            useCenter = false,
-            topLeft = topLeft,
-            size = arcSize,
-            style = Stroke(stroke, cap = StrokeCap.Butt)
-        )
-        var startAngle = -90f
-        slices.forEach { (colorRgb, amount) ->
-            val sweep = (amount.toFloat() / total.toFloat()) * 360f
-            drawArc(
-                color = Color(colorRgb),
-                startAngle = startAngle,
-                sweepAngle = sweep,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(stroke, cap = StrokeCap.Butt)
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.pace_card_title),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.pace_month_day,
+                            monthName,
+                            pace.day,
+                            pace.daysInMonth
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = onEditBudget) {
+                    Text(stringResource(R.string.budget_total_edit))
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                PaceStat(
+                    label = stringResource(R.string.pace_expected),
+                    percent = formatPacePercent(pace.expectedPct),
+                    amount = Money.format(pace.expectedCents),
+                    valueColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                PaceStat(
+                    label = stringResource(R.string.pace_real),
+                    percent = formatPacePercent(pace.realPct),
+                    amount = Money.format(pace.spentCents),
+                    valueColor = statusColor,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            PaceBar(pace = pace, statusColor = statusColor)
+
+            Text(
+                text = if (pace.isOver) {
+                    stringResource(R.string.pace_above, Money.format(pace.overCents))
+                } else {
+                    stringResource(R.string.pace_below)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = statusColor
             )
-            startAngle += sweep
         }
     }
 }
 
 @Composable
-private fun SummaryTopRow(row: GetMonthSummary.CategoryRow, modifier: Modifier = Modifier) {
+private fun PaceStat(
+    label: String,
+    percent: String,
+    amount: String,
+    valueColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(text = percent, style = MaterialTheme.typography.titleMedium, color = valueColor)
+        Text(
+            text = amount,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun PaceBar(pace: MonthPace, statusColor: Color, modifier: Modifier = Modifier) {
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+    val markerColor = MaterialTheme.colorScheme.onSurface
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(12.dp)
+    ) {
+        val radius = CornerRadius(size.height / 2f)
+        drawRoundRect(color = trackColor, cornerRadius = radius)
+
+        if (pace.barProgress > 0f) {
+            drawRoundRect(
+                color = statusColor,
+                size = Size(size.width * pace.barProgress, size.height),
+                cornerRadius = radius
+            )
+        }
+
+        // Marca vertical del ritmo esperado (día actual / días del mes).
+        val markerX = (size.width * pace.expectedFraction)
+            .coerceIn(3.dp.toPx(), size.width - 3.dp.toPx())
+        drawLine(
+            color = markerColor,
+            start = Offset(markerX, 0f),
+            end = Offset(markerX, size.height),
+            strokeWidth = 3.dp.toPx(),
+            cap = androidx.compose.ui.graphics.StrokeCap.Round
+        )
+    }
+}
+
+@Composable
+private fun BudgetPaceSuggestionCard(onDefineBudget: () -> Unit, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = stringResource(R.string.pace_no_budget_title),
+                style = MaterialTheme.typography.titleSmall
+            )
+            Text(
+                text = stringResource(R.string.pace_no_budget_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(
+                onClick = onDefineBudget,
+                modifier = Modifier.align(Alignment.Start)
+            ) {
+                Text(stringResource(R.string.budget_total_define))
+            }
+        }
+    }
+}
+
+private fun formatPacePercent(value: java.math.BigDecimal): String =
+    value.setScale(1, java.math.RoundingMode.HALF_UP).toPlainString().replace('.', ',') + " %"
+
+@Composable
+private fun CategoryBudgetRow(row: GetMonthSummary.CategoryRow, modifier: Modifier = Modifier) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(
@@ -208,28 +347,22 @@ private fun SummaryTopRow(row: GetMonthSummary.CategoryRow, modifier: Modifier =
             }
             row.budgetCents?.let { budget ->
                 val pct = row.percent ?: 0f
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(pct.coerceAtMost(1f))
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(
-                                when {
-                                    pct > 1f -> Color(0xFFE5484D)
-                                    pct >= 0.8f -> Color(0xFFF5A623)
-                                    else -> Color(0xFF4C8DFF)
-                                }
-                            )
-                    )
-                }
+                BudgetProgressBar(
+                    progress = pct,
+                    spent = Money.format(row.netSpentCents),
+                    limit = Money.format(budget)
+                )
             }
+        }
+    }
+}
+
+@Composable
+@Preview(name = "SummaryScreen", showBackground = true)
+fun PreviewSummaryScreen() {
+    CampusTheme {
+        Surface {
+            SummaryScreen()
         }
     }
 }

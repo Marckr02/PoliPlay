@@ -9,6 +9,7 @@ import com.example.campuspocket.feature.academic.data.TaskReminderEntity
 import com.example.campuspocket.feature.finance.data.AccountEntity
 import com.example.campuspocket.feature.finance.data.BudgetEntity
 import com.example.campuspocket.feature.finance.data.CategoryEntity
+import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.data.TransactionEntity
 import com.example.campuspocket.feature.notes.data.FolderEntity
@@ -18,10 +19,11 @@ import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 /**
- * Formato del respaldo JSON (versionado). Las 13 tablas viajan con sus ids tal cual.
+ * Formato del respaldo JSON (versionado). Las 14 tablas viajan con sus ids tal cual.
  * Reglas:
  * - formatVersion solo cambia si cambia la ESTRUCTURA del archivo.
- * - dbVersion debe coincidir con la de Room al importar (v2 congelada).
+ * - dbVersion refleja el esquema Room actual (v4). Al importar, v2 y v3 se
+ *   normalizan; una versión superior se rechaza.
  * - Fechas como texto ISO ("yyyy-MM-dd"); booleans y Long tal cual.
  */
 @Serializable
@@ -42,6 +44,7 @@ data class BackupTables(
     val accounts: List<AccountData> = emptyList(),
     val categories: List<CategoryData> = emptyList(),
     val budgets: List<BudgetData> = emptyList(),
+    @SerialName("monthly_budgets") val monthlyBudgets: List<MonthlyBudgetData> = emptyList(),
     val transactions: List<TransactionData> = emptyList(),
     @SerialName("scheduled_payments") val scheduledPayments: List<ScheduledPaymentData> = emptyList(),
     val folders: List<FolderData> = emptyList(),
@@ -57,7 +60,8 @@ data class BackupTables(
 @Serializable data class AccountData(val id: Long, val name: String, val type: String, val initialBalanceCents: Long, val colorArgb: Int, val includeInTotal: Boolean, val archived: Boolean, val sortOrder: Int)
 @Serializable data class CategoryData(val id: Long, val name: String, val kind: String, val iconKey: String, val colorArgb: Int, val archived: Boolean)
 @Serializable data class BudgetData(val id: Long, val yearMonth: String, val categoryId: Long, val amountCents: Long)
-@Serializable data class TransactionData(val id: Long, val type: String, val amountCents: Long, val date: String, val accountId: Long, val targetAccountId: Long?, val categoryId: Long?, val description: String?, val refundOfId: Long?, val scheduledPaymentId: Long?, val createdAt: Long)
+@Serializable data class MonthlyBudgetData(val id: Long, val yearMonth: String, val amountCents: Long)
+@Serializable data class TransactionData(val id: Long, val type: String, val amountCents: Long, val date: String, val accountId: Long, val targetAccountId: Long?, val categoryId: Long?, val description: String?, val refundOfId: Long?, val scheduledPaymentId: Long?, val createdAt: Long, val subtype: String? = null)
 @Serializable data class ScheduledPaymentData(val id: Long, val name: String, val amountCents: Long, val accountId: Long, val categoryId: Long?, val frequency: String, val nextDueDate: String, val anchorDayOfMonth: Int = 0, val remindDaysBefore: Int, val active: Boolean)
 @Serializable data class FolderData(val id: Long, val name: String, val parentId: Long?)
 @Serializable data class NoteData(val id: Long, val title: String, val content: String, val folderId: Long?, val courseId: Long?, val taskId: Long?, val pinned: Boolean, val createdAt: Long, val updatedAt: Long)
@@ -89,8 +93,11 @@ fun CategoryData.toEntity() = CategoryEntity(id, name, kind, iconKey, colorArgb,
 fun BudgetEntity.toBackup() = BudgetData(id, yearMonth, categoryId, amountCents)
 fun BudgetData.toEntity() = BudgetEntity(id, yearMonth, categoryId, amountCents)
 
-fun TransactionEntity.toBackup() = TransactionData(id, type, amountCents, date.toString(), accountId, targetAccountId, categoryId, description, refundOfId, scheduledPaymentId, createdAt)
-fun TransactionData.toEntity() = TransactionEntity(id, type, amountCents, LocalDate.parse(date), accountId, targetAccountId, categoryId, description, refundOfId, scheduledPaymentId, createdAt)
+fun MonthlyBudgetEntity.toBackup() = MonthlyBudgetData(id, yearMonth, amountCents)
+fun MonthlyBudgetData.toEntity() = MonthlyBudgetEntity(id, yearMonth, amountCents)
+
+fun TransactionEntity.toBackup() = TransactionData(id, type, amountCents, date.toString(), accountId, targetAccountId, categoryId, description, refundOfId, scheduledPaymentId, createdAt, subtype)
+fun TransactionData.toEntity() = TransactionEntity(id, type, subtype, amountCents, LocalDate.parse(date), accountId, targetAccountId, categoryId, description, refundOfId, scheduledPaymentId, createdAt)
 
 fun ScheduledPaymentEntity.toBackup() = ScheduledPaymentData(id, name, amountCents, accountId, categoryId, frequency, nextDueDate.toString(), anchorDayOfMonth, remindDaysBefore, active)
 fun ScheduledPaymentData.toEntity() = ScheduledPaymentEntity(id, name, amountCents, accountId, categoryId, frequency, LocalDate.parse(nextDueDate), anchorDayOfMonth, remindDaysBefore, active)

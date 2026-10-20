@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.finance.ui.history
 
 import com.example.campuspocket.feature.finance.FakeFinanceRepository
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Transaction
 import com.example.campuspocket.feature.finance.testAccount
@@ -68,6 +69,26 @@ class HistoryViewModelTest {
         )
 
         assertEquals(listOf(1L), filtered.map { it.id })
+    }
+
+    @Test
+    fun `el filtro de subtipo aisla los retiros en cajero`() {
+        val all = listOf(
+            testTransfer(id = 1, accountId = 1, targetAccountId = 2),
+            testTransfer(
+                id = 2,
+                accountId = 1,
+                targetAccountId = 2,
+                subtype = TransactionSubtype.RETIRO_CAJERO
+            )
+        )
+
+        val withdrawals = HistoryViewModel.applyFilters(
+            all,
+            HistoryFilters(subtype = TransactionSubtype.RETIRO_CAJERO)
+        )
+
+        assertEquals(listOf(2L), withdrawals.map { it.id })
     }
 
     @Test

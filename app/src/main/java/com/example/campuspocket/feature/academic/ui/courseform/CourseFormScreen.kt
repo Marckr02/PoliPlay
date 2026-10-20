@@ -1,5 +1,8 @@
 package com.example.campuspocket.feature.academic.ui.courseform
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,10 +12,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +37,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,6 +69,7 @@ fun CourseFormScreen(
         onNameChange = viewModel::onNameChange,
         onSectionChange = viewModel::onSectionChange,
         onTeacherChange = viewModel::onTeacherChange,
+        onColorChange = viewModel::onColorChange,
         onAddSession = viewModel::addSession,
         onRemoveSession = viewModel::removeSession,
         onSessionChange = viewModel::updateSession,
@@ -78,6 +87,7 @@ private fun CourseFormContent(
     onNameChange: (String) -> Unit,
     onSectionChange: (String) -> Unit,
     onTeacherChange: (String) -> Unit,
+    onColorChange: (Int) -> Unit,
     onAddSession: () -> Unit,
     onRemoveSession: (Int) -> Unit,
     onSessionChange: (Int, SessionFormState) -> Unit,
@@ -156,6 +166,55 @@ private fun CourseFormContent(
                 errorRes = null
             )
 
+            // Selector de color para la materia
+            val paletteColors = listOf(
+                0xFF4C8DFF.toInt(),
+                0xFF22C55E.toInt(),
+                0xFFEAB308.toInt(),
+                0xFFEF4444.toInt(),
+                0xFFA855F7.toInt(),
+                0xFFEC4899.toInt(),
+                0xFF06B6D4.toInt(),
+                0xFFF97316.toInt()
+            )
+            Column(modifier = Modifier.padding(top = 4.dp)) {
+                Text(
+                    text = "Color de la materia",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    paletteColors.forEach { colorArgb ->
+                        val isSelected = state.colorArgb == colorArgb
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(colorArgb))
+                                .clickable { onColorChange(colorArgb) }
+                                .then(
+                                    if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                    else Modifier
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             Text(
                 text = stringResource(R.string.course_sessions_title),
                 style = MaterialTheme.typography.titleMedium,
@@ -233,7 +292,6 @@ private fun SessionEditor(
             }
 
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Días lectivos: lunes a sábado (aquí no hay clases los domingos).
                 SchoolDays.withSaturday.forEach { day ->
                     FilterChip(
                         selected = session.day == day,
@@ -276,9 +334,3 @@ private fun SessionEditor(
         }
     }
 }
-
-/**
- * Campo de hora como botón con icono de reloj: toca y abre un TimePicker (formato 24 h),
- * en vez de un teclado donde no cabe el separador ":".
- */
-

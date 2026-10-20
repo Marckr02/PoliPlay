@@ -7,16 +7,17 @@ import android.net.Uri
 import android.os.Build
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.core.backup.BackupImportException
 import com.example.campuspocket.core.backup.BackupImportIssue
 import com.example.campuspocket.core.backup.BackupManager
+import com.example.campuspocket.core.preferences.CampusModule
+import com.example.campuspocket.core.preferences.PreferenceKeys
+import com.example.campuspocket.core.preferences.ThemeMode
+import com.example.campuspocket.core.preferences.UserPreferences
+import com.example.campuspocket.core.preferences.UserPreferencesRepository
 import com.example.campuspocket.feature.academic.data.SemesterDao
 import com.example.campuspocket.feature.academic.data.SemesterEntity
 import com.example.campuspocket.feature.finance.notifications.DailyPaymentReviewWorker
@@ -36,7 +37,6 @@ import javax.inject.Inject
 import javax.inject.Named
 
 data class SettingsPrefs(
-    val theme: String = "system",
     val channelTasks: Boolean = true,
     val channelPayments: Boolean = true,
     val channelBudgets: Boolean = true,
@@ -58,6 +58,7 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val backupManager: BackupManager,
     private val dataStore: DataStore<Preferences>,
+    private val userPreferencesRepository: UserPreferencesRepository,
     private val semesterDao: SemesterDao,
     @Named("io") private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -65,7 +66,7 @@ class SettingsViewModel @Inject constructor(
     // ---- Respaldo ----
 
     val lastBackupAt: StateFlow<Long?> = dataStore.data
-        .map { it[KEY_LAST_BACKUP] }
+        .map { it[PreferenceKeys.LAST_BACKUP] }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -80,7 +81,7 @@ class SettingsViewModel @Inject constructor(
                 withContext(ioDispatcher) {
                     context.contentResolver.openOutputStream(uri, "w")!!.use { out -> backupManager.exportBackup(out) }
                 }
-                dataStore.edit { it[KEY_LAST_BACKUP] = System.currentTimeMillis() }
+                dataStore.edit { it[PreferenceKeys.LAST_BACKUP] = System.currentTimeMillis() }
                 _uiState.value = _uiState.value.copy(busy = false, exportDone = true)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(busy = false, importError = BackupImportIssue.NOT_JSON)
@@ -113,7 +114,7 @@ class SettingsViewModel @Inject constructor(
             }
             try {
                 backupManager.importBackup(file)
-                dataStore.edit { it[KEY_LAST_BACKUP] = System.currentTimeMillis() }
+                dataStore.edit { it[PreferenceKeys.LAST_BACKUP] = System.currentTimeMillis() }
                 _uiState.value = _uiState.value.copy(busy = false, importDone = true)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(busy = false, importError = BackupImportIssue.NOT_JSON)
@@ -131,31 +132,43 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissBackupBanner() {
         viewModelScope.launch {
-            dataStore.edit { it[KEY_BACKUP_BANNER_DISMISSED] = System.currentTimeMillis() }
+            dataStore.edit { it[PreferenceKeys.BACKUP_BANNER_DISMISSED] = System.currentTimeMillis() }
         }
     }
 
     // ---- Preferencias ----
 
+    /** Preferencias de personalización centralizadas (perfil, módulos, tema, onboarding). */
+    val userPreferences: StateFlow<UserPreferences> = userPreferencesRepository.preferences
+        .stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
+
     val prefs: StateFlow<SettingsPrefs> = dataStore.data.map { p ->
         SettingsPrefs(
-            theme = p[KEY_THEME] ?: "system",
-            channelTasks = p[KEY_CHANNEL_TASKS] ?: true,
-            channelPayments = p[KEY_CHANNEL_PAYMENTS] ?: true,
-            channelBudgets = p[KEY_CHANNEL_BUDGETS] ?: true,
-            lockEnabled = p[KEY_LOCK_ENABLED] ?: false,
-            lockTimeoutSeconds = p[KEY_LOCK_TIMEOUT] ?: 0,
-            lastBackupBannerDismissedAt = p[KEY_BACKUP_BANNER_DISMISSED] ?: 0
+            channelTasks = p[PreferenceKeys.CHANNEL_TASKS] ?: true,
+            channelPayments = p[PreferenceKeys.CHANNEL_PAYMENTS] ?: true,
+            channelBudgets = p[PreferenceKeys.CHANNEL_BUDGETS] ?: true,
+            lockEnabled = p[PreferenceKeys.LOCK_ENABLED] ?: false,
+            lockTimeoutSeconds = p[PreferenceKeys.LOCK_TIMEOUT_SECONDS] ?: 0,
+            lastBackupBannerDismissedAt = p[PreferenceKeys.BACKUP_BANNER_DISMISSED] ?: 0
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsPrefs())
 
-    fun setTheme(theme: String) { viewModelScope.launch { dataStore.edit { it[KEY_THEME] = theme } } }
+    fun setThemeMode(mode: ThemeMode) { viewModelScope.launch { userPreferencesRepository.setThemeMode(mode) } }
+
+    fun setDisplayName(name: String) { viewModelScope.launch { userPreferencesRepository.setDisplayName(name) } }
+
+    fun clearDisplayName() { viewModelScope.launch { userPreferencesRepository.clearDisplayName() } }
+
+    fun setModuleEnabled(module: CampusModule, enabled: Boolean) {
+        viewModelScope.launch { userPreferencesRepository.setModuleEnabled(module, enabled) }
+    }
+
     fun setChannelEnabled(channel: String, enabled: Boolean) {
         viewModelScope.launch {
             when (channel) {
-                "tasks" -> dataStore.edit { it[KEY_CHANNEL_TASKS] = enabled }
-                "payments" -> dataStore.edit { it[KEY_CHANNEL_PAYMENTS] = enabled }
-                "budgets" -> dataStore.edit { it[KEY_CHANNEL_BUDGETS] = enabled }
+                "tasks" -> dataStore.edit { it[PreferenceKeys.CHANNEL_TASKS] = enabled }
+                "payments" -> dataStore.edit { it[PreferenceKeys.CHANNEL_PAYMENTS] = enabled }
+                "budgets" -> dataStore.edit { it[PreferenceKeys.CHANNEL_BUDGETS] = enabled }
             }
         }
     }
@@ -173,9 +186,9 @@ class SettingsViewModel @Inject constructor(
 
     // ---- Bloqueo ----
 
-    fun enableLock() { viewModelScope.launch { dataStore.edit { it[KEY_LOCK_ENABLED] = true } } }
-    fun disableLock() { viewModelScope.launch { dataStore.edit { it[KEY_LOCK_ENABLED] = false } } }
-    fun setLockTimeout(seconds: Int) { viewModelScope.launch { dataStore.edit { it[KEY_LOCK_TIMEOUT] = seconds } } }
+    fun enableLock() { viewModelScope.launch { dataStore.edit { it[PreferenceKeys.LOCK_ENABLED] = true } } }
+    fun disableLock() { viewModelScope.launch { dataStore.edit { it[PreferenceKeys.LOCK_ENABLED] = false } } }
+    fun setLockTimeout(seconds: Int) { viewModelScope.launch { dataStore.edit { it[PreferenceKeys.LOCK_TIMEOUT_SECONDS] = seconds } } }
 
     /** ¿El dispositivo tiene credencial (biométrica fuerte o credencial de pantalla)? */
     fun lockSupported(context: Context): Boolean {
@@ -206,13 +219,5 @@ class SettingsViewModel @Inject constructor(
             if (dismissedAt > 0 && nowMillis - dismissedAt <= sevenDays) return false
             return lastBackupAt == null || nowMillis - lastBackupAt > thirtyDays
         }
-        val KEY_LAST_BACKUP = longPreferencesKey("last_backup_at")
-        val KEY_BACKUP_BANNER_DISMISSED = longPreferencesKey("backup_banner_dismissed")
-        val KEY_THEME = stringPreferencesKey("theme")
-        val KEY_CHANNEL_TASKS = booleanPreferencesKey("channel_tasks")
-        val KEY_CHANNEL_PAYMENTS = booleanPreferencesKey("channel_payments")
-        val KEY_CHANNEL_BUDGETS = booleanPreferencesKey("channel_budgets")
-        val KEY_LOCK_ENABLED = booleanPreferencesKey("lock_enabled")
-        val KEY_LOCK_TIMEOUT = intPreferencesKey("lock_timeout_seconds")
     }
 }

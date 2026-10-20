@@ -45,6 +45,7 @@ class PaymentFlowTest {
             categoryDao = db.categoryDao(),
             transactionDao = db.transactionDao(),
             budgetDao = db.budgetDao(),
+            monthlyBudgetDao = db.monthlyBudgetDao(),
             scheduledPaymentDao = db.scheduledPaymentDao(),
             db = db,
             dataStore = prefs,

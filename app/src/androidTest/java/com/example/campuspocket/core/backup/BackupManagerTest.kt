@@ -12,7 +12,9 @@ import com.example.campuspocket.feature.finance.data.AccountEntity
 import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.data.CategoryEntity
 import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
 import com.example.campuspocket.feature.finance.data.TransactionEntity
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
@@ -62,9 +64,22 @@ class BackupManagerTest {
         db.taskReminderDao().insert(TaskReminderEntity(taskId = taskId, remindAt = 100L))
         val cashId = db.accountDao().insert(AccountEntity(name = "Efectivo", type = AccountType.CASH.name, initialBalanceCents = 1_000))
         val bankId = db.accountDao().insert(AccountEntity(name = "Banco", type = AccountType.DEBIT.name, initialBalanceCents = 500))
+        val savingsId = db.accountDao().insert(AccountEntity(name = "Ahorros", type = AccountType.SAVINGS.name, initialBalanceCents = 20_000))
         val catId = db.categoryDao().insert(CategoryEntity(name = "Comida", kind = CategoryKind.EXPENSE.name, iconKey = "category"))
         db.transactionDao().insert(TransactionEntity(type = TransactionType.EXPENSE.name, amountCents = 100, date = LocalDate.of(2026, 10, 1), accountId = cashId, categoryId = catId, createdAt = 50L))
         db.transactionDao().insert(TransactionEntity(type = TransactionType.TRANSFER.name, amountCents = 200, date = LocalDate.of(2026, 10, 2), accountId = cashId, targetAccountId = bankId, createdAt = 51L))
+        db.transactionDao().insert(
+            TransactionEntity(
+                type = TransactionType.TRANSFER.name,
+                subtype = TransactionSubtype.RETIRO_CAJERO.name,
+                amountCents = 500,
+                date = LocalDate.of(2026, 10, 3),
+                accountId = savingsId,
+                targetAccountId = cashId,
+                createdAt = 52L
+            )
+        )
+        db.monthlyBudgetDao().insert(MonthlyBudgetEntity(yearMonth = "2026-10", amountCents = 250_000))
         val folderId = db.folderDao().insert(FolderEntity(name = "Uni"))
         val subId = db.folderDao().insert(FolderEntity(name = "Cálculo", parentId = folderId))
         db.noteDao().insert(NoteEntity(title = "Apunte", content = "contenido", folderId = subId, pinned = true, createdAt = 7L, updatedAt = 8L))
@@ -74,7 +89,9 @@ class BackupManagerTest {
         manager.exportBackup(out)
         val backupText = out.toString(Charsets.UTF_8)
         assertTrue(backupText.contains("\"formatVersion\":1"))
-        assertTrue(backupText.contains("\"dbVersion\":3"))
+        assertTrue(backupText.contains("\"dbVersion\":4"))
+        assertTrue(backupText.contains("\"monthly_budgets\""))
+        assertTrue(backupText.contains("\"RETIRO_CAJERO\""))
 
         // BORRAR TODO (simula pérdida total)
         db.clearAllTables()
@@ -101,7 +118,7 @@ class BackupManagerTest {
         assertEquals(1, db.taskReminderDao().getByTask(taskId).size)
 
         val accounts = db.accountDao().observeAll().first()
-        assertEquals(2, accounts.size)
+        assertEquals(3, accounts.size)
         assertEquals("Efectivo", accounts.first { it.id == cashId }.name)
         assertEquals(1_000L, accounts.first { it.id == cashId }.initialBalanceCents)
 
@@ -110,10 +127,23 @@ class BackupManagerTest {
         assertEquals("Comida", categories.single().name)
 
         val transactions = db.transactionDao().observeAll().first()
-        assertEquals(2, transactions.size)
-        val transfer = transactions.first { it.type == TransactionType.TRANSFER.name }
+        assertEquals(3, transactions.size)
+        val transfer = transactions.first {
+            it.type == TransactionType.TRANSFER.name &&
+                it.subtype == null
+        }
         assertEquals(cashId, transfer.accountId)
         assertEquals(bankId, transfer.targetAccountId)
+
+        val withdrawal = transactions.first {
+            it.subtype == TransactionSubtype.RETIRO_CAJERO.name
+        }
+        assertEquals(savingsId, withdrawal.accountId)
+        assertEquals(cashId, withdrawal.targetAccountId)
+        assertEquals(500L, withdrawal.amountCents)
+
+        val monthlyBudget = db.monthlyBudgetDao().getByMonth("2026-10")!!
+        assertEquals(250_000L, monthlyBudget.amountCents)
 
         val folders = db.folderDao().observeAll().first()
         assertEquals(2, folders.size)

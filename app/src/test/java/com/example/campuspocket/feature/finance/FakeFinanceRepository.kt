@@ -1,8 +1,13 @@
 package com.example.campuspocket.feature.finance
 
+import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.data.CategoryKind
 import com.example.campuspocket.feature.finance.data.TransactionDao
+import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
+import com.example.campuspocket.feature.finance.domain.CashAccountRules
+import com.example.campuspocket.feature.finance.domain.WithdrawalResult
+import com.example.campuspocket.feature.finance.domain.WithdrawalRules
 import com.example.campuspocket.feature.finance.domain.model.Account
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
@@ -221,6 +226,71 @@ class FakeFinanceRepository(
     override suspend fun deleteBudget(yearMonth: String, categoryId: Long) {
         budgetsFlow.value = budgetsFlow.value.filterNot { it.yearMonth == yearMonth && it.categoryId == categoryId }
     }
+
+    // ---- Presupuesto total del mes (Fase 8B) ----
+    private val monthlyBudgetsFlow = MutableStateFlow<List<com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity>>(emptyList())
+
+    override fun observeMonthlyBudgets() = monthlyBudgetsFlow
+    override suspend fun getMonthlyBudget(yearMonth: String) =
+        monthlyBudgetsFlow.value.firstOrNull { it.yearMonth == yearMonth }
+
+    override suspend fun upsertMonthlyBudget(yearMonth: String, amountCents: Long) {
+        val existing = monthlyBudgetsFlow.value.firstOrNull { it.yearMonth == yearMonth }
+        if (existing != null) {
+            monthlyBudgetsFlow.value = monthlyBudgetsFlow.value.map {
+                if (it.yearMonth == yearMonth) it.copy(amountCents = amountCents) else it
+            }
+        } else {
+            val nextId = (monthlyBudgetsFlow.value.mapNotNull { it.id }.maxOrNull() ?: 0L) + 1
+            monthlyBudgetsFlow.value = monthlyBudgetsFlow.value + com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                id = nextId, yearMonth = yearMonth, amountCents = amountCents
+            )
+        }
+    }
+
+    override suspend fun deleteMonthlyBudget(yearMonth: String) {
+        monthlyBudgetsFlow.value = monthlyBudgetsFlow.value.filterNot { it.yearMonth == yearMonth }
+    }
+
+    // ---- Retiro en cajero (Fase 8A) ----
+    override suspend fun withdrawToCash(
+        savingsAccountId: Long,
+        amountCents: Long,
+        date: LocalDate
+    ): WithdrawalResult {
+        val source = accountsFlow.value.firstOrNull {
+            it.id == savingsAccountId && !it.archived && it.type == AccountType.SAVINGS
+        }
+        val cash = CashAccountRules.pick(accountsFlow.value.filter { !it.archived })
+        val balance = source?.let { account ->
+            val delta = transactionsFlow.value.filter { it.accountId == account.id }.sumOf {
+                when (it.type) {
+                    TransactionType.INCOME, TransactionType.REFUND -> it.amountCents
+                    else -> -it.amountCents
+                }
+            }
+            val incoming = transactionsFlow.value
+                .filter { it.type == TransactionType.TRANSFER && it.targetAccountId == account.id }
+                .sumOf { it.amountCents }
+            account.initialBalanceCents + delta + incoming
+        }
+        val error = WithdrawalRules.validate(amountCents, balance, source?.name, cash != null)
+        if (error != null) return WithdrawalResult.Failure(error, source?.name)
+
+        val id = ++nextTransactionId
+        val tx = Transaction(
+            id = id,
+            type = TransactionType.TRANSFER,
+            subtype = TransactionSubtype.RETIRO_CAJERO,
+            amountCents = amountCents,
+            date = date,
+            accountId = source!!.id!!,
+            targetAccountId = cash!!.id
+        )
+        insertedTransactions += tx
+        transactionsFlow.value = transactionsFlow.value + tx
+        return WithdrawalResult.Success(id)
+    }
 }
 
 fun testAccount(
@@ -283,10 +353,12 @@ fun testTransfer(
     accountId: Long = 1,
     targetAccountId: Long = 2,
     amountCents: Long = 500,
-    date: LocalDate = LocalDate.of(2026, 10, 1)
+    date: LocalDate = LocalDate.of(2026, 10, 1),
+    subtype: TransactionSubtype? = null
 ): Transaction = Transaction(
     id = id,
     type = TransactionType.TRANSFER,
+    subtype = subtype,
     amountCents = amountCents,
     date = date,
     accountId = accountId,

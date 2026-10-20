@@ -19,6 +19,8 @@ import com.example.campuspocket.feature.finance.data.BudgetDao
 import com.example.campuspocket.feature.finance.data.BudgetEntity
 import com.example.campuspocket.feature.finance.data.CategoryDao
 import com.example.campuspocket.feature.finance.data.CategoryEntity
+import com.example.campuspocket.feature.finance.data.MonthlyBudgetDao
+import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentDao
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.data.TransactionDao
@@ -31,10 +33,9 @@ import com.example.campuspocket.feature.notes.data.NoteEntity
 /**
  * Base de datos única de la app. Se construye en DatabaseModule (Hilt).
  *
- * Mientras la app no se haya publicado, ante un cambio de esquema se SUBE `version`
- * y el borrado destructivo (DatabaseModule) recrea la BD: no hace falta desinstalar.
- * Antes de la primera publicación se quitará el borrado destructivo y los cambios
- * pasarán a tener Migration explícita (los esquemas exportados están en app/schemas).
+ * Esquema actual v4. Cada cambio de esquema debe subir `version`, agregar su Migration
+ * en `Migrations` y actualizar los snapshots de `app/schemas`; DatabaseModule no usa
+ * borrado destructivo.
  */
 @Database(
     entities = [
@@ -46,13 +47,14 @@ import com.example.campuspocket.feature.notes.data.NoteEntity
         AccountEntity::class,
         CategoryEntity::class,
         BudgetEntity::class,
+        MonthlyBudgetEntity::class,
         TransactionEntity::class,
         ScheduledPaymentEntity::class,
         FolderEntity::class,
         NoteEntity::class,
         ImportHintEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -65,6 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
     abstract fun categoryDao(): CategoryDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun monthlyBudgetDao(): MonthlyBudgetDao
     abstract fun transactionDao(): TransactionDao
     abstract fun scheduledPaymentDao(): ScheduledPaymentDao
     abstract fun folderDao(): FolderDao
