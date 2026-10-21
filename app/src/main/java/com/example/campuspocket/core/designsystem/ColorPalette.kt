@@ -4,7 +4,7 @@ package com.example.campuspocket.core.designsystem
 object ColorPalette {
     private val colors = listOf(
         0xFF2563EB, // Blue
-        0xFF059669, // Emerald
+        0xFF047857, // Emerald (WCAG AA sobre blanco y tinta oscura)
         0xFFD97706, // Amber
         0xFFDC2626, // Crimson
         0xFF7C3AED, // Violet

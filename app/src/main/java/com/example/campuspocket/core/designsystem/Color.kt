@@ -8,34 +8,34 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * Paleta primitiva de CampusPocket (tokens de color).
+ * Paleta primitiva de CampusPocket v2, derivada del ícono del búho.
  *
- * Fuente: especificación "bento + barra flotante".
- * - Claro: fondo neutro frío (#F2F3F7), tarjetas blancas, tinta #0E1116 y acento índigo.
- * - Oscuro: fondo #0B0E13, tarjetas #171B23, hero/barra #232A36 y acento #8B87FF.
+ * - Verde azulado (ink): hero, dock, selección y enlaces.
+ * - Honey: resaltados sobre ink (pestaña activa, etiqueta AHORA, progreso).
+ * - Amber: relleno de acciones principales y tarjeta de finanzas del Inicio.
  *
- * Los colores de datos (materias, cuentas, categorías) viven en ColorPalette.kt y
- * NO deben confundirse con estos tokens: cambiar el tema no altera datos guardados.
+ * Los colores de datos (materias/cuentas) viven en ColorPalette.kt y no cambian
+ * con el tema ni con los datos ya guardados.
  */
 internal object CampusPalette {
 
     object Light {
-        val Background = Color(0xFFF2F3F7)
+        val Background = Color(0xFFF3F5F4)
         val Surface = Color(0xFFFFFFFF)
-        val SurfaceSecondary = Color(0xFFE4E7EE)
-        val OnBackground = Color(0xFF0E1116)
-        val OnSurface = Color(0xFF0E1116)
-        val TextSecondary = Color(0xFF565D6B)
-        val Primary = Color(0xFF4F46E5)
+        val SurfaceSecondary = Color(0xFFE3E9E8)
+        val OnBackground = Color(0xFF0A2229)
+        val OnSurface = Color(0xFF0A2229)
+        val TextSecondary = Color(0xFF4B5E63)
+        val Primary = Color(0xFF044455)
         val OnPrimary = Color(0xFFFFFFFF)
-        val PrimaryContainer = Color(0xFFE4E3FF)
-        val OnPrimaryContainer = Color(0xFF3730A3)
+        val PrimaryContainer = Color(0xFFD3E6EA)
+        val OnPrimaryContainer = Color(0xFF04252E)
         val Sage = Color(0xFFD9F2E3)
         val OnSage = Color(0xFF14532D)
         val Warm = Color(0xFFFFE6D5)
         val OnWarm = Color(0xFF7A2E0E)
-        val Border = Color(0xFFE4E7EE)
-        val OutlineVariant = Color(0xFFEDEFF4)
+        val Border = Color(0xFFC9D3D5)
+        val OutlineVariant = Color(0xFFE3E9E8)
         val Success = Color(0xFF17663F)
         val Warning = Color(0xFF8A4B12)
         val Error = Color(0xFFB4232C)
@@ -44,29 +44,39 @@ internal object CampusPalette {
         val OnErrorContainer = Color(0xFF5F1215)
         val WarningContainer = Color(0xFFFFE6D5)
         val SuccessContainer = Color(0xFFD9F2E3)
-        val HeroContainer = Color(0xFF0E1116)
-        val OnHeroContainer = Color(0xFFF1F4F8)
-        val SurfaceDim = Color(0xFFE4E7EE)
+        val HeroContainer = Color(0xFF044455)
+        val OnHeroContainer = Color(0xFFFFFFFF)
+        val SurfaceDim = Color(0xFFE3E9E8)
         val SurfaceBright = Color(0xFFFFFFFF)
         val SurfaceContainerLowest = Color(0xFFFFFFFF)
         val SurfaceContainerLow = Color(0xFFF7F8FA)
         val SurfaceContainer = Color(0xFFFFFFFF)
         val SurfaceContainerHigh = Color(0xFFEDEFF4)
-        val SurfaceContainerHighest = Color(0xFFE4E7EE)
-        val InverseSurface = Color(0xFF0E1116)
-        val InverseOnSurface = Color(0xFFF1F4F8)
-        val InversePrimary = Color(0xFFC6F45A)
+        val SurfaceContainerHighest = Color(0xFFE3E9E8)
+        val InverseSurface = Color(0xFF044455)
+        val InverseOnSurface = Color(0xFFFFFFFF)
+        val InversePrimary = Color(0xFFFBD76A)
 
-        // Tokens extendidos del rediseño.
-        val Ink = Color(0xFF0E1116)
-        val OnInk = Color(0xFFF1F4F8)
-        val OnInkMuted = Color(0xFFB4BBC8)
-        val Lime = Color(0xFFC6F45A)
-        val OnLime = Color(0xFF0E1116)
-        val Track = Color(0xFFE4E7EE)
-        val OnTrack = Color(0xFF0E1116)
-        val Lavender = Color(0xFFE4E3FF)
-        val OnLavender = Color(0xFF3730A3)
+        // Tokens extendidos.
+        val Ink = Color(0xFF044455)
+        val OnInk = Color(0xFFFFFFFF)
+        val OnInkMuted = Color(0xFFB7D0D6)
+        val InkMuted = Color(0xFFB7D0D6)
+        val InkLine = Color(0xFF0E5A6C)
+        val Lime = Color(0xFFFBD76A)
+        val OnLime = Color(0xFF0A2229)
+        val Accent = Color(0xFFF2C043)
+        val OnAccent = Color(0xFF04252E)
+        val AccentMuted = Color(0xFFF8D98A)
+        val OnAccentMuted = Color(0xFF3A2600)
+        val Selected = Color(0xFF044455)
+        val OnSelected = Color(0xFFFFFFFF)
+        val Danger = Color(0xFFB4232C)
+        val OnDanger = Color(0xFFFFFFFF)
+        val Track = Color(0xFFE3E9E8)
+        val OnTrack = Color(0xFF0A2229)
+        val Lavender = Color(0xFFFFF1CC)
+        val OnLavender = Color(0xFF5A3F00)
         val Peach = Color(0xFFFFE6D5)
         val OnPeach = Color(0xFF7A2E0E)
         val Mint = Color(0xFFD9F2E3)
@@ -77,79 +87,88 @@ internal object CampusPalette {
         val OnLimeSoft = Color(0xFF2F3A0B)
         val Violet = Color(0xFFE9E2FF)
         val OnViolet = Color(0xFF3B2A7A)
-        val Dock = Color(0xFF0E1116)
-        val OnDock = Color(0xFFF1F4F8)
-        val DockInactive = Color(0xFFA3AAB8)
+        val Dock = Color(0xFF044455)
+        val OnDock = Color(0xFFFFFFFF)
+        val DockInactive = Color(0xFF8FB4BC)
     }
 
     object Dark {
-        val Background = Color(0xFF0B0E13)
-        val Surface = Color(0xFF171B23)
-        val SurfaceSecondary = Color(0xFF232A36)
-        val OnBackground = Color(0xFFF1F4F8)
-        val OnSurface = Color(0xFFF1F4F8)
-        val TextSecondary = Color(0xFFAAB2C2)
-        val Primary = Color(0xFF8B87FF)
-        val OnPrimary = Color(0xFF0B0E13)
-        val PrimaryContainer = Color(0xFF2B2854)
-        val OnPrimaryContainer = Color(0xFFE4E3FF)
-        val Sage = Color(0xFF193B2A)
-        val OnSage = Color(0xFFB7F0CB)
-        val Warm = Color(0xFF3A2519)
-        val OnWarm = Color(0xFFFFD9BF)
-        val Border = Color(0xFF2A303B)
-        val OutlineVariant = Color(0xFF222833)
+        val Background = Color(0xFF071A20)
+        val Surface = Color(0xFF0E2A33)
+        val SurfaceSecondary = Color(0xFF143540)
+        val OnBackground = Color(0xFFEAF2F3)
+        val OnSurface = Color(0xFFEAF2F3)
+        val TextSecondary = Color(0xFF9DB8BE)
+        val Primary = Color(0xFFFBD76A)
+        val OnPrimary = Color(0xFF04252E)
+        val PrimaryContainer = Color(0xFF0F3B48)
+        val OnPrimaryContainer = Color(0xFFEAF2F3)
+        val Sage = Color(0xFF1E3D2B)
+        val OnSage = Color(0xFF8AD5A7)
+        val Warm = Color(0xFF4A2A1A)
+        val OnWarm = Color(0xFFFFD9C2)
+        val Border = Color(0xFF2A4650)
+        val OutlineVariant = Color(0xFF143540)
         val Success = Color(0xFF7EE2A8)
         val Warning = Color(0xFFFFC46B)
         val Error = Color(0xFFFF9A9E)
         val OnError = Color(0xFF490C12)
         val ErrorContainer = Color(0xFF5C1A1F)
         val OnErrorContainer = Color(0xFFFFDAD9)
-        val WarningContainer = Color(0xFF3A2519)
-        val SuccessContainer = Color(0xFF193B2A)
-        val HeroContainer = Color(0xFF232A36)
-        val OnHeroContainer = Color(0xFFF1F4F8)
-        val SurfaceDim = Color(0xFF0B0E13)
-        val SurfaceBright = Color(0xFF2A303B)
-        val SurfaceContainerLowest = Color(0xFF0B0E13)
-        val SurfaceContainerLow = Color(0xFF12161D)
-        val SurfaceContainer = Color(0xFF171B23)
-        val SurfaceContainerHigh = Color(0xFF1E242E)
-        val SurfaceContainerHighest = Color(0xFF232A36)
-        val InverseSurface = Color(0xFFF1F4F8)
-        val InverseOnSurface = Color(0xFF0E1116)
-        val InversePrimary = Color(0xFF4F46E5)
+        val WarningContainer = Color(0xFF4A2A1A)
+        val SuccessContainer = Color(0xFF1E3D2B)
+        val HeroContainer = Color(0xFF0F3B48)
+        val OnHeroContainer = Color(0xFFEAF2F3)
+        val SurfaceDim = Color(0xFF071A20)
+        val SurfaceBright = Color(0xFF1A4550)
+        val SurfaceContainerLowest = Color(0xFF071A20)
+        val SurfaceContainerLow = Color(0xFF0B2028)
+        val SurfaceContainer = Color(0xFF0E2A33)
+        val SurfaceContainerHigh = Color(0xFF122F39)
+        val SurfaceContainerHighest = Color(0xFF143540)
+        val InverseSurface = Color(0xFFEAF2F3)
+        val InverseOnSurface = Color(0xFF071A20)
+        val InversePrimary = Color(0xFF044455)
 
-        // Tokens extendidos del rediseño.
-        val Ink = Color(0xFF232A36)
-        val OnInk = Color(0xFFF1F4F8)
-        val OnInkMuted = Color(0xFFB4BBC8)
-        val Lime = Color(0xFFC6F45A)
-        val OnLime = Color(0xFF0E1116)
-        val Track = Color(0xFF232A36)
-        val OnTrack = Color(0xFFF1F4F8)
-        val Lavender = Color(0xFF2E2A52)
-        val OnLavender = Color(0xFFD9D6FF)
-        val Peach = Color(0xFF3A2519)
-        val OnPeach = Color(0xFFFFD9BF)
-        val Mint = Color(0xFF193B2A)
-        val OnMint = Color(0xFFB7F0CB)
-        val Sky = Color(0xFF16333C)
-        val OnSky = Color(0xFFB9E6F2)
+        // Tokens extendidos.
+        val Ink = Color(0xFF0F3B48)
+        val OnInk = Color(0xFFEAF2F3)
+        val OnInkMuted = Color(0xFFA9C4CA)
+        val InkMuted = Color(0xFFA9C4CA)
+        val InkLine = Color(0xFF1A5666)
+        val Lime = Color(0xFFFBD76A)
+        val OnLime = Color(0xFF0A2229)
+        val Accent = Color(0xFFF2C043)
+        val OnAccent = Color(0xFF04252E)
+        val AccentMuted = Color(0xFFF8D98A)
+        val OnAccentMuted = Color(0xFF3A2600)
+        val Selected = Color(0xFFF3F5F4)
+        val OnSelected = Color(0xFF04252E)
+        val Danger = Color(0xFFFF9A9E)
+        val OnDanger = Color(0xFF490C12)
+        val Track = Color(0xFF143540)
+        val OnTrack = Color(0xFFEAF2F3)
+        val Lavender = Color(0xFF4A3A12)
+        val OnLavender = Color(0xFFFFE3A0)
+        val Peach = Color(0xFF4A2A1A)
+        val OnPeach = Color(0xFFFFD9C2)
+        val Mint = Color(0xFF1E3D2B)
+        val OnMint = Color(0xFF8AD5A7)
+        val Sky = Color(0xFF173A45)
+        val OnSky = Color(0xFFCDE9F1)
         val LimeSoft = Color(0xFF2E3A12)
         val OnLimeSoft = Color(0xFFE7F5C2)
         val Violet = Color(0xFF2B2347)
         val OnViolet = Color(0xFFDCD2FF)
-        val Dock = Color(0xFF232A36)
-        val OnDock = Color(0xFFF1F4F8)
-        val DockInactive = Color(0xFF9AA3B2)
+        val Dock = Color(0xFF0F3B48)
+        val OnDock = Color(0xFFEAF2F3)
+        val DockInactive = Color(0xFF8FB4BC)
     }
 }
 
 /**
  * Tokens semánticos que Material 3 no cubre de serie: éxito, advertencia,
- * acento lima, pista de controles, barra flotante y tintes pastel.
- * Se exponen por composición para que los componentes no fijen colores a mano.
+ * acento ámbar, selección, barra flotante y tintes pastel.
  */
 @Immutable
 data class CampusExtendedColors(
@@ -170,8 +189,18 @@ data class CampusExtendedColors(
     val ink: Color,
     val onInk: Color,
     val onInkMuted: Color,
+    val inkMuted: Color,
+    val inkLine: Color,
     val lime: Color,
     val onLime: Color,
+    val accent: Color,
+    val onAccent: Color,
+    val accentMuted: Color,
+    val onAccentMuted: Color,
+    val selected: Color,
+    val onSelected: Color,
+    val danger: Color,
+    val onDanger: Color,
     val track: Color,
     val onTrack: Color,
     val lavender: Color,
@@ -209,8 +238,18 @@ internal val LightExtendedColors = CampusExtendedColors(
     ink = CampusPalette.Light.Ink,
     onInk = CampusPalette.Light.OnInk,
     onInkMuted = CampusPalette.Light.OnInkMuted,
+    inkMuted = CampusPalette.Light.InkMuted,
+    inkLine = CampusPalette.Light.InkLine,
     lime = CampusPalette.Light.Lime,
     onLime = CampusPalette.Light.OnLime,
+    accent = CampusPalette.Light.Accent,
+    onAccent = CampusPalette.Light.OnAccent,
+    accentMuted = CampusPalette.Light.AccentMuted,
+    onAccentMuted = CampusPalette.Light.OnAccentMuted,
+    selected = CampusPalette.Light.Selected,
+    onSelected = CampusPalette.Light.OnSelected,
+    danger = CampusPalette.Light.Danger,
+    onDanger = CampusPalette.Light.OnDanger,
     track = CampusPalette.Light.Track,
     onTrack = CampusPalette.Light.OnTrack,
     lavender = CampusPalette.Light.Lavender,
@@ -248,8 +287,18 @@ internal val DarkExtendedColors = CampusExtendedColors(
     ink = CampusPalette.Dark.Ink,
     onInk = CampusPalette.Dark.OnInk,
     onInkMuted = CampusPalette.Dark.OnInkMuted,
+    inkMuted = CampusPalette.Dark.InkMuted,
+    inkLine = CampusPalette.Dark.InkLine,
     lime = CampusPalette.Dark.Lime,
     onLime = CampusPalette.Dark.OnLime,
+    accent = CampusPalette.Dark.Accent,
+    onAccent = CampusPalette.Dark.OnAccent,
+    accentMuted = CampusPalette.Dark.AccentMuted,
+    onAccentMuted = CampusPalette.Dark.OnAccentMuted,
+    selected = CampusPalette.Dark.Selected,
+    onSelected = CampusPalette.Dark.OnSelected,
+    danger = CampusPalette.Dark.Danger,
+    onDanger = CampusPalette.Dark.OnDanger,
     track = CampusPalette.Dark.Track,
     onTrack = CampusPalette.Dark.OnTrack,
     lavender = CampusPalette.Dark.Lavender,

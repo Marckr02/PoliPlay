@@ -439,21 +439,21 @@ private fun FinanceSummaryCard(
     BentoCard(
         modifier = modifier,
         onClick = onClick,
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
+        containerColor = ext.accent,
+        contentColor = ext.onAccent,
         shape = MaterialTheme.shapes.large,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
     ) {
         Text(
             text = stringResource(R.string.home_available_label),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
+            color = ext.onAccent.copy(alpha = 0.82f)
         )
         Spacer(Modifier.height(6.dp))
         Text(
             text = Money.format(availableCents),
             style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = ext.onAccent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -461,7 +461,7 @@ private fun FinanceSummaryCard(
             Text(
                 text = stringResource(R.string.home_available_of, Money.format(budget)),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
+                color = ext.onAccent.copy(alpha = 0.82f)
             )
         }
         Spacer(Modifier.weight(1f))
@@ -471,14 +471,14 @@ private fun FinanceSummaryCard(
                     .fillMaxWidth()
                     .height(5.dp)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.22f))
+                    .background(ext.onAccent.copy(alpha = 0.22f))
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(fraction)
                         .height(5.dp)
                         .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                        .background(ext.lime)
+                        .background(ext.ink)
                 )
             }
         }

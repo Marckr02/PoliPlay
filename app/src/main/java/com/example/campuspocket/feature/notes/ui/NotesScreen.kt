@@ -9,11 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,12 +30,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.FolderChipsRow
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
+import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.components.SearchPill
 import com.example.campuspocket.core.designsystem.components.StaggeredNotesGrid
+import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
 
@@ -55,46 +62,49 @@ fun NotesScreen(
     var movingNote by remember { mutableStateOf<NoteEntity?>(null) }
     var deletingFolder by remember { mutableStateOf<FolderEntity?>(null) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(start = 20.dp, end = 20.dp, top = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.notes_title),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = if (state.notes.size == 1) {
-                        stringResource(R.string.notes_count_one)
-                    } else {
-                        stringResource(R.string.notes_count, state.notes.size)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(modifier = modifier.fillMaxSize()) {
+        CampusTopBar(
+            title = stringResource(R.string.notes_title),
+            onBack = null,
+            actions = {
+                RoundIconButton(
+                    icon = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.notes_new),
+                    onClick = onNewNote,
+                    containerColor = MaterialTheme.extended.accent,
+                    contentColor = MaterialTheme.extended.onAccent
                 )
             }
-        }
-
-        SearchPill(
-            value = state.query,
-            onValueChange = viewModel::setQuery,
-            placeholder = stringResource(R.string.notes_search_placeholder)
         )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = if (state.notes.size == 1) {
+                    stringResource(R.string.notes_count_one)
+                } else {
+                    stringResource(R.string.notes_count, state.notes.size)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        FolderChipsRow(
-            folders = state.folders,
-            selectedFolderId = state.currentFolderId,
-            onFolderClick = { folderId -> viewModel.enterFolder(folderId) },
-            onAddFolder = { showNewFolder = true }
-        )
+            SearchPill(
+                value = state.query,
+                onValueChange = viewModel::setQuery,
+                placeholder = stringResource(R.string.notes_search_placeholder)
+            )
+
+            FolderChipsRow(
+                folders = state.folders,
+                selectedFolderId = state.currentFolderId,
+                onFolderClick = { folderId -> viewModel.enterFolder(folderId) },
+                onAddFolder = { showNewFolder = true }
+            )
 
         when {
             state.isLoading -> Box(
@@ -147,102 +157,88 @@ fun NotesScreen(
             }
         }
     }
+    }
 
     if (showNewFolder) {
         var folderName by remember { mutableStateOf("") }
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showNewFolder = false },
-            title = { Text(stringResource(R.string.notes_new_folder)) },
-            text = {
+            title = stringResource(R.string.notes_new_folder),
+            confirmText = stringResource(R.string.save),
+            confirmEnabled = folderName.isNotBlank(),
+            onConfirm = {
+                viewModel.createFolder(folderName, null)
+                showNewFolder = false
+            },
+            content = {
                 CampusTextField(
                     value = folderName,
                     onValueChange = { folderName = it },
                     label = stringResource(R.string.notes_folder_name),
                     singleLine = true
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.createFolder(folderName, null)
-                    showNewFolder = false
-                }) { Text(stringResource(R.string.save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewFolder = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
             }
         )
     }
 
     deletingFolder?.let { folder ->
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { deletingFolder = null },
-            title = { Text(folder.name) },
-            text = { Text(stringResource(R.string.notes_folder_delete_explain)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteFolder(folder.id)
-                    deletingFolder = null
-                }) { Text(stringResource(R.string.delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingFolder = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
+            title = folder.name,
+            message = stringResource(R.string.notes_folder_delete_explain),
+            icon = Icons.Filled.Delete,
+            destructive = true,
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                viewModel.deleteFolder(folder.id)
+                deletingFolder = null
             }
         )
     }
 
     deletingNote?.let { note ->
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { deletingNote = null },
-            title = { Text(note.title.ifBlank { stringResource(R.string.notes_empty_title) }) },
-            text = { Text(stringResource(R.string.delete_note_confirm)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteNote(note.id)
-                    deletingNote = null
-                }) { Text(stringResource(R.string.delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingNote = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
+            title = note.title.ifBlank { stringResource(R.string.notes_empty_title) },
+            message = stringResource(R.string.delete_note_confirm),
+            icon = Icons.Filled.Delete,
+            destructive = true,
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                viewModel.deleteNote(note.id)
+                deletingNote = null
             }
         )
     }
 
     movingNote?.let { note ->
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { movingNote = null },
-            title = { Text(note.title.ifBlank { stringResource(R.string.notes_empty_title) }) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = stringResource(R.string.note_move_to_folder),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    TextButton(onClick = {
+            title = note.title.ifBlank { stringResource(R.string.notes_empty_title) },
+            message = stringResource(R.string.note_move_to_folder),
+            confirmText = stringResource(R.string.cancel),
+            onConfirm = { movingNote = null },
+            showDismiss = false,
+            content = {
+                CampusButton(
+                    text = stringResource(R.string.note_move_to_root),
+                    onClick = {
                         viewModel.moveNoteToFolder(note.id, null)
                         movingNote = null
-                    }) {
-                        Text(stringResource(R.string.note_move_to_root))
-                    }
-                    state.folders.forEach { folder ->
-                        TextButton(onClick = {
+                    },
+                    style = CampusButtonStyle.SECONDARY,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                state.folders.forEach { folder ->
+                    CampusButton(
+                        text = folder.name,
+                        onClick = {
                             viewModel.moveNoteToFolder(note.id, folder.id)
                             movingNote = null
-                        }) {
-                            Text(folder.name)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { movingNote = null }) {
-                    Text(stringResource(R.string.cancel))
+                        },
+                        style = CampusButtonStyle.SECONDARY,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         )

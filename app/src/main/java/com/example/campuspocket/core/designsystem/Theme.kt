@@ -28,8 +28,8 @@ private val LightColorScheme = lightColorScheme(
     secondaryContainer = CampusPalette.Light.Lavender,
     onSecondaryContainer = CampusPalette.Light.OnLavender,
 
-    tertiary = CampusPalette.Light.Lime,
-    onTertiary = CampusPalette.Light.OnLime,
+    tertiary = CampusPalette.Light.Accent,
+    onTertiary = CampusPalette.Light.OnAccent,
     tertiaryContainer = CampusPalette.Light.LimeSoft,
     onTertiaryContainer = CampusPalette.Light.OnLimeSoft,
 
@@ -71,8 +71,8 @@ private val DarkColorScheme = darkColorScheme(
     secondaryContainer = CampusPalette.Dark.Lavender,
     onSecondaryContainer = CampusPalette.Dark.OnLavender,
 
-    tertiary = CampusPalette.Dark.Lime,
-    onTertiary = CampusPalette.Dark.OnLime,
+    tertiary = CampusPalette.Dark.Accent,
+    onTertiary = CampusPalette.Dark.OnAccent,
     tertiaryContainer = CampusPalette.Dark.LimeSoft,
     onTertiaryContainer = CampusPalette.Dark.OnLimeSoft,
 

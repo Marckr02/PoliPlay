@@ -102,7 +102,7 @@ class HoyViewModel @Inject constructor(
             weekDays = days,
             classes = classesFor(courses, day, today),
             tasks = tasks
-                .filter { LocalDate.ofInstant(it.dueAt, zone) == today }
+                .filter { it.dueAt.atZone(zone).toLocalDate() == today }
                 .sortedBy { it.dueAt }
                 .map { task ->
                     HoyTask(

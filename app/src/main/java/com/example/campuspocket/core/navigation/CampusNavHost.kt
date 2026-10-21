@@ -2,6 +2,12 @@ package com.example.campuspocket.core.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -137,6 +143,16 @@ fun CampusNavHost(
     }
 
     var quickAddTarget by remember { mutableStateOf<TopLevelDestination?>(null) }
+    val dockRootRoutes = remember {
+        setOf(
+            TopLevelDestination.HOME.route,
+            AcademicDestinations.HOY,
+            AcademicDestinations.SEMANA,
+            FinanceDestinations.HOME,
+            NotesDestinations.NOTES_LIST
+        )
+    }
+    val showDock = currentDestination?.route in dockRootRoutes
     val dockDestinations = TopLevelDestination.visibleFor(preferences).map { destination ->
         DockDestination(
             route = destination.route,
@@ -148,32 +164,42 @@ fun CampusNavHost(
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            FloatingDock(
-                destinations = dockDestinations,
-                currentRoute = currentTopLevel?.route,
-                onNavigate = { destination -> navigateToTopLevel(destination.route) },
-                onAddClick = {
-                    when (currentTopLevel) {
-                        TopLevelDestination.HOME -> quickAddTarget = TopLevelDestination.HOME
-                        TopLevelDestination.FINANCE -> quickAddTarget = TopLevelDestination.FINANCE
-                        TopLevelDestination.ACADEMIC -> navController.navigate(AcademicDestinations.taskForm()) {
-                            launchSingleTop = true
+            AnimatedVisibility(
+                visible = showDock,
+                enter = slideInVertically(animationSpec = tween(220)) { it } + fadeIn(tween(160)),
+                exit = slideOutVertically(animationSpec = tween(180)) { it } + fadeOut(tween(120))
+            ) {
+                FloatingDock(
+                    destinations = dockDestinations,
+                    currentRoute = currentTopLevel?.route,
+                    onNavigate = { destination -> navigateToTopLevel(destination.route) },
+                    onAddClick = {
+                        when (currentTopLevel) {
+                            TopLevelDestination.HOME -> quickAddTarget = TopLevelDestination.HOME
+                            TopLevelDestination.FINANCE -> quickAddTarget = TopLevelDestination.FINANCE
+                            TopLevelDestination.ACADEMIC -> navController.navigate(AcademicDestinations.taskForm()) {
+                                launchSingleTop = true
+                            }
+                            TopLevelDestination.NOTES -> navController.navigate(NotesDestinations.editor(null)) {
+                                launchSingleTop = true
+                            }
+                            TopLevelDestination.SETTINGS, null -> Unit
                         }
-                        TopLevelDestination.NOTES -> navController.navigate(NotesDestinations.editor(null)) {
-                            launchSingleTop = true
-                        }
-                        else -> Unit
-                    }
-                },
-                addContentDescription = stringResource(R.string.dock_add),
-                modifier = Modifier.navigationBarsPadding().padding(bottom = 4.dp)
-            )
+                    },
+                    addContentDescription = stringResource(R.string.dock_add),
+                    modifier = Modifier.navigationBarsPadding().padding(bottom = 4.dp)
+                )
+            }
         }
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = TopLevelDestination.start.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeIn(tween(180)) },
+            exitTransition = { fadeOut(tween(120)) },
+            popEnterTransition = { fadeIn(tween(180)) },
+            popExitTransition = { fadeOut(tween(120)) }
         ) {
             composable(TopLevelDestination.HOME.route) {
                 HomeRoute(
@@ -470,7 +496,8 @@ private fun NavGraphBuilder.academicGraph(navController: NavHostController) {
         composable(AcademicDestinations.TASKS) {
             TasksScreen(
                 onAddTask = { navController.navigate(AcademicDestinations.taskForm()) },
-                onOpenTask = { taskId -> navController.navigate(AcademicDestinations.taskForm(taskId)) }
+                onOpenTask = { taskId -> navController.navigate(AcademicDestinations.taskForm(taskId)) },
+                onBack = { navController.popBackStack() }
             )
         }
         composable(

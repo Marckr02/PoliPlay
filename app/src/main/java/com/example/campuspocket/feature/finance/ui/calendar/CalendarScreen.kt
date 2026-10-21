@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
+import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.util.Money
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -55,6 +56,7 @@ fun CalendarScreen(
     onDaySelected: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
+    embedded: Boolean = false,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,29 +66,44 @@ fun CalendarScreen(
             .take(2)
             .replaceFirstChar { it.uppercase(locale) }
     }
+    val monthLabel = state.month.month.getDisplayName(TextStyle.FULL, locale)
+        .replaceFirstChar { it.uppercase(locale) } + " " + state.month.year
 
-    Column(modifier = modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = if (embedded) 0.dp else 20.dp)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = if (embedded) 0.dp else 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RoundIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back),
-                onClick = onBack,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.width(8.dp))
+            if (!embedded) {
+                RoundIconButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                    onClick = onBack,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.width(8.dp))
+            }
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.finance_calendar),
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = if (embedded) monthLabel else stringResource(R.string.finance_calendar),
+                    style = if (embedded) {
+                        MaterialTheme.typography.titleMedium
+                    } else {
+                        MaterialTheme.typography.headlineSmall
+                    },
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = state.month.month.getDisplayName(TextStyle.FULL, locale)
-                        .replaceFirstChar { it.uppercase(locale) } + " " + state.month.year,
+                    text = if (embedded) {
+                        stringResource(R.string.finance_calendar)
+                    } else {
+                        monthLabel
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -128,7 +145,7 @@ fun CalendarScreen(
                 DayCell(
                     day = day,
                     isToday = day.date == LocalDate.now(),
-                    onClick = { onDaySelected(day.date) },
+                    onClick = if (embedded) null else ({ onDaySelected(day.date) }),
                     modifier = Modifier.padding(2.dp)
                 )
             }
@@ -140,15 +157,17 @@ fun CalendarScreen(
 private fun DayCell(
     day: DayCellState,
     isToday: Boolean,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
+    val ext = MaterialTheme.extended
     val negative = day.balanceCents < 0
-    val container = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-    val content = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val container = if (isToday) ext.accent else MaterialTheme.colorScheme.surface
+    val content = if (isToday) ext.onAccent else MaterialTheme.colorScheme.onSurface
     Card(
-        onClick = onClick,
-        modifier = modifier.aspectRatio(0.85f),
+        modifier = modifier
+            .aspectRatio(0.85f)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         colors = CardDefaults.cardColors(containerColor = container),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

@@ -81,8 +81,9 @@ class FinanceUiTest {
             }
         }
 
-        // Monto con el teclado en pantalla: 4,50 (450 centavos)
-        listOf("4", ".", "5", "0").forEach { key ->
+        // Monto con el teclado en pantalla: 4,50 (450 centavos).
+        // El teclado es de cajero: cada dígito entra por la derecha.
+        listOf("4", "5", "0").forEach { key ->
             composeRule.onNodeWithText(key).performClick()
         }
         // Guardar

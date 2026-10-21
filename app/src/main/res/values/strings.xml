@@ -37,6 +37,7 @@
     <string name="empty_transactions">No hay transacciones.</string>
     <string name="empty_transactions_message">Los movimientos que registres aparecerán aquí.</string>
     <string name="empty_budgets">No hay presupuestos para este mes.</string>
+    <string name="empty_budgets_message">Define un presupuesto y asigna montos por categoría para controlar tus gastos.</string>
     <string name="empty_scheduled_payments">No hay pagos programados.</string>
     <string name="empty_scheduled_payments_message">Aquí verás los pagos que programes.</string>
 
@@ -161,6 +162,7 @@
     <string name="finance_accounts">Cuentas</string>
     <string name="finance_budgets">Presupuestos</string>
     <string name="finance_calendar">Calendario</string>
+    <string name="payments_view_list">Lista</string>
     <string name="calendar_previous_month">Mes anterior</string>
     <string name="calendar_next_month">Mes siguiente</string>
     <string name="finance_history">Historial</string>
@@ -209,6 +211,8 @@
     <string name="transaction_date">Fecha</string>
     <string name="transaction_amount">Monto</string>
     <string name="transaction_description">Descripción</string>
+    <string name="keypad_backspace">Borrar dígito</string>
+    <string name="keypad_clear_all">Mantén pulsado para borrar todo</string>
     <string name="transaction_category">Categoría</string>
     <string name="transaction_account">Cuenta</string>
     <string name="transaction_target_account">Cuenta destino</string>
@@ -423,6 +427,12 @@
     <string name="timeline_now">AHORA</string>
     <string name="task_filter_all">Todas</string>
     <string name="task_filter_week">Esta semana</string>
+    <string name="task_filter_completed">Completadas</string>
+    <string name="task_group_overdue">Atrasadas</string>
+    <string name="task_group_tomorrow">Mañana</string>
+    <string name="task_group_later">Más adelante</string>
+    <string name="task_empty_filter">No hay tareas con este filtro.</string>
+    <string name="task_filter_by_course">Filtrar por materia</string>
 
     <!-- Inicio -->
     <string name="home_next_class">PRÓXIMA CLASE</string>
@@ -475,6 +485,10 @@
     <string name="finance_add_account">Nueva cuenta</string>
     <string name="finance_no_accounts">Crea tu primera cuenta para empezar</string>
     <string name="finance_month_summary">Resumen del mes</string>
+    <string name="finance_summary_show">Ver</string>
+    <string name="finance_summary_hide">Ocultar</string>
+    <string name="finance_summary_show_description">Mostrar el resumen del mes</string>
+    <string name="finance_summary_hide_description">Ocultar el resumen del mes</string>
     <string name="finance_add_movement">Añadir movimiento</string>
     <string name="finance_open_categories">Gestionar categorías</string>
     <string name="finance_open_calendar">Ver calendario</string>

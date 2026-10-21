@@ -5,27 +5,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,9 +36,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.KeypadAmountInput
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.TransactionTypeSelector
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.TransactionType
@@ -79,38 +77,24 @@ fun TransactionFormScreen(
         if (state.saved || state.deleted) onDone()
     }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = stringResource(transactionTypeLabelRes(state.type)))
-                },
-                navigationIcon = {
-                    IconButton(onClick = onDone) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+    Column(modifier = modifier.fillMaxSize().imePadding()) {
+        CampusTopBar(
+            title = stringResource(transactionTypeLabelRes(state.type)),
+            onBack = onDone
+        )
         if (!state.isLoaded) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) { CircularProgressIndicator() }
-            return@Scaffold
+            return@Column
         }
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             KeypadAmountInput(
@@ -249,9 +233,11 @@ fun TransactionFormScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                TextButton(onClick = { showDatePicker = true }) {
-                    Text(DATE_FORMATTER.format(state.date))
-                }
+                SecondaryPillButton(
+                    text = DATE_FORMATTER.format(state.date),
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             CampusTextField(
@@ -260,24 +246,25 @@ fun TransactionFormScreen(
                 label = stringResource(R.string.transaction_description),
                 modifier = Modifier.fillMaxWidth()
             )
+        }
 
-            PrimaryPillButton(
-                text = stringResource(R.string.save),
-                onClick = viewModel::save,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        CampusButton(
+            text = stringResource(R.string.save),
+            onClick = viewModel::save,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+        )
+        if (state.isEditing) {
+            CampusButton(
+                text = stringResource(R.string.delete),
+                onClick = { showDeleteDialog = true },
+                style = CampusButtonStyle.DESTRUCTIVE,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 12.dp)
             )
-
-            if (state.isEditing) {
-                TextButton(
-                    onClick = { showDeleteDialog = true },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(
-                        text = stringResource(R.string.delete),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
         }
     }
 
@@ -285,48 +272,34 @@ fun TransactionFormScreen(
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = state.date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
-        DatePickerDialog(
+        CampusDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pickerState.selectedDateMillis?.let { millis ->
-                            viewModel.onDateChange(
-                                Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-                            )
-                        }
-                        showDatePicker = false
-                    }
-                ) { Text(stringResource(R.string.ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.cancel))
+            title = stringResource(R.string.transaction_date),
+            confirmText = stringResource(R.string.ok),
+            onConfirm = {
+                pickerState.selectedDateMillis?.let { millis ->
+                    viewModel.onDateChange(
+                        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                    )
                 }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
+                showDatePicker = false
+            },
+            content = { DatePicker(state = pickerState) }
+        )
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showDeleteDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.delete()
-                    }
-                ) { Text(stringResource(R.string.delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(stringResource(R.string.delete)) },
-            text = { Text(stringResource(R.string.delete_transaction_confirm)) }
+            title = stringResource(R.string.delete),
+            message = stringResource(R.string.delete_transaction_confirm),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.delete()
+            }
         )
     }
 }

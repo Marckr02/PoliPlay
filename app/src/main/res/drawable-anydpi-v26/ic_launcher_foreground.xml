@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Búho y libro dentro de la zona segura de 72x72 dp del icono adaptativo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Escudo verde azulado -->
+    <path
+        android:fillColor="#044455"
+        android:pathData="M54,18.5 L81.5,24.5 L81.5,59.5 C81.5,77 69,87 54,90 C39,87 26.5,77 26.5,59.5 L26.5,24.5 Z" />
+
+    <!-- Páginas del libro -->
+    <path
+        android:fillColor="#FBD76A"
+        android:pathData="M54,55 L36,53 C33,52.6 31,54.4 31,57.2 L31,67 C31,73.5 38,76.5 46,76 C49.5,75.5 52,74.5 54,73 Z" />
+    <path
+        android:fillColor="#F2C043"
+        android:pathData="M54,55 L72,53 C75,52.6 77,54.4 77,57.2 L77,67 C77,73.5 70,76.5 62,76 C58.5,75.5 56,74.5 54,73 Z" />
+
+    <!-- Cara del búho -->
+    <path
+        android:fillColor="#F8FAF9"
+        android:pathData="M32,25.5 C35.5,23 40.5,22.8 44.5,24.8 C48.2,26.7 51.3,30 54,33.5 C56.7,30 59.8,26.7 63.5,24.8 C67.5,22.8 72.5,23 76,25.5 L76,46 C76,52.5 71.3,56 65.2,54.4 L54,51.5 L42.8,54.4 C36.7,56 32,52.5 32,46 Z" />
+    <path
+        android:fillColor="#044455"
+        android:pathData="M41.5,40.5 a3.8,3.8 0 1,0 7.6,0 a3.8,3.8 0 1,0 -7.6,0 Z" />
+    <path
+        android:fillColor="#044455"
+        android:pathData="M58.9,40.5 a3.8,3.8 0 1,0 7.6,0 a3.8,3.8 0 1,0 -7.6,0 Z" />
+
+    <!-- Lomo del libro -->
+    <path
+        android:strokeColor="#044455"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L54,75" />
+</vector>

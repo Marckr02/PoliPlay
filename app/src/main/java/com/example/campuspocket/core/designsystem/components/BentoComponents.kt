@@ -6,6 +6,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -48,8 +49,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -178,7 +178,7 @@ fun FloatingDock(
             modifier = Modifier
                 .size(60.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
+                .background(ext.accent)
                 .semantics { contentDescription = addContentDescription }
                 .combinedClickable(
                     onClick = onAddClick,
@@ -190,7 +190,7 @@ fun FloatingDock(
             Icon(
                 imageVector = Icons.Filled.Add,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
+                tint = ext.onAccent,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -329,12 +329,12 @@ fun CampusChip(
 ) {
     val ext = MaterialTheme.extended
     val container by animateColorAsState(
-        targetValue = if (selected) ext.ink else ext.track,
+        targetValue = if (selected) ext.selected else ext.track,
         animationSpec = tween(150),
         label = "chipContainer"
     )
     val content by animateColorAsState(
-        targetValue = if (selected) ext.onInk else ext.onTrack,
+        targetValue = if (selected) ext.onSelected else ext.onTrack,
         animationSpec = tween(150),
         label = "chipContent"
     )
@@ -447,12 +447,12 @@ private fun <T> PillSegmentOption(
 ) {
     val ext = MaterialTheme.extended
     val container by animateColorAsState(
-        targetValue = if (isSelected) ext.ink else Color.Transparent,
+        targetValue = if (isSelected) ext.selected else Color.Transparent,
         animationSpec = tween(150),
         label = "segmentContainer"
     )
     val content by animateColorAsState(
-        targetValue = if (isSelected) ext.onInk else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = if (isSelected) ext.onSelected else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(150),
         label = "segmentContent"
     )
@@ -509,8 +509,8 @@ fun DayStrip(
     ) {
         days.forEach { day ->
             val selected = day.date == selectedDate
-            val container = if (selected) ext.ink else ext.track
-            val content = if (selected) ext.onInk else MaterialTheme.colorScheme.onSurfaceVariant
+            val container = if (selected) ext.selected else ext.track
+            val content = if (selected) ext.onSelected else MaterialTheme.colorScheme.onSurfaceVariant
             Column(
                 modifier = Modifier
                     .width(48.dp)
@@ -529,7 +529,7 @@ fun DayStrip(
                 Text(
                     text = stringResource(day.letterRes),
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (selected) ext.lime else content
+                    color = content
                 )
                 Text(
                     text = day.dayOfMonth.toString(),
@@ -542,7 +542,7 @@ fun DayStrip(
                         Modifier
                             .size(4.dp)
                             .clip(CircleShape)
-                            .background(ext.lime)
+                            .background(ext.accent)
                     )
                 }
             }
@@ -965,33 +965,74 @@ fun CampusTextField(
     supportingText: (@Composable () -> Unit)? = null
 ) {
     val ext = MaterialTheme.extended
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
+    val shape = MaterialTheme.shapes.small
+    val interaction = remember { MutableInteractionSource() }
+    Column(
         modifier = modifier.fillMaxWidth(),
-        label = { Text(label) },
-        placeholder = placeholder?.let { { Text(it) } },
-        prefix = prefix?.let { { Text(it) } },
-        singleLine = singleLine,
-        minLines = minLines,
-        readOnly = readOnly,
-        isError = isError,
-        keyboardOptions = keyboardOptions,
-        shape = MaterialTheme.shapes.small,
-        trailingIcon = trailingIcon,
-        supportingText = supportingText,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = ext.track,
-            unfocusedContainerColor = ext.track,
-            disabledContainerColor = ext.track,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            cursorColor = MaterialTheme.colorScheme.primary,
-            focusedLabelColor = MaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        if (label.isNotBlank()) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = if (singleLine) 52.dp else 96.dp)
+                .clip(shape)
+                .background(ext.track)
+                .then(
+                    if (isError) {
+                        Modifier.border(2.dp, MaterialTheme.colorScheme.error, shape)
+                    } else {
+                        Modifier
+                    }
+                ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            singleLine = singleLine,
+            minLines = if (singleLine) 1 else minLines.coerceAtLeast(2),
+            readOnly = readOnly,
+            keyboardOptions = keyboardOptions,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            interactionSource = interaction,
+            decorationBox = { innerTextField ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 15.dp),
+                    verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
+                ) {
+                    prefix?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Box(Modifier.weight(1f)) {
+                        if (value.isEmpty() && placeholder != null) {
+                            Text(
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        innerTextField()
+                    }
+                    trailingIcon?.invoke()
+                }
+            }
         )
-    )
+        supportingText?.invoke()
+    }
 }
 
 /** Botón primario en píldora de 52 dp. */
@@ -1003,6 +1044,7 @@ fun PrimaryPillButton(
     enabled: Boolean = true,
     loading: Boolean = false
 ) {
+    val ext = MaterialTheme.extended
     Button(
         onClick = onClick,
         modifier = modifier.height(52.dp),
@@ -1010,15 +1052,17 @@ fun PrimaryPillButton(
         shape = PillShape,
         contentPadding = PaddingValues(horizontal = 24.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = ext.accent,
+            contentColor = ext.onAccent,
+            disabledContainerColor = ext.accent.copy(alpha = 0.45f),
+            disabledContentColor = ext.onAccent.copy(alpha = 0.6f)
         )
     ) {
         if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = ext.onAccent
             )
         } else {
             Text(text = text, style = MaterialTheme.typography.labelLarge)
@@ -1060,6 +1104,7 @@ fun DangerPillButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val ext = MaterialTheme.extended
     Button(
         onClick = onClick,
         modifier = modifier.height(52.dp),
@@ -1067,8 +1112,8 @@ fun DangerPillButton(
         shape = PillShape,
         contentPadding = PaddingValues(horizontal = 24.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer
+            containerColor = ext.danger,
+            contentColor = ext.onDanger
         )
     ) {
         Text(text = text, style = MaterialTheme.typography.labelLarge)

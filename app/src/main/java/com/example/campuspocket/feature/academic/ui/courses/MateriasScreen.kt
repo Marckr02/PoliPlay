@@ -17,13 +17,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
@@ -60,13 +59,12 @@ fun MateriasScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<Course?>(null) }
 
-    CampusTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,28 +115,19 @@ fun MateriasScreen(
                 }
             }
         }
-    }
 
     pendingDelete?.let { course ->
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { pendingDelete = null },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        course.id?.let(viewModel::deleteCourse)
-                        pendingDelete = null
-                    }
-                ) {
-                    Text(stringResource(R.string.delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(course.name) },
-            text = { Text(stringResource(R.string.delete_course_confirm)) }
+            title = course.name,
+            message = stringResource(R.string.delete_course_confirm),
+            icon = Icons.Filled.Delete,
+            destructive = true,
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                course.id?.let(viewModel::deleteCourse)
+                pendingDelete = null
+            }
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.finance.ui.withdrawal
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -15,23 +17,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,9 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.AccountBalance
@@ -64,30 +63,19 @@ fun WithdrawalScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.finance_withdrawal)) },
-                navigationIcon = {
-                    IconButton(onClick = onDone) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+    Column(modifier = modifier.fillMaxSize()) {
+        CampusTopBar(
+            title = stringResource(R.string.finance_withdrawal),
+            onBack = onDone
+        )
         when {
             state.isLoading -> Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) { CircularProgressIndicator() }
 
             state.savingsAccounts.isEmpty() -> Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 EmptyStateCard(
@@ -99,61 +87,60 @@ fun WithdrawalScreen(
                 )
             }
 
-            else -> Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                SavingsAccountDropdown(
-                    accounts = state.savingsAccounts,
-                    selectedId = state.selectedAccountId,
-                    onSelect = viewModel::selectAccount
-                )
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    SavingsAccountDropdown(
+                        accounts = state.savingsAccounts,
+                        selectedId = state.selectedAccountId,
+                        onSelect = viewModel::selectAccount
+                    )
 
-                CashDestinationCard(
-                    cashName = state.cashAccount?.name,
-                    showError = state.error == WithdrawalError.MISSING_CASH_ACCOUNT,
-                    onCreateAccount = onCreateAccount
-                )
+                    CashDestinationCard(
+                        cashName = state.cashAccount?.name,
+                        showError = state.error == WithdrawalError.MISSING_CASH_ACCOUNT,
+                        onCreateAccount = onCreateAccount
+                    )
 
-                AmountSection(
-                    state = state,
-                    onPreset = viewModel::selectPreset,
-                    onOther = viewModel::selectOtherAmount,
-                    onAmountChange = viewModel::onAmountChange
-                )
+                    AmountSection(
+                        state = state,
+                        onPreset = viewModel::selectPreset,
+                        onOther = viewModel::selectOtherAmount,
+                        onAmountChange = viewModel::onAmountChange
+                    )
 
-                state.error?.let { error ->
-                    if (error == WithdrawalError.MISSING_SOURCE_ACCOUNT) {
-                        InlineError(errorText(error = error, accountName = state.selectedAccount?.account?.name))
+                    state.error?.let { error ->
+                        if (error == WithdrawalError.MISSING_SOURCE_ACCOUNT) {
+                            InlineError(errorText(error = error, accountName = state.selectedAccount?.account?.name))
+                        }
                     }
                 }
-
-                PrimaryPillButton(
+                CampusButton(
                     text = stringResource(R.string.withdrawal_confirm),
                     onClick = viewModel::save,
                     enabled = !state.isSaving,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
                 )
             }
         }
     }
 
     state.savedAmountCents?.let { amount ->
-        AlertDialog(
-            onDismissRequest = {},
-            title = { Text(stringResource(R.string.withdrawal_success_title)) },
-            text = {
-                Text(stringResource(R.string.withdrawal_success, Money.format(amount)))
-            },
-            confirmButton = {
-                TextButton(onClick = onDone) {
-                    Text(stringResource(R.string.ok))
-                }
-            }
+        CampusDialog(
+            onDismissRequest = onDone,
+            title = stringResource(R.string.withdrawal_success_title),
+            message = stringResource(R.string.withdrawal_success, Money.format(amount)),
+            icon = Icons.Filled.CheckCircle,
+            confirmText = stringResource(R.string.ok),
+            onConfirm = onDone,
+            showDismiss = false
         )
     }
 }
@@ -238,13 +225,13 @@ private fun CashDestinationCard(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                        .background(MaterialTheme.extended.lavender, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_wallet),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = MaterialTheme.extended.onLavender
                     )
                 }
                 Column {
@@ -272,9 +259,15 @@ private fun CashDestinationCard(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onCreateAccount) {
-                    Text(stringResource(R.string.finance_new_account))
-                }
+                Text(
+                    text = stringResource(R.string.finance_new_account),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .clickable(onClick = onCreateAccount)
+                        .padding(horizontal = 8.dp, vertical = 14.dp)
+                )
             }
         }
     }
@@ -355,7 +348,7 @@ private fun AmountChip(
         onClick = onClick,
         modifier = modifier.height(48.dp),
         shape = MaterialTheme.shapes.small,
-        color = if (selected) MaterialTheme.colorScheme.primary
+        color = if (selected) MaterialTheme.extended.selected
         else MaterialTheme.extended.track
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -367,14 +360,14 @@ private fun AmountChip(
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                        tint = MaterialTheme.extended.onSelected,
                         modifier = Modifier.size(16.dp)
                     )
                 }
                 Text(
                     text = label,
                     style = MaterialTheme.typography.titleSmall,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary
+                    color = if (selected) MaterialTheme.extended.onSelected
                     else MaterialTheme.colorScheme.onSurface
                 )
             }

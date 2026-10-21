@@ -15,16 +15,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,11 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.ContrastUtil
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
-import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.finance.domain.model.Category
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
     onAddCategory: () -> Unit,
@@ -49,44 +45,37 @@ fun CategoriesScreen(
     viewModel: CategoriesViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val ext = MaterialTheme.extended
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.categories_manage)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                actions = {
-                    RoundIconButton(
-                        icon = Icons.Filled.Add,
-                        contentDescription = stringResource(R.string.category_new),
-                        onClick = onAddCategory,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            )
-        }
-    ) { innerPadding ->
+    Column(modifier = modifier.fillMaxSize()) {
+        CampusTopBar(
+            title = stringResource(R.string.categories_manage),
+            onBack = onBack,
+            actions = {
+                RoundIconButton(
+                    icon = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.category_new),
+                    onClick = onAddCategory,
+                    containerColor = ext.accent,
+                    contentColor = ext.onAccent
+                )
+            }
+        )
+
         if (state.isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
             }
-            return@Scaffold
+            return@Column
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (state.expense.isNotEmpty()) {
@@ -125,6 +114,7 @@ private fun CategoryRow(
     onEditCategory: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val background = Color(category.colorArgb)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -134,13 +124,13 @@ private fun CategoryRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier.size(36.dp).background(Color(category.colorArgb), CircleShape),
+            modifier = Modifier.size(36.dp).background(background, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = category.name.first().uppercase(),
                 style = MaterialTheme.typography.titleSmall,
-                color = Color.White
+                color = ContrastUtil.onColorFor(background)
             )
         }
         Column(Modifier.padding(start = 12.dp)) {

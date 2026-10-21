@@ -15,11 +15,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.DangerPillButton
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.util.Money
@@ -168,25 +168,17 @@ fun AccountDetailScreen(
     }
 
     if (showArchiveDialog) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showArchiveDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showArchiveDialog = false
-                        viewModel.archive()
-                    }
-                ) {
-                    Text(stringResource(R.string.account_archive))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showArchiveDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(account?.name ?: "") },
-            text = { Text(stringResource(R.string.account_archived_hint)) }
+            title = account?.name ?: "",
+            message = stringResource(R.string.account_archived_hint),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.account_archive),
+            onConfirm = {
+                showArchiveDialog = false
+                viewModel.archive()
+            }
         )
     }
 }

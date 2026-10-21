@@ -6,30 +6,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,9 +36,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.CampusSwitch
 import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.Frequency
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
@@ -90,32 +85,23 @@ fun PaymentFormScreen(
 
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(if (state.isEditing) R.string.edit else R.string.scheduled_payment_name)) },
-                navigationIcon = {
-                    IconButton(onClick = onDone) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-                    }
-                }
-            )
-        }
-    ) { inner ->
+    Column(modifier = modifier.fillMaxSize().imePadding()) {
+        CampusTopBar(
+            title = stringResource(if (state.isEditing) R.string.edit else R.string.scheduled_payment_name),
+            onBack = onDone
+        )
         if (!state.isLoaded) {
-            Box(Modifier.fillMaxSize().padding(inner), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            return@Scaffold
+            return@Column
         }
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(inner)
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             CampusTextField(
@@ -217,9 +203,11 @@ fun PaymentFormScreen(
             // Próxima fecha de pago
             Column {
                 Text(stringResource(R.string.scheduled_payment_next_due), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = { showDatePicker = true }) {
-                    Text(DATE_FMT.format(state.nextDueDate))
-                }
+                SecondaryPillButton(
+                    text = DATE_FMT.format(state.nextDueDate),
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             // Recordar N días antes
@@ -243,35 +231,39 @@ fun PaymentFormScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.scheduled_payment_active), style = MaterialTheme.typography.bodyLarge)
-                Switch(checked = state.active, onCheckedChange = viewModel::onActiveChange)
+                CampusSwitch(
+                    checked = state.active,
+                    onCheckedChange = viewModel::onActiveChange,
+                    contentDescription = stringResource(R.string.scheduled_payment_active)
+                )
             }
-
-            PrimaryPillButton(
-                text = stringResource(R.string.save),
-                onClick = viewModel::save,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
+
+        CampusButton(
+            text = stringResource(R.string.save),
+            onClick = viewModel::save,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        )
     }
 
     if (showDatePicker) {
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = state.nextDueDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
-        DatePickerDialog(
+        CampusDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pickerState.selectedDateMillis?.let { ms ->
-                            viewModel.onNextDueDateChange(Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalDate())
-                        }
-                        showDatePicker = false
-                    }
-                ) { Text(stringResource(R.string.ok)) }
+            title = stringResource(R.string.scheduled_payment_next_due),
+            confirmText = stringResource(R.string.ok),
+            onConfirm = {
+                pickerState.selectedDateMillis?.let { ms ->
+                    viewModel.onNextDueDateChange(Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalDate())
+                }
+                showDatePicker = false
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) } }
-        ) { DatePicker(state = pickerState) }
+            content = { DatePicker(state = pickerState) }
+        )
     }
 }
 

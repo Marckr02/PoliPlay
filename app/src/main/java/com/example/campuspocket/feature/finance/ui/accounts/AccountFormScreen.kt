@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -17,23 +18,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,8 +48,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.ColorPalette
+import com.example.campuspocket.core.designsystem.ContrastUtil
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
+import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.CampusSwitch
 import com.example.campuspocket.core.designsystem.components.CampusTextField
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.feature.finance.data.AccountType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,40 +71,26 @@ fun AccountFormScreen(
         if (state.saved || state.archivedDone) onDone()
     }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(stringResource(if (state.isEditing) R.string.account_name else R.string.finance_new_account))
-                },
-                navigationIcon = {
-                    IconButton(onClick = onDone) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+    Column(modifier = modifier.fillMaxSize().imePadding()) {
+        CampusTopBar(
+            title = stringResource(if (state.isEditing) R.string.account_name else R.string.finance_new_account),
+            onBack = onDone
+        )
         if (!state.isLoaded) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
             }
-            return@Scaffold
+            return@Column
         }
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             CampusTextField(
@@ -175,9 +161,10 @@ fun AccountFormScreen(
                     text = stringResource(R.string.account_include_in_total),
                     style = MaterialTheme.typography.bodyLarge
                 )
-                Switch(
+                CampusSwitch(
                     checked = state.includeInTotal,
-                    onCheckedChange = viewModel::onIncludeInTotalChange
+                    onCheckedChange = viewModel::onIncludeInTotalChange,
+                    contentDescription = stringResource(R.string.account_include_in_total)
                 )
             }
 
@@ -220,7 +207,7 @@ fun AccountFormScreen(
                                 Icon(
                                     imageVector = Icons.Filled.Check,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = ContrastUtil.onColorFor(color),
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -229,46 +216,40 @@ fun AccountFormScreen(
                 }
             }
 
-            PrimaryPillButton(
-                text = stringResource(R.string.save),
-                onClick = viewModel::save,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-            )
+        }
 
-            if (state.isEditing) {
-                TextButton(
-                    onClick = { showArchiveDialog = true },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(
-                        text = stringResource(R.string.account_archive),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+        CampusButton(
+            text = stringResource(R.string.save),
+            onClick = viewModel::save,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+        )
+        if (state.isEditing) {
+            CampusButton(
+                text = stringResource(R.string.account_archive),
+                onClick = { showArchiveDialog = true },
+                style = CampusButtonStyle.DESTRUCTIVE,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 12.dp)
+            )
         }
     }
 
     if (showArchiveDialog) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showArchiveDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showArchiveDialog = false
-                        viewModel.archive()
-                    }
-                ) {
-                    Text(stringResource(R.string.account_archive))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showArchiveDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(state.name) },
-            text = { Text(stringResource(R.string.account_archived_hint)) }
+            title = state.name,
+            message = stringResource(R.string.account_archived_hint),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.account_archive),
+            onConfirm = {
+                showArchiveDialog = false
+                viewModel.archive()
+            }
         )
     }
 }

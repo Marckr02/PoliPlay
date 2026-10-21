@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -39,6 +40,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * Pruebas de interfaz (Compose) con repositorios falsos en memoria (sin Hilt ni la BD del teléfono).
@@ -144,6 +147,7 @@ class AcademicUiTest {
                 TasksScreen(
                     onAddTask = {},
                     onOpenTask = {},
+                    onBack = {},
                     viewModel = TasksViewModel(taskRepo, FakeCourseRepository(listOf(course)))
                 )
             }
@@ -153,6 +157,53 @@ class AcademicUiTest {
             composeRule.onAllNodes(hasText("Entregar informe de laboratorio")).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithText("Entregar informe de laboratorio").assertIsDisplayed()
+    }
+
+    @Test
+    fun losFiltrosDeTareasFiltranPorFecha() {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        fun atNoon(daysFromToday: Long): Instant =
+            today.plusDays(daysFromToday).atTime(12, 0).atZone(zone).toInstant()
+
+        val taskRepo = FakeTaskRepository(
+            listOf(
+                Task(id = 1, title = "Tarea de hoy", dueAt = atNoon(0)),
+                Task(id = 2, title = "Tarea en tres días", dueAt = atNoon(3)),
+                Task(id = 3, title = "Tarea en diez días", dueAt = atNoon(10))
+            )
+        )
+
+        composeRule.setContent {
+            CampusTheme {
+                TasksScreen(
+                    onAddTask = {},
+                    onOpenTask = {},
+                    onBack = {},
+                    viewModel = TasksViewModel(taskRepo, FakeCourseRepository())
+                )
+            }
+        }
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Tarea en diez días")).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNode(hasText("Hoy") and hasClickAction()).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Tarea de hoy").assertIsDisplayed()
+        composeRule.onNodeWithText("Tarea en tres días").assertDoesNotExist()
+        composeRule.onNodeWithText("Tarea en diez días").assertDoesNotExist()
+
+        composeRule.onNode(hasText("Esta semana") and hasClickAction()).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Tarea de hoy").assertIsDisplayed()
+        composeRule.onNodeWithText("Tarea en tres días").assertIsDisplayed()
+        composeRule.onNodeWithText("Tarea en diez días").assertDoesNotExist()
+
+        composeRule.onNode(hasText("Todas") and hasClickAction()).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Tarea en diez días").assertIsDisplayed()
     }
 
     // ---- Fakes en memoria ---------------------------------------------------

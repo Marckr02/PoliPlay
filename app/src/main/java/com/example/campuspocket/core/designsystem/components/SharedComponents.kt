@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,8 +35,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -194,24 +191,7 @@ fun PriorityBadge(
     priority: Priority,
     modifier: Modifier = Modifier
 ) {
-    val ext = MaterialTheme.extended
-    val (backgroundColor, textColor) = when (priority) {
-        Priority.HIGH -> Pair(ext.peach, ext.onPeach)
-        Priority.MEDIUM -> Pair(ext.warningContainer, ext.warning)
-        Priority.LOW -> Pair(ext.track, MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    Box(
-        modifier = modifier
-            .clip(PillShape)
-            .background(backgroundColor)
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    ) {
-        Text(
-            text = stringResource(priority.resourceString),
-            style = MaterialTheme.typography.labelSmall,
-            color = textColor
-        )
-    }
+    PriorityTag(priority = priority, modifier = modifier)
 }
 
 @Composable
@@ -572,7 +552,8 @@ enum class TaskFilter(val label: Int) {
     ALL(R.string.task_filter_all),
     TODAY(R.string.academic_today),
     THIS_WEEK(R.string.task_filter_week),
-    BY_COURSE(R.string.task_course)
+    BY_COURSE(R.string.task_course),
+    COMPLETED(R.string.task_filter_completed)
 }
 
 @Composable
@@ -633,37 +614,11 @@ private fun RoundCheckbox(
     onCheckedChange: (Boolean) -> Unit,
     contentDescription: String
 ) {
-    val color = MaterialTheme.colorScheme.primary
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .semantics { this.contentDescription = contentDescription }
-            .clickable(role = Role.Checkbox) { onCheckedChange(!checked) },
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .then(
-                    if (checked) {
-                        Modifier.background(color)
-                    } else {
-                        Modifier.border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                    }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            if (checked) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-    }
+    CampusCheckbox(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        contentDescription = contentDescription
+    )
 }
 
 private fun formatDueAt(task: Task): String {
@@ -685,8 +640,8 @@ fun AccountsCarousel(
     ) {
         items(accounts, key = { it.account.id ?: 0L }) { balance ->
             val index = accounts.indexOf(balance)
-            val container = if (index % 2 == 0) ext.ink else MaterialTheme.colorScheme.primary
-            val content = if (index % 2 == 0) ext.onInk else MaterialTheme.colorScheme.onPrimary
+            val container = if (index % 2 == 0) ext.ink else ext.accent
+            val content = if (index % 2 == 0) ext.onInk else ext.onAccent
             WalletCard(
                 name = balance.account.name,
                 typeLabel = stringResource(accountTypeLabelRes(balance.account.type)),
@@ -831,65 +786,6 @@ internal fun transactionTypeLabelRes(type: TransactionType): Int = when (type) {
     TransactionType.INCOME -> R.string.finance_income
     TransactionType.TRANSFER -> R.string.finance_transfer
     TransactionType.REFUND -> R.string.finance_refund
-}
-
-@Composable
-fun KeypadAmountInput(
-    modifier: Modifier = Modifier,
-    amount: String,
-    onAmountChange: (String) -> Unit,
-    error: Boolean = false,
-    label: String = ""
-) {
-    val ext = MaterialTheme.extended
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (label.isNotBlank()) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Text(
-            text = if (amount.isEmpty()) "0" else amount,
-            style = MaterialTheme.typography.displayMedium,
-            color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth().padding(24.dp).wrapContentSize(Alignment.CenterEnd),
-            textAlign = TextAlign.End,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "⌫").forEach { key ->
-                Button(
-                    onClick = {
-                        when (key) {
-                            "⌫" -> if (amount.isNotEmpty()) onAmountChange(amount.dropLast(1))
-                            "." -> if (!amount.contains(".")) {
-                                onAmountChange(if (amount.isEmpty()) "0." else amount + ".")
-                            }
-                            else -> {
-                                if (amount != "0" || key == ".") {
-                                    onAmountChange(if (amount == "0") key else amount + key)
-                                }
-                            }
-                        }
-                    },
-                    modifier = Modifier.weight(1f).aspectRatio(1f).fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ext.track,
-                        contentColor = ext.onTrack
-                    )
-                ) {
-                    Text(text = key, style = MaterialTheme.typography.titleLarge)
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -1076,20 +972,6 @@ fun PreviewTransactionTypeSelector() {
     CampusTheme {
         Surface {
             TransactionTypeSelector(selectedType = TransactionType.EXPENSE, onTypeChange = {})
-        }
-    }
-}
-
-@Composable
-@Preview(name = "KeypadAmountInput", showBackground = true)
-fun PreviewKeypadAmountInput() {
-    CampusTheme {
-        Surface {
-            KeypadAmountInput(
-                amount = "123.45",
-                onAmountChange = {},
-                label = stringResource(R.string.transaction_amount)
-            )
         }
     }
 }

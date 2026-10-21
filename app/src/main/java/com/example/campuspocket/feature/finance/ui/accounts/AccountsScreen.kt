@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.ContrastUtil
 import com.example.campuspocket.core.designsystem.components.AccountsCarousel
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
@@ -163,7 +164,7 @@ private fun AccountRow(
                 Text(
                     text = balance.account.name.first().uppercase(),
                     style = MaterialTheme.typography.titleSmall,
-                    color = Color.White
+                    color = ContrastUtil.onColorFor(Color(balance.account.colorArgb))
                 )
             }
             Spacer(Modifier.width(12.dp))

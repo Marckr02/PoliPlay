@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.finance.ui.payments
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,15 +21,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,15 +44,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
+import com.example.campuspocket.feature.finance.ui.calendar.CalendarScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -66,6 +70,8 @@ import javax.inject.Inject
 
 private val DATE_FMT: DateTimeFormatter =
     DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es"))
+
+private enum class PaymentsView { LIST, CALENDAR }
 
 private fun freqLabelRes(f: String): Int = when (f) {
     "WEEKLY" -> R.string.scheduled_payment_frequency_weekly
@@ -87,6 +93,7 @@ fun PaymentsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val ext = MaterialTheme.extended
+    var view by rememberSaveable { mutableStateOf(PaymentsView.LIST) }
     var payNow by remember { mutableStateOf<ScheduledPaymentEntity?>(null) }
     var deleting by remember { mutableStateOf<ScheduledPaymentEntity?>(null) }
 
@@ -134,7 +141,20 @@ fun PaymentsScreen(
             }
         }
 
-        when {
+        PillSegmentedControl(
+            options = PaymentsView.entries,
+            selected = view,
+            onSelect = { view = it },
+            label = { option ->
+                stringResource(
+                    if (option == PaymentsView.LIST) R.string.payments_view_list
+                    else R.string.finance_calendar
+                )
+            }
+        )
+
+        when (view) {
+            PaymentsView.LIST -> when {
             state.isLoading -> Box(
                 Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -184,7 +204,7 @@ fun PaymentsScreen(
                                 }
                             }
                             Spacer(Modifier.height(12.dp))
-                            PrimaryPillButton(
+                            CampusButton(
                                 text = stringResource(R.string.scheduled_payment_new),
                                 onClick = onAddPayment,
                                 modifier = Modifier.fillMaxWidth()
@@ -209,15 +229,30 @@ fun PaymentsScreen(
                     )
                 }
             }
+            }
+
+            PaymentsView.CALENDAR -> CalendarScreen(
+                onDaySelected = {},
+                embedded = true,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 
     payNow?.let { payment ->
         var amountCents by remember(payment.id) { mutableStateOf(payment.amountCents) }
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { payNow = null },
-            title = { Text(payment.name) },
-            text = {
+            title = payment.name,
+            confirmText = stringResource(R.string.confirm),
+            confirmEnabled = amountCents > 0,
+            onConfirm = {
+                if (amountCents > 0) {
+                    viewModel.markPaid(payment, amountCents, LocalDate.now())
+                    payNow = null
+                }
+            },
+            content = {
                 CampusTextField(
                     value = Money.toLocalDecimalString(amountCents),
                     onValueChange = { raw ->
@@ -229,39 +264,21 @@ fun PaymentsScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (amountCents > 0) {
-                            viewModel.markPaid(payment, amountCents, LocalDate.now())
-                            payNow = null
-                        }
-                    },
-                    enabled = amountCents > 0
-                ) { Text(stringResource(R.string.confirm)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { payNow = null }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
 
     deleting?.let { payment ->
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { deleting = null },
-            title = { Text(payment.name) },
-            text = { Text(stringResource(R.string.scheduled_payment_delete_confirm)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.delete(payment.id)
-                        deleting = null
-                    }
-                ) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.cancel)) }
+            title = payment.name,
+            message = stringResource(R.string.scheduled_payment_delete_confirm),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                viewModel.delete(payment.id)
+                deleting = null
             }
         )
     }
@@ -323,15 +340,30 @@ private fun PaymentCard(
                 onClick = onToggleActive
             )
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = onMarkPaid) {
-                Text(stringResource(R.string.scheduled_payment_mark_paid))
-            }
-            TextButton(onClick = onEdit) {
-                Text(stringResource(R.string.edit))
-            }
-            TextButton(onClick = onDelete) {
-                Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
-            }
+            Text(
+                text = stringResource(R.string.scheduled_payment_mark_paid),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClick = onMarkPaid)
+                    .padding(horizontal = 6.dp, vertical = 15.dp)
+            )
+            Text(
+                text = stringResource(R.string.edit),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClick = onEdit)
+                    .padding(horizontal = 6.dp, vertical = 15.dp)
+            )
+            Text(
+                text = stringResource(R.string.delete),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .clickable(onClick = onDelete)
+                    .padding(horizontal = 6.dp, vertical = 15.dp)
+            )
         }
     }
 }

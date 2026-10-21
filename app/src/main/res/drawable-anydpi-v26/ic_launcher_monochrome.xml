@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Silueta de un solo color para el icono temático de Android 13+. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M32,25.5 C35.5,23 40.5,22.8 44.5,24.8 C48.2,26.7 51.3,30 54,33.5 C56.7,30 59.8,26.7 63.5,24.8 C67.5,22.8 72.5,23 76,25.5 L76,46 C76,52.5 71.3,56 65.2,54.4 L54,51.5 L42.8,54.4 C36.7,56 32,52.5 32,46 Z M41.5,40.5 a3.8,3.8 0 1,0 7.6,0 a3.8,3.8 0 1,0 -7.6,0 Z M58.9,40.5 a3.8,3.8 0 1,0 7.6,0 a3.8,3.8 0 1,0 -7.6,0 Z" />
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,55 L36,53 C33,52.6 31,54.4 31,57.2 L31,67 C31,73.5 38,76.5 46,76 C49.5,75.5 52,74.5 54,73 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,55 L72,53 C75,52.6 77,54.4 77,57.2 L77,67 C77,73.5 70,76.5 62,76 C58.5,75.5 56,74.5 54,73 Z" />
+</vector>

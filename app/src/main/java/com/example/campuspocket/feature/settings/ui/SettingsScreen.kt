@@ -16,21 +16,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,10 +46,12 @@ import com.example.campuspocket.BuildConfig
 import com.example.campuspocket.R
 import com.example.campuspocket.core.backup.BackupImportIssue
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.CampusSwitch
 import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
-import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.SettingsSectionCard
 import com.example.campuspocket.core.designsystem.components.descriptionRes
@@ -120,85 +119,66 @@ fun SettingsScreen(
     // Confirmaciones: exportar avisa que el archivo no está cifrado; importar
     // reemplaza todos los datos, así que exige confirmación explícita.
     if (showExportWarning) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showExportWarning = false },
-            title = { Text(stringResource(R.string.settings_export)) },
-            text = { Text(stringResource(R.string.settings_export_not_encrypted)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showExportWarning = false
-                    createLauncher.launch(viewModel.suggestedFileName())
-                }) { Text(stringResource(R.string.action_continue)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExportWarning = false }) { Text(stringResource(R.string.cancel)) }
+            title = stringResource(R.string.settings_export),
+            message = stringResource(R.string.settings_export_not_encrypted),
+            icon = Icons.Filled.Warning,
+            confirmText = stringResource(R.string.action_continue),
+            onConfirm = {
+                showExportWarning = false
+                createLauncher.launch(viewModel.suggestedFileName())
             }
         )
     }
     if (showImportConfirm) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = {
                 showImportConfirm = false
                 viewModel.dismissImport()
             },
-            title = { Text(stringResource(R.string.settings_import)) },
-            text = { Text(stringResource(R.string.settings_import_confirm)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showImportConfirm = false
-                    viewModel.confirmImport()
-                }) { Text(stringResource(R.string.action_continue)) }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showImportConfirm = false
-                    viewModel.dismissImport()
-                }) { Text(stringResource(R.string.cancel)) }
+            title = stringResource(R.string.settings_import),
+            message = stringResource(R.string.settings_import_confirm),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.action_continue),
+            onConfirm = {
+                showImportConfirm = false
+                viewModel.confirmImport()
             }
         )
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+    Column(modifier = modifier.fillMaxSize()) {
+        CampusTopBar(
+            title = stringResource(R.string.nav_settings),
+            onBack = onBack
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            RoundIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back),
-                onClick = onBack,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = stringResource(R.string.nav_settings),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        // Banner de respaldo
-        if (viewModel.delegateShouldShowBanner(lastBackupAt, prefs.lastBackupBannerDismissedAt)) {
-            BentoCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(R.string.settings_backup_reminder),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = { viewModel.dismissBackupBanner() }) {
-                        Text(stringResource(R.string.done))
+            // Banner de respaldo
+            if (viewModel.delegateShouldShowBanner(lastBackupAt, prefs.lastBackupBannerDismissedAt)) {
+                BentoCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.settings_backup_reminder),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SecondaryPillButton(
+                            text = stringResource(R.string.done),
+                            onClick = { viewModel.dismissBackupBanner() },
+                            modifier = Modifier.height(48.dp)
+                        )
                     }
                 }
             }
-        }
 
         // ---- Mi perfil ----
         SettingsSectionCard(
@@ -274,9 +254,10 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Switch(
+                    CampusSwitch(
                         checked = userPreferences.isModuleEnabled(module),
-                        onCheckedChange = { viewModel.setModuleEnabled(module, it) }
+                        onCheckedChange = { viewModel.setModuleEnabled(module, it) },
+                        contentDescription = stringResource(module.titleRes())
                     )
                 }
             }
@@ -315,10 +296,11 @@ fun SettingsScreen(
             )
             // Botón de debug solo en builds de depuración (el canal real es el aviso diario).
             if (BuildConfig.DEBUG) {
-                TextButton(
+                SecondaryPillButton(
+                    text = stringResource(R.string.settings_debug_review_now),
                     onClick = { viewModel.reviewNow(context); message = R.string.loading },
                     modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.settings_debug_review_now)) }
+                )
             }
             if (state.busy) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             message?.let {
@@ -357,7 +339,7 @@ fun SettingsScreen(
                 },
                 detail = if (!exactAlarmsOk) stringResource(R.string.settings_exact_alarms_denied) else null
             )
-            HorizontalDivider()
+            Spacer(Modifier.height(4.dp))
             ToggleRow(label = stringResource(R.string.settings_channel_tasks), checked = prefs.channelTasks, onCheckedChange = { viewModel.setChannelEnabled("tasks", it) })
             ToggleRow(label = stringResource(R.string.settings_channel_payments), checked = prefs.channelPayments, onCheckedChange = { viewModel.setChannelEnabled("payments", it) })
             ToggleRow(label = stringResource(R.string.settings_channel_budgets), checked = prefs.channelBudgets, onCheckedChange = { viewModel.setChannelEnabled("budgets", it) })
@@ -373,9 +355,13 @@ fun SettingsScreen(
             semesters.forEach { sem ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().clickable { viewModel.setActiveSemester(sem.id) }
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Switch(checked = sem.isActive, onCheckedChange = null)
+                    CampusSwitch(
+                        checked = sem.isActive,
+                        onCheckedChange = { if (it) viewModel.setActiveSemester(sem.id) },
+                        contentDescription = sem.name
+                    )
                     Spacer(Modifier.width(8.dp))
                     Text(sem.name)
                 }
@@ -429,6 +415,7 @@ fun SettingsScreen(
             )
         }
     }
+    }
 }
 
 private val DATE_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.forLanguageTag("es"))
@@ -450,7 +437,12 @@ private fun ToggleRow(
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+            CampusSwitch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                contentDescription = label,
+                enabled = enabled
+            )
         }
         detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }

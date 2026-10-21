@@ -134,7 +134,7 @@ class HomeViewModel @Inject constructor(
             laterClass = later,
             pendingTasks = tasks.size,
             tasksDueToday = tasks.count {
-                LocalDate.ofInstant(it.dueAt, zone) == today
+                it.dueAt.atZone(zone).toLocalDate() == today
             },
             availableCents = finance.availableCents,
             monthlyBudgetCents = finance.monthlyBudgetCents,

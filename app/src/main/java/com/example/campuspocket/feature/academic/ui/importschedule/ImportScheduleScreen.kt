@@ -15,21 +15,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,9 +41,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.feature.academic.domain.model.SchoolDays
 import com.example.campuspocket.feature.academic.importer.ParseWarning
@@ -77,31 +75,20 @@ fun ImportScheduleScreen(
         if ((state as? ImportUiState.Review)?.saved == true) onDone()
     }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.import_pdf_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onDone) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+    Column(modifier = modifier.fillMaxSize()) {
+        CampusTopBar(
+            title = stringResource(R.string.import_pdf_title),
+            onBack = onDone
+        )
         when (val current = state) {
             ImportUiState.Idle -> PickPdfView(
                 errorRes = null,
                 onPick = { launcher.launch(arrayOf("application/pdf")) },
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.weight(1f)
             )
 
             ImportUiState.Reading -> Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
@@ -110,14 +97,14 @@ fun ImportScheduleScreen(
             is ImportUiState.ReadError -> PickPdfView(
                 errorRes = current.messageRes,
                 onPick = { launcher.launch(arrayOf("application/pdf")) },
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.weight(1f)
             )
 
             is ImportUiState.Review -> ReviewContent(
                 state = current,
                 viewModel = viewModel,
                 onDone = onDone,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -150,7 +137,7 @@ private fun PickPdfView(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
-        PrimaryPillButton(onClick = onPick, text = stringResource(R.string.import_pdf_select))
+        CampusButton(onClick = onPick, text = stringResource(R.string.import_pdf_select))
     }
 }
 
@@ -163,44 +150,10 @@ private fun ReviewContent(
 ) {
     var editingSession by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
-    Scaffold(
-        modifier = modifier,
-        bottomBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.saveError?.let { errorRes ->
-                        Text(
-                            text = stringResource(errorRes),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SecondaryPillButton(
-                            text = stringResource(R.string.cancel),
-                            onClick = onDone,
-                            modifier = Modifier.weight(1f)
-                        )
-                        PrimaryPillButton(
-                            text = stringResource(R.string.import_pdf_confirm),
-                            onClick = viewModel::confirm,
-                            enabled = state.canSave && !state.isSaving,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
+    Column(modifier = modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier.fillMaxSize().weight(1f),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -227,6 +180,40 @@ private fun ReviewContent(
                 )
             }
         }
+
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                state.saveError?.let { errorRes ->
+                    Text(
+                        text = stringResource(errorRes),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SecondaryPillButton(
+                        text = stringResource(R.string.cancel),
+                        onClick = onDone,
+                        modifier = Modifier.weight(1f)
+                    )
+                    CampusButton(
+                        text = stringResource(R.string.import_pdf_confirm),
+                        onClick = viewModel::confirm,
+                        enabled = state.canSave && !state.isSaving,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
     }
 
     editingSession?.let { (courseIndex, sessionIndex) ->
@@ -246,28 +233,18 @@ private fun ReviewContent(
     }
 
     if (state.absentCourses != null) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = viewModel::onAbsentDeleteDismissed,
-            confirmButton = {
-                TextButton(onClick = viewModel::onAbsentDeleteConfirmed) {
-                    Text(stringResource(R.string.import_merge_delete_button))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::onAbsentDeleteDismissed) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(state.termName) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.import_merge_absent_warning,
-                        state.absentCourses.size,
-                        state.absentCourses.joinToString(", ") { it.name }
-                    )
-                )
-            }
+            title = state.termName,
+            message = stringResource(
+                R.string.import_merge_absent_warning,
+                state.absentCourses.size,
+                state.absentCourses.joinToString(", ") { it.name }
+            ),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.import_merge_delete_button),
+            onConfirm = viewModel::onAbsentDeleteConfirmed
         )
     }
 }
@@ -466,62 +443,53 @@ private fun SessionEditDialog(
     val orderError = startTime != null && endTime != null && !endTime.isAfter(startTime)
     val valid = draft.day != null && startTime != null && endTime != null && !orderError
 
-    AlertDialog(
+    CampusDialog(
         onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = { onApply(draft) }, enabled = valid) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-        title = { Text(stringResource(R.string.import_session_edit)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SchoolDays.withSaturday.forEach { day ->
-                        CampusChip(
-                            label = stringResource(day.shortLabelRes()),
-                            selected = draft.day == day,
-                            onClick = { draft = draft.copy(day = day) }
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TimeField(
-                        labelRes = R.string.session_start,
-                        value = draft.start,
-                        errorRes = if (draft.start.isNotBlank() && startTime == null) {
-                            R.string.error_time_format
-                        } else {
-                            null
-                        },
-                        onTimeSelected = { time -> draft = draft.copy(start = TimeText.format(time)) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    TimeField(
-                        labelRes = R.string.session_end,
-                        value = draft.end,
-                        errorRes = when {
-                            orderError -> R.string.error_time_order
-                            draft.end.isNotBlank() && endTime == null -> R.string.error_time_format
-                            else -> null
-                        },
-                        onTimeSelected = { time -> draft = draft.copy(end = TimeText.format(time)) },
-                        modifier = Modifier.weight(1f)
+        title = stringResource(R.string.import_session_edit),
+        confirmText = stringResource(R.string.save),
+        confirmEnabled = valid,
+        onConfirm = { onApply(draft) },
+        content = {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SchoolDays.withSaturday.forEach { day ->
+                    CampusChip(
+                        label = stringResource(day.shortLabelRes()),
+                        selected = draft.day == day,
+                        onClick = { draft = draft.copy(day = day) }
                     )
                 }
-                CampusTextField(
-                    value = draft.room,
-                    onValueChange = { draft = draft.copy(room = it) },
-                    label = stringResource(R.string.session_room),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TimeField(
+                    labelRes = R.string.session_start,
+                    value = draft.start,
+                    errorRes = if (draft.start.isNotBlank() && startTime == null) {
+                        R.string.error_time_format
+                    } else {
+                        null
+                    },
+                    onTimeSelected = { time -> draft = draft.copy(start = TimeText.format(time)) },
+                    modifier = Modifier.weight(1f)
+                )
+                TimeField(
+                    labelRes = R.string.session_end,
+                    value = draft.end,
+                    errorRes = when {
+                        orderError -> R.string.error_time_order
+                        draft.end.isNotBlank() && endTime == null -> R.string.error_time_format
+                        else -> null
+                    },
+                    onTimeSelected = { time -> draft = draft.copy(end = TimeText.format(time)) },
+                    modifier = Modifier.weight(1f)
                 )
             }
+            CampusTextField(
+                value = draft.room,
+                onValueChange = { draft = draft.copy(room = it) },
+                label = stringResource(R.string.session_room),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     )
 }

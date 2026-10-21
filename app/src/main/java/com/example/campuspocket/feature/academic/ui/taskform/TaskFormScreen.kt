@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,23 +20,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -56,10 +51,16 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
+import com.example.campuspocket.core.designsystem.components.RoundIconButton
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.SegmentedControl
+import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.academic.domain.model.Priority
 import com.example.campuspocket.feature.academic.ui.TimePickerDialog
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -117,25 +118,17 @@ fun TaskFormScreen(
     )
 
     if (showDeleteDialog) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showDeleteDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.delete()
-                    }
-                ) {
-                    Text(stringResource(R.string.delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(state.title) },
-            text = { Text(stringResource(R.string.delete_task_confirm)) }
+            title = state.title,
+            message = stringResource(R.string.delete_task_confirm),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.delete()
+            }
         )
     }
 }
@@ -183,59 +176,45 @@ private fun TaskFormContent(
         ActivityResultContracts.RequestPermission()
     ) { granted -> notificationsGranted = granted }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(
-                            if (state.isEditing) R.string.task_edit else R.string.task_new
-                        )
+    Column(modifier = modifier.fillMaxSize()) {
+        CampusTopBar(
+            title = stringResource(
+                if (state.isEditing) R.string.task_edit else R.string.task_new
+            ),
+            onBack = onBack,
+            actions = {
+                if (state.isEditing && !state.notFound) {
+                    RoundIconButton(
+                        icon = Icons.Filled.Check,
+                        contentDescription = stringResource(
+                            if (state.completedAt == null) {
+                                R.string.task_mark_completed
+                            } else {
+                                R.string.task_mark_pending
+                            }
+                        ),
+                        onClick = { onToggleCompleted(state.completedAt == null) },
+                        containerColor = MaterialTheme.extended.accent,
+                        contentColor = MaterialTheme.extended.onAccent
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                actions = {
-                    if (state.isEditing && !state.notFound) {
-                        TextButton(onClick = { onToggleCompleted(state.completedAt == null) }) {
-                            Text(
-                                stringResource(
-                                    if (state.completedAt == null) {
-                                        R.string.task_mark_completed
-                                    } else {
-                                        R.string.task_mark_pending
-                                    }
-                                )
-                            )
-                        }
-                    }
                 }
-            )
-        }
-    ) { innerPadding ->
+            }
+        )
         if (!state.isLoaded) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
             }
-            return@Scaffold
+            return@Column
         }
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             CampusTextField(
@@ -270,14 +249,14 @@ private fun TaskFormContent(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                TextButton(onClick = { showDatePicker = true }) {
-                    Text(
-                        java.time.format.DateTimeFormatter.ofPattern(
-                            "EEE d 'de' MMM 'de' yyyy",
-                            java.util.Locale.forLanguageTag("es")
-                        ).format(state.date)
-                    )
-                }
+                SecondaryPillButton(
+                    text = java.time.format.DateTimeFormatter.ofPattern(
+                        "EEE d 'de' MMM 'de' yyyy",
+                        java.util.Locale.forLanguageTag("es")
+                    ).format(state.date),
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
             Column {
                 Text(
@@ -285,9 +264,11 @@ private fun TaskFormContent(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                TextButton(onClick = { showTimePicker = true }) {
-                    Text(TimeText.format(state.time))
-                }
+                SecondaryPillButton(
+                    text = TimeText.format(state.time),
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Column {
@@ -346,31 +327,26 @@ private fun TaskFormContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f)
                             )
-                            TextButton(
-                                onClick = {
-                                    context.startActivity(
-                                        Intent(
-                                            android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
-                                        ).apply {
-                                            data = android.net.Uri.parse("package:${context.packageName}")
-                                        }
-                                    )
-                                }
-                            ) {
-                                Text(stringResource(R.string.exact_alarm_open_settings))
-                            }
+                            Text(
+                                text = stringResource(R.string.exact_alarm_open_settings),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 14.dp)
+                                    .clickable {
+                                        context.startActivity(
+                                            Intent(
+                                                android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                                            ).apply {
+                                                data = android.net.Uri.parse("package:${context.packageName}")
+                                            }
+                                        )
+                                    }
+                            )
                         }
                     }
                 }
             }
-
-            PrimaryPillButton(
-                text = stringResource(R.string.save),
-                onClick = onSave,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
 
             // Notas vinculadas a esta tarea (Fase 6)
             if (state.isEditing && linkedNotes.isNotEmpty()) {
@@ -391,18 +367,25 @@ private fun TaskFormContent(
                     }
                 }
             }
+        }
 
-            if (state.isEditing) {
-                TextButton(
-                    onClick = onDeleteRequest,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(
-                        text = stringResource(R.string.delete),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+        CampusButton(
+            text = stringResource(R.string.save),
+            onClick = onSave,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+        )
+        if (state.isEditing) {
+            CampusButton(
+                text = stringResource(R.string.delete),
+                onClick = onDeleteRequest,
+                style = CampusButtonStyle.DESTRUCTIVE,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 12.dp)
+            )
         }
     }
 
@@ -413,32 +396,22 @@ private fun TaskFormContent(
                 .toInstant()
                 .toEpochMilli()
         )
-        DatePickerDialog(
+        CampusDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pickerState.selectedDateMillis?.let { millis ->
-                            onDateChange(
-                                Instant.ofEpochMilli(millis)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                            )
-                        }
-                        showDatePicker = false
-                    }
-                ) {
-                    Text(stringResource(R.string.ok))
+            title = stringResource(R.string.task_due_date),
+            confirmText = stringResource(R.string.ok),
+            onConfirm = {
+                pickerState.selectedDateMillis?.let { millis ->
+                    onDateChange(
+                        Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                    )
                 }
+                showDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
+            content = { DatePicker(state = pickerState) }
+        )
     }
 
     if (showTimePicker) {
@@ -454,24 +427,15 @@ private fun TaskFormContent(
     }
 
     if (showPermissionDialog) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showPermissionDialog = false },
-            title = { Text(stringResource(R.string.notification_perm_title)) },
-            text = { Text(stringResource(R.string.notification_perm_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showPermissionDialog = false
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                ) {
-                    Text(stringResource(R.string.notification_perm_grant))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text(stringResource(R.string.notification_perm_later))
-                }
+            title = stringResource(R.string.notification_perm_title),
+            message = stringResource(R.string.notification_perm_message),
+            confirmText = stringResource(R.string.notification_perm_grant),
+            dismissText = stringResource(R.string.notification_perm_later),
+            onConfirm = {
+                showPermissionDialog = false
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         )
     }

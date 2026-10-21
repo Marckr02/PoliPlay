@@ -9,23 +9,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,12 +35,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.ColorPalette
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
-import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.feature.finance.data.CategoryKind
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryFormScreen(
     onDone: () -> Unit,
@@ -61,38 +57,24 @@ fun CategoryFormScreen(
         if (state.saved) onDone()
     }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(stringResource(if (state.isEditing) R.string.category_edit else R.string.category_new))
-                },
-                navigationIcon = {
-                    IconButton(onClick = onDone) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+    Column(modifier = modifier.fillMaxSize().imePadding()) {
+        CampusTopBar(
+            title = stringResource(if (state.isEditing) R.string.category_edit else R.string.category_new),
+            onBack = onDone
+        )
         if (!state.isLoaded) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) { CircularProgressIndicator() }
-            return@Scaffold
+            return@Column
         }
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             CampusTextField(
@@ -131,65 +113,64 @@ fun CategoryFormScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 (0 until 10).forEach { index ->
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .background(Color(ColorPalette[index]), CircleShape)
-                            .clickable { viewModel.onColorChange(ColorPalette[index]) }
-                            .then(
-                                if (state.colorArgb == ColorPalette[index]) {
-                                    Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                } else {
-                                    Modifier
-                                }
-                            )
-                    )
+                            .size(48.dp)
+                            .clickable { viewModel.onColorChange(ColorPalette[index]) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color(ColorPalette[index]), CircleShape)
+                                .then(
+                                    if (state.colorArgb == ColorPalette[index]) {
+                                        Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        )
+                    }
                 }
             }
+        }
 
-            PrimaryPillButton(
-                text = stringResource(R.string.save),
-                onClick = viewModel::save,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        CampusButton(
+            text = stringResource(R.string.save),
+            onClick = viewModel::save,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+        )
+        if (state.isEditing) {
+            CampusButton(
+                text = stringResource(R.string.category_archive),
+                onClick = { showArchiveDialog = true },
+                style = CampusButtonStyle.DESTRUCTIVE,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 12.dp)
             )
-
-            if (state.isEditing) {
-                TextButton(
-                    onClick = { showArchiveDialog = true },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(
-                        text = stringResource(R.string.category_archive),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
         }
     }
 
     if (showArchiveDialog) {
-        AlertDialog(
+        CampusDialog(
             onDismissRequest = { showArchiveDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showArchiveDialog = false
-                        viewModel.archive()
-                        onArchived()
-                    }
-                ) {
-                    Text(stringResource(R.string.category_archive))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showArchiveDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(state.name) },
-            text = { Text(stringResource(R.string.dialog_delete_category)) }
+            title = state.name,
+            message = stringResource(R.string.dialog_delete_category),
+            icon = Icons.Filled.Warning,
+            destructive = true,
+            confirmText = stringResource(R.string.category_archive),
+            onConfirm = {
+                showArchiveDialog = false
+                viewModel.archive()
+                onArchived()
+            }
         )
     }
 }

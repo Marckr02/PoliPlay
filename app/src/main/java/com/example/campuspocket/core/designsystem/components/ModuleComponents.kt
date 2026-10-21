@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.preferences.CampusModule
 
 /**
@@ -122,7 +122,7 @@ fun SelectableModuleCard(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
+                MaterialTheme.extended.lavender
             } else {
                 MaterialTheme.colorScheme.surface
             }
@@ -136,7 +136,11 @@ fun SelectableModuleCard(
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = null,
-                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (selected) {
+                    MaterialTheme.extended.onLavender
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 modifier = Modifier.size(28.dp)
             )
             Spacer(Modifier.width(14.dp))
@@ -153,7 +157,12 @@ fun SelectableModuleCard(
                 )
             }
             Spacer(Modifier.width(8.dp))
-            Checkbox(checked = selected, onCheckedChange = null, enabled = enabled)
+            CampusCheckbox(
+                checked = selected,
+                onCheckedChange = onSelectedChange,
+                contentDescription = title,
+                enabled = enabled
+            )
         }
     }
 }

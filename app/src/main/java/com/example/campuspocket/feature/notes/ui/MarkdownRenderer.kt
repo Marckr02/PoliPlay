@@ -76,7 +76,7 @@ fun MarkdownPreview(
 }
 
 /** Negrita **...**, cursiva *...* o _..._ y código en línea `...` sobre AnnotatedString. */
-internal fun renderInline(text: String, codeBackground: Color = Color(0x1A000000)): AnnotatedString = buildAnnotatedString {
+internal fun renderInline(text: String, codeBackground: Color): AnnotatedString = buildAnnotatedString {
     var i = 0
     while (i < text.length) {
         when {

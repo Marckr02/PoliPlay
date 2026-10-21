@@ -20,14 +20,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +45,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.BudgetProgressBar
+import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
@@ -172,19 +173,19 @@ fun BudgetsScreen(
                         EmptyStateCard(
                             modifier = Modifier.fillMaxWidth(),
                             title = stringResource(R.string.empty_budgets),
-                            message = stringResource(R.string.empty_budgets),
+                            message = stringResource(R.string.empty_budgets_message),
                             icon = painterResource(R.drawable.ic_wallet)
                         )
                     }
                 }
 
                 item(key = "copiar") {
-                    TextButton(
+                    CampusButton(
+                        text = stringResource(R.string.budget_copy_previous),
                         onClick = { viewModel.copyFromPreviousMonth() },
+                        style = CampusButtonStyle.SECONDARY,
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.budget_copy_previous))
-                    }
+                    )
                 }
             }
         }
@@ -277,16 +278,15 @@ private fun MonthlyBudgetEditDialog(
 ) {
     var value by remember(amountCents) { mutableStateOf(amountCents ?: 0L) }
 
-    AlertDialog(
+    CampusDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(
-                stringResource(
-                    if (amountCents == null) R.string.budget_total_define else R.string.budget_total_edit
-                )
-            )
-        },
-        text = {
+        title = stringResource(
+            if (amountCents == null) R.string.budget_total_define else R.string.budget_total_edit
+        ),
+        confirmText = stringResource(R.string.save),
+        confirmEnabled = value > 0,
+        onConfirm = { if (value > 0) onSave(value) },
+        content = {
             CampusTextField(
                 value = Money.toLocalDecimalString(value),
                 onValueChange = { text ->
@@ -298,27 +298,13 @@ private fun MonthlyBudgetEditDialog(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
-        },
-        confirmButton = {
-            TextButton(onClick = { if (value > 0) onSave(value) }) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            Row {
-                if (onDelete != null) {
-                    TextButton(
-                        onClick = onDelete,
-                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text(stringResource(R.string.delete))
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
+            if (onDelete != null) {
+                CampusButton(
+                    text = stringResource(R.string.delete),
+                    onClick = onDelete,
+                    style = CampusButtonStyle.DESTRUCTIVE,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     )
@@ -414,10 +400,13 @@ private fun BudgetEditDialog(
 ) {
     var amountCents by remember(row.categoryId) { mutableStateOf(row.budgetCents ?: 0L) }
 
-    AlertDialog(
+    CampusDialog(
         onDismissRequest = onDismiss,
-        title = { Text(row.name) },
-        text = {
+        title = row.name,
+        confirmText = stringResource(R.string.save),
+        confirmEnabled = amountCents > 0,
+        onConfirm = { if (amountCents > 0) onSave(amountCents) },
+        content = {
             CampusTextField(
                 value = Money.toLocalDecimalString(amountCents),
                 onValueChange = { text ->
@@ -429,27 +418,13 @@ private fun BudgetEditDialog(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
-        },
-        confirmButton = {
-            TextButton(onClick = { if (amountCents > 0) onSave(amountCents) }) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            Row {
-                if (onDelete != null) {
-                    TextButton(
-                        onClick = onDelete,
-                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text(stringResource(R.string.delete))
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
+            if (onDelete != null) {
+                CampusButton(
+                    text = stringResource(R.string.delete),
+                    onClick = onDelete,
+                    style = CampusButtonStyle.DESTRUCTIVE,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     )
