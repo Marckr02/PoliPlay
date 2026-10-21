@@ -35,7 +35,11 @@ data class SummaryUiState(
     val upcomingPayments: List<ScheduledPaymentEntity> = emptyList(),
     val pace: MonthPace? = null,
     val isLoading: Boolean = true
-)
+) {
+    /** Remanente del presupuesto total; null si no hay presupuesto mensual. */
+    val monthlyRemainingCents: Long?
+        get() = pace?.let { it.budgetCents - it.spentCents }
+}
 
 /** Resumen del mes actual + proyección con pagos pendientes (spec 7.3 y 5B). */
 @HiltViewModel

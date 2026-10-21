@@ -54,8 +54,8 @@ import java.util.Locale
 enum class HomeQuickAdd { EXPENSE, TASK, NOTE }
 
 /**
- * Inicio bento: saludo, próxima clase, disponible del mes, tareas, notas
- * recientes y accesos rápidos. Solo pinta datos reales que recibe en [state];
+ * Inicio bento: saludo, próxima clase, presupuesto restante del mes, tareas,
+ * notas recientes y accesos rápidos. Solo pinta datos reales que recibe en [state];
  * si no hay datos, muestra estados vacíos honestos.
  */
 @Composable
@@ -138,8 +138,9 @@ fun HomeScreen(
             ) {
                 if (showFinance) {
                     FinanceSummaryCard(
-                        availableCents = state.availableCents,
                         monthlyBudgetCents = state.monthlyBudgetCents,
+                        monthlySpentCents = state.monthlySpentCents,
+                        monthlyRemainingCents = state.monthlyRemainingCents,
                         onClick = { onOpenModule(CampusModule.FINANCE) },
                         modifier = Modifier.weight(1f).fillMaxSize()
                     )
@@ -425,14 +426,16 @@ private fun NextClassCard(
 
 @Composable
 private fun FinanceSummaryCard(
-    availableCents: Long,
     monthlyBudgetCents: Long?,
+    monthlySpentCents: Long,
+    monthlyRemainingCents: Long?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val ext = MaterialTheme.extended
-    val fraction = if (monthlyBudgetCents != null && monthlyBudgetCents > 0) {
-        (availableCents.toFloat() / monthlyBudgetCents).coerceIn(0f, 1f)
+    // La barra representa el avance del gasto, no el dinero disponible.
+    val fraction = if (monthlyBudgetCents != null && monthlyBudgetCents > 0L) {
+        (monthlySpentCents.toFloat() / monthlyBudgetCents).coerceIn(0f, 1f)
     } else {
         null
     }
@@ -445,21 +448,33 @@ private fun FinanceSummaryCard(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
     ) {
         Text(
-            text = stringResource(R.string.home_available_label),
+            text = stringResource(R.string.home_remaining_label),
             style = MaterialTheme.typography.labelSmall,
             color = ext.onAccent.copy(alpha = 0.82f)
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = Money.format(availableCents),
+            text = monthlyRemainingCents?.let { Money.format(it) } ?: "—",
             style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
             color = ext.onAccent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        monthlyBudgetCents?.let { budget ->
+        if (monthlyBudgetCents != null && monthlyRemainingCents != null) {
             Text(
-                text = stringResource(R.string.home_available_of, Money.format(budget)),
+                text = stringResource(
+                    R.string.home_budget_spent_of,
+                    Money.format(monthlyBudgetCents),
+                    Money.format(monthlySpentCents)
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = ext.onAccent.copy(alpha = 0.82f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.budgets_no_budget),
                 style = MaterialTheme.typography.labelSmall,
                 color = ext.onAccent.copy(alpha = 0.82f)
             )

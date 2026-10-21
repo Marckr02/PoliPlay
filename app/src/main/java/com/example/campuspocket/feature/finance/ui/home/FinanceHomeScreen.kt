@@ -418,6 +418,7 @@ private fun FinanceSummaryRow(
     modifier: Modifier = Modifier
 ) {
     val ext = MaterialTheme.extended
+    val remainingCents = summary.monthlyRemainingCents
     BentoCard(
         modifier = modifier,
         onClick = onToggle,
@@ -431,15 +432,20 @@ private fun FinanceSummaryRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.finance_month_summary),
+                text = stringResource(R.string.finance_remaining_summary),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = Money.format(summary.availableCents),
+                text = remainingCents?.let { Money.format(it) }
+                    ?: stringResource(R.string.budgets_no_budget),
                 style = MaterialTheme.typography.titleSmall,
-                color = if (summary.availableCents < 0) ext.danger else ext.success
+                color = when {
+                    remainingCents == null -> MaterialTheme.colorScheme.onSurfaceVariant
+                    remainingCents < 0 -> ext.danger
+                    else -> ext.success
+                }
             )
             Spacer(Modifier.width(12.dp))
             Text(

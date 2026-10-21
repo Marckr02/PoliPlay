@@ -3,7 +3,9 @@ package com.example.campuspocket.feature.finance.ui.budgets
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.feature.finance.domain.BudgetPace
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
+import com.example.campuspocket.feature.finance.domain.MonthPace
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,6 +16,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Clock
+import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
@@ -23,7 +27,9 @@ data class BudgetsUiState(
     val isLoading: Boolean = true,
     val semesterMode: Boolean = false,
     /** Presupuesto total independiente del mes; null si no está definido. */
-    val monthlyBudgetCents: Long? = null
+    val monthlyBudgetCents: Long? = null,
+    /** Ritmo del presupuesto total; null si no hay presupuesto o el mes es futuro. */
+    val pace: MonthPace? = null
 ) {
     val totalBudgetCents: Long get() = rows.sumOf { it.budgetCents ?: 0L }
     val totalSpentCents: Long get() = rows.sumOf { it.netSpentCents }
@@ -32,10 +38,11 @@ data class BudgetsUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class BudgetsViewModel @Inject constructor(
-    private val financeRepository: FinanceRepository
+    private val financeRepository: FinanceRepository,
+    private val clock: Clock = Clock.systemDefaultZone()
 ) : ViewModel() {
 
-    private val _yearMonth = MutableStateFlow(YearMonth.now())
+    private val _yearMonth = MutableStateFlow(YearMonth.from(LocalDate.now(clock)))
     val yearMonth: StateFlow<YearMonth> = _yearMonth
 
     private val _semesterMode = MutableStateFlow(false)
@@ -70,12 +77,27 @@ class BudgetsViewModel @Inject constructor(
                     val monthlyBudget = monthlyBudgets
                         .firstOrNull { it.yearMonth == month.toString() }
                         ?.amountCents
+                    val today = LocalDate.now(clock)
+                    val currentMonth = YearMonth.from(today)
+                    val paceDate = when {
+                        month == currentMonth -> today
+                        month < currentMonth -> month.atEndOfMonth()
+                        else -> null
+                    }
+                    val pace = paceDate?.let {
+                        BudgetPace.compute(
+                            today = it,
+                            budgetCents = monthlyBudget,
+                            spentCents = summary.totalSpentCents
+                        )
+                    }
                     BudgetsUiState(
                         yearMonth = month,
                         rows = summary.rows,
                         isLoading = false,
                         semesterMode = false,
-                        monthlyBudgetCents = monthlyBudget
+                        monthlyBudgetCents = monthlyBudget,
+                        pace = pace
                     )
                 } else {
                     val months = GetMonthSummary.semesterMonths(month, null)
@@ -98,7 +120,11 @@ class BudgetsViewModel @Inject constructor(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, BudgetsUiState(YearMonth.now()))
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            BudgetsUiState(YearMonth.from(LocalDate.now(clock)))
+        )
 
     fun previousMonth() { _yearMonth.value = _yearMonth.value.minusMonths(1) }
     fun nextMonth() { _yearMonth.value = _yearMonth.value.plusMonths(1) }

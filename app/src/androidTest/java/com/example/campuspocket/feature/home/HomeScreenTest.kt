@@ -8,7 +8,9 @@ import androidx.compose.ui.test.performClick
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
+import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.home.ui.HomeScreen
+import com.example.campuspocket.feature.home.ui.HomeUiState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -55,8 +57,32 @@ class HomeScreenTest {
                 )
             }
         }
-        composeRule.onNodeWithText("DISPONIBLE ESTE MES").performClick()
+        composeRule.onNodeWithText("PRESUPUESTO RESTANTE").performClick()
         assertEquals(CampusModule.FINANCE, abierto)
+    }
+
+    @Test
+    fun tarjetaMuestraElRemanenteDelPresupuestoMensual() {
+        composeRule.setContent {
+            CampusTheme {
+                HomeScreen(
+                    preferences = UserPreferences(),
+                    onOpenModule = {},
+                    onOpenSettings = {},
+                    state = HomeUiState(
+                        monthlyBudgetCents = 16_000L,
+                        monthlySpentCents = 5_000L,
+                        monthlyRemainingCents = 11_000L
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("PRESUPUESTO RESTANTE").assertIsDisplayed()
+        composeRule.onNodeWithText(Money.format(11_000L)).assertIsDisplayed()
+        composeRule.onNodeWithText(
+            "de ${Money.format(16_000L)} · Gastado ${Money.format(5_000L)}"
+        ).assertIsDisplayed()
     }
 
     @Test

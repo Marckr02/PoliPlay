@@ -441,8 +441,8 @@
     <string name="home_up_next">Luego · %1$s · %2$s</string>
     <string name="home_no_next_class">Sin clases próximas</string>
     <string name="home_no_next_class_message">Disfruta el descanso o revisa tu semana.</string>
-    <string name="home_available_label">DISPONIBLE ESTE MES</string>
-    <string name="home_available_of">de %1$s</string>
+    <string name="home_remaining_label">PRESUPUESTO RESTANTE</string>
+    <string name="home_budget_spent_of">de %1$s · Gastado %2$s</string>
     <string name="home_tasks_label">TAREAS</string>
     <string name="home_tasks_pending">%1$d pendientes</string>
     <string name="home_tasks_due_today">%1$d vencen hoy</string>
@@ -484,7 +484,7 @@
     <string name="finance_manage_accounts">Gestionar cuentas</string>
     <string name="finance_add_account">Nueva cuenta</string>
     <string name="finance_no_accounts">Crea tu primera cuenta para empezar</string>
-    <string name="finance_month_summary">Resumen del mes</string>
+    <string name="finance_remaining_summary">Presupuesto restante</string>
     <string name="finance_summary_show">Ver</string>
     <string name="finance_summary_hide">Ocultar</string>
     <string name="finance_summary_show_description">Mostrar el resumen del mes</string>

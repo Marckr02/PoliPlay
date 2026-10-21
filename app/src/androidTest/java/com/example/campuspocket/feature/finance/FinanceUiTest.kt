@@ -152,6 +152,38 @@ class FinanceUiTest {
     }
 
     @Test
+    fun presupuestosMuestraElRitmoDelMes() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+        repo.monthlyBudgetsFlow.value = listOf(
+            com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                yearMonth = YearMonth.now().toString(),
+                amountCents = 100_000
+            )
+        )
+        repo.transactionsFlow.value = listOf(
+            Transaction(
+                id = 99,
+                type = TransactionType.EXPENSE,
+                amountCents = 25_000,
+                date = LocalDate.now(),
+                accountId = 1,
+                categoryId = 1
+            )
+        )
+
+        composeRule.setContent {
+            CampusTheme {
+                BudgetsScreen(viewModel = BudgetsViewModel(repo))
+            }
+        }
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Ritmo del mes")).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Ritmo del mes").assertIsDisplayed()
+    }
+
+    @Test
     fun retiroEnCajeroConChipGuardaLaTransferencia() {
         val cash = Account(id = 1, name = "Efectivo", type = AccountType.CASH, initialBalanceCents = 0)
         val savings = Account(id = 2, name = "Ahorros", type = AccountType.SAVINGS, initialBalanceCents = 20_000)

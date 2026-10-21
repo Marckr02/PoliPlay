@@ -55,6 +55,7 @@ import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
+import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceCard
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
@@ -137,6 +138,14 @@ fun BudgetsScreen(
                             spentCents = state.totalSpentCents,
                             onClick = { showTotalBudgetDialog = true }
                         )
+                    }
+                    state.pace?.let { pace ->
+                        item(key = "ritmo") {
+                            BudgetPaceCard(
+                                pace = pace,
+                                onEditBudget = { showTotalBudgetDialog = true }
+                            )
+                        }
                     }
                 }
 

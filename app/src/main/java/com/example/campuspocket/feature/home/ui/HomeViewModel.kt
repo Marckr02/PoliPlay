@@ -51,8 +51,9 @@ data class HomeUiState(
     val laterClass: HomeClass? = null,
     val pendingTasks: Int = 0,
     val tasksDueToday: Int = 0,
-    val availableCents: Long = 0,
     val monthlyBudgetCents: Long? = null,
+    val monthlySpentCents: Long = 0,
+    val monthlyRemainingCents: Long? = null,
     val recentNotes: List<NoteEntity> = emptyList(),
     val isLoading: Boolean = true
 )
@@ -109,9 +110,15 @@ class HomeViewModel @Inject constructor(
             monthStart = month.atDay(1),
             monthEnd = month.atEndOfMonth()
         )
+        val monthlyBudgetCents = monthlyBudgets
+            .firstOrNull { it.yearMonth == month.toString() }
+            ?.amountCents
+            ?.takeIf { it > 0L }
+        val monthlySpentCents = summary.totalSpentCents.coerceAtLeast(0L)
         HomeFinance(
-            availableCents = summary.availableCents,
-            monthlyBudgetCents = monthlyBudgets.firstOrNull { it.yearMonth == month.toString() }?.amountCents
+            monthlyBudgetCents = monthlyBudgetCents,
+            monthlySpentCents = monthlySpentCents,
+            monthlyRemainingCents = monthlyBudgetCents?.minus(monthlySpentCents)
         )
     }
 
@@ -136,8 +143,9 @@ class HomeViewModel @Inject constructor(
             tasksDueToday = tasks.count {
                 it.dueAt.atZone(zone).toLocalDate() == today
             },
-            availableCents = finance.availableCents,
             monthlyBudgetCents = finance.monthlyBudgetCents,
+            monthlySpentCents = finance.monthlySpentCents,
+            monthlyRemainingCents = finance.monthlyRemainingCents,
             recentNotes = notes
                 .sortedWith(compareByDescending<NoteEntity> { it.pinned }.thenByDescending { it.updatedAt })
                 .take(2),
@@ -187,7 +195,8 @@ class HomeViewModel @Inject constructor(
     }
 
     private data class HomeFinance(
-        val availableCents: Long,
-        val monthlyBudgetCents: Long?
+        val monthlyBudgetCents: Long?,
+        val monthlySpentCents: Long,
+        val monthlyRemainingCents: Long?
     )
 }

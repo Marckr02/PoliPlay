@@ -78,14 +78,15 @@ fun SummaryScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = stringResource(R.string.summary_available),
+                            text = stringResource(R.string.finance_remaining_summary),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        val remainingCents = state.monthlyRemainingCents
                         Text(
-                            text = Money.format(state.availableCents),
+                            text = remainingCents?.let { Money.format(it) } ?: "—",
                             style = MaterialTheme.typography.headlineMedium,
-                            color = if (state.availableCents < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                            color = if ((remainingCents ?: 0L) < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                         )
                         CategoryExpenseChart(
                             slices = state.donutSlices,
@@ -172,7 +173,7 @@ fun SummaryScreen(
  * porcentaje real se muestra completo.
  */
 @Composable
-private fun BudgetPaceCard(
+internal fun BudgetPaceCard(
     pace: MonthPace,
     onEditBudget: () -> Unit,
     modifier: Modifier = Modifier
