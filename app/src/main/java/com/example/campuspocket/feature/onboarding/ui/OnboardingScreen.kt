@@ -12,12 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -30,6 +26,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.preferences.CampusModule
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.SelectableModuleCard
 import com.example.campuspocket.core.designsystem.components.descriptionRes
 import com.example.campuspocket.core.designsystem.components.iconRes
@@ -54,7 +53,7 @@ fun OnboardingScreen(
             .verticalScroll(rememberScrollState())
             .safeDrawingPadding()
             .imePadding()
-            .padding(horizontal = 24.dp, vertical = 32.dp),
+            .padding(horizontal = 20.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
@@ -96,10 +95,10 @@ private fun NameStep(
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Spacer(Modifier.height(8.dp))
-    OutlinedTextField(
+    CampusTextField(
         value = name,
         onValueChange = onNameChange,
-        label = { Text(stringResource(R.string.onboarding_name_label)) },
+        label = stringResource(R.string.onboarding_name_label),
         supportingText = { Text(stringResource(R.string.onboarding_name_support)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(
@@ -109,18 +108,16 @@ private fun NameStep(
         modifier = Modifier.fillMaxWidth()
     )
     Spacer(Modifier.height(8.dp))
-    Button(
+    PrimaryPillButton(
+        text = stringResource(R.string.onboarding_continue),
         onClick = onContinue,
         modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(stringResource(R.string.onboarding_continue))
-    }
-    TextButton(
+    )
+    SecondaryPillButton(
+        text = stringResource(R.string.onboarding_later),
         onClick = onContinue,
         modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(stringResource(R.string.onboarding_later))
-    }
+    )
 }
 
 @Composable
@@ -152,26 +149,17 @@ private fun ModulesStep(
         )
     }
     Spacer(Modifier.height(4.dp))
-    Button(
+    PrimaryPillButton(
+        text = stringResource(R.string.onboarding_start),
         onClick = onFinish,
         enabled = !state.saving,
+        loading = state.saving,
         modifier = Modifier.fillMaxWidth()
-    ) {
-        if (state.saving) {
-            CircularProgressIndicator(
-                modifier = Modifier.height(20.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        } else {
-            Text(stringResource(R.string.onboarding_start))
-        }
-    }
-    TextButton(
+    )
+    SecondaryPillButton(
+        text = stringResource(R.string.back),
         onClick = onBack,
         enabled = !state.saving,
         modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(stringResource(R.string.back))
-    }
+    )
 }

@@ -11,10 +11,10 @@ import androidx.compose.runtime.CompositionLocalProvider
  * Esquemas Material 3 completos derivados de la paleta de la especificación.
  *
  * Reglas aplicadas:
- * - El azul de marca (primary) señala acciones y selección; no pinta grandes áreas.
- * - El fondo claro es cálido (#F5F1E8); las tarjetas principales son blancas.
- * - En oscuro no hay negro absoluto: azul carbón (#111A26) con superficies por tono.
- * - Todas las combinaciones texto/fondo cumplen contraste AA (>= 4.5:1).
+ * - El acento índigo señala acciones y selección; no pinta grandes áreas.
+ * - El fondo claro es neutro (#F2F3F7); las tarjetas son blancas y sin bordes.
+ * - En oscuro no hay negro absoluto: #0B0E13 con superficies por tono.
+ * - El "ink" (casi negro) se reserva para hero, barra flotante y elementos de énfasis.
  */
 private val LightColorScheme = lightColorScheme(
     primary = CampusPalette.Light.Primary,
@@ -23,15 +23,15 @@ private val LightColorScheme = lightColorScheme(
     onPrimaryContainer = CampusPalette.Light.OnPrimaryContainer,
     inversePrimary = CampusPalette.Light.InversePrimary,
 
-    secondary = CampusPalette.Light.TextSecondary,
+    secondary = CampusPalette.Light.Ink,
     onSecondary = CampusPalette.Light.OnPrimary,
-    secondaryContainer = CampusPalette.Light.Sage,
-    onSecondaryContainer = CampusPalette.Light.OnSage,
+    secondaryContainer = CampusPalette.Light.Lavender,
+    onSecondaryContainer = CampusPalette.Light.OnLavender,
 
-    tertiary = CampusPalette.Light.Warm,
-    onTertiary = CampusPalette.Light.OnWarm,
-    tertiaryContainer = CampusPalette.Light.WarningContainer,
-    onTertiaryContainer = CampusPalette.Light.OnWarm,
+    tertiary = CampusPalette.Light.Lime,
+    onTertiary = CampusPalette.Light.OnLime,
+    tertiaryContainer = CampusPalette.Light.LimeSoft,
+    onTertiaryContainer = CampusPalette.Light.OnLimeSoft,
 
     background = CampusPalette.Light.Background,
     onBackground = CampusPalette.Light.OnBackground,
@@ -66,15 +66,15 @@ private val DarkColorScheme = darkColorScheme(
     onPrimaryContainer = CampusPalette.Dark.OnPrimaryContainer,
     inversePrimary = CampusPalette.Dark.InversePrimary,
 
-    secondary = CampusPalette.Dark.TextSecondary,
-    onSecondary = CampusPalette.Dark.OnPrimary,
-    secondaryContainer = CampusPalette.Dark.Sage,
-    onSecondaryContainer = CampusPalette.Dark.OnSage,
+    secondary = CampusPalette.Dark.OnSurface,
+    onSecondary = CampusPalette.Dark.Background,
+    secondaryContainer = CampusPalette.Dark.Lavender,
+    onSecondaryContainer = CampusPalette.Dark.OnLavender,
 
-    tertiary = CampusPalette.Dark.Warm,
-    onTertiary = CampusPalette.Dark.OnWarm,
-    tertiaryContainer = CampusPalette.Dark.WarningContainer,
-    onTertiaryContainer = CampusPalette.Dark.OnWarm,
+    tertiary = CampusPalette.Dark.Lime,
+    onTertiary = CampusPalette.Dark.OnLime,
+    tertiaryContainer = CampusPalette.Dark.LimeSoft,
+    onTertiaryContainer = CampusPalette.Dark.OnLimeSoft,
 
     background = CampusPalette.Dark.Background,
     onBackground = CampusPalette.Dark.OnBackground,

@@ -35,12 +35,15 @@
     <string name="empty_tasks">No hay tareas. Crea una nueva tarea.</string>
     <string name="empty_courses">No hay materias. Añade tu primera materia.</string>
     <string name="empty_transactions">No hay transacciones.</string>
+    <string name="empty_transactions_message">Los movimientos que registres aparecerán aquí.</string>
     <string name="empty_budgets">No hay presupuestos para este mes.</string>
     <string name="empty_scheduled_payments">No hay pagos programados.</string>
+    <string name="empty_scheduled_payments_message">Aquí verás los pagos que programes.</string>
 
     <!-- Academic -->
     <string name="academic_today">Hoy</string>
     <string name="academic_week">Semana</string>
+    <string name="week_subtitle">Horario de la semana</string>
     <string name="academic_courses">Materias</string>
     <string name="academic_tasks">Tareas</string>
     <string name="academic_import">Importar horario</string>
@@ -51,6 +54,8 @@
     <string name="academic_due_tomorrow">Vencen mañana</string>
     <string name="course_code">Código</string>
     <string name="course_name">Nombre</string>
+    <string name="course_color">Color de la materia</string>
+    <string name="course_section_short">Sec. %1$s</string>
     <string name="course_section">Paralelo</string>
     <string name="course_teacher">Profesor</string>
     <string name="course_credits">Créditos</string>
@@ -143,12 +148,21 @@
     <string name="day_fri_short">Vie</string>
     <string name="day_sat_short">Sáb</string>
     <string name="day_sun_short">Dom</string>
+    <string name="day_letter_monday">L</string>
+    <string name="day_letter_tuesday">M</string>
+    <string name="day_letter_wednesday">X</string>
+    <string name="day_letter_thursday">J</string>
+    <string name="day_letter_friday">V</string>
+    <string name="day_letter_saturday">S</string>
+    <string name="day_letter_sunday">D</string>
 
     <!-- Finance -->
     <string name="finance_dashboard">Resumen</string>
     <string name="finance_accounts">Cuentas</string>
     <string name="finance_budgets">Presupuestos</string>
     <string name="finance_calendar">Calendario</string>
+    <string name="calendar_previous_month">Mes anterior</string>
+    <string name="calendar_next_month">Mes siguiente</string>
     <string name="finance_history">Historial</string>
     <string name="finance_scheduled">Pagos programados</string>
     <string name="finance_categories">Categorías</string>
@@ -208,6 +222,11 @@
     <string name="scheduled_payment_remind_days">Recordar con %1$d días de antelación</string>
     <string name="scheduled_payment_mark_paid">Marcar como pagado</string>
     <string name="scheduled_payment_active">Activo</string>
+    <string name="scheduled_payment_paused">Pausado</string>
+    <string name="scheduled_payment_new">Nuevo pago</string>
+    <string name="scheduled_payment_delete_confirm">¿Eliminar este pago programado?</string>
+    <string name="payments_count">%1$d pagos</string>
+    <string name="payments_count_one">1 pago</string>
     <string name="payment_new">Nuevo pago programado</string>
     <string name="summary_projected_balance">Balance proyectado</string>
     <string name="summary_projected_expense">Gasto proyectado</string>
@@ -293,6 +312,7 @@
     <string name="notes_folder_delete_explain">Se borrará la carpeta y sus subcarpetas; las notas que contiene se conservan sin carpeta.</string>
     <string name="notes_empty_title">Sin título</string>
     <string name="note_pin">Fijar</string>
+    <string name="note_pinned">Fijada</string>
     <string name="note_unpin">Desfijar</string>
     <string name="markdown_bold">Negrita</string>
     <string name="markdown_italic">Cursiva</string>
@@ -315,6 +335,7 @@
     <string name="settings_import_success">Datos importados correctamente</string>
     <string name="settings_import_confirm">Esto reemplazará todos tus datos. ¿Continuar?</string>
     <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_notifications_system">Notificaciones (sistema)</string>
     <string name="settings_exact_alarms">Alarmas exactas</string>
     <string name="settings_exact_alarms_denied">Las alarmas exactas están denegadas. Los recordatorios pueden ser inexactos.</string>
     <string name="settings_grant_exact_alarms">Conceder permiso</string>
@@ -396,4 +417,92 @@
     <string name="settings_channel_payments">Pagos</string>
     <string name="settings_channel_budgets">Presupuestos</string>
     <string name="settings_debug_review_now">Revisar ahora (debug)</string>
+
+    <!-- Rediseño bento + barra flotante -->
+    <string name="clear">Borrar texto</string>
+    <string name="timeline_now">AHORA</string>
+    <string name="task_filter_all">Todas</string>
+    <string name="task_filter_week">Esta semana</string>
+
+    <!-- Inicio -->
+    <string name="home_next_class">PRÓXIMA CLASE</string>
+    <string name="home_in_minutes">en %1$d min</string>
+    <string name="home_starting_now">ahora</string>
+    <string name="home_up_next">Luego · %1$s · %2$s</string>
+    <string name="home_no_next_class">Sin clases próximas</string>
+    <string name="home_no_next_class_message">Disfruta el descanso o revisa tu semana.</string>
+    <string name="home_available_label">DISPONIBLE ESTE MES</string>
+    <string name="home_available_of">de %1$s</string>
+    <string name="home_tasks_label">TAREAS</string>
+    <string name="home_tasks_pending">%1$d pendientes</string>
+    <string name="home_tasks_due_today">%1$d vencen hoy</string>
+    <string name="home_tasks_all_done">Todo al día</string>
+    <string name="home_recent_notes">Notas recientes</string>
+    <string name="home_recent_notes_empty">Aún no tienes notas</string>
+    <string name="home_quick_access">Accesos rápidos</string>
+    <string name="home_quick_expense">Gasto</string>
+    <string name="home_quick_task">Tarea</string>
+    <string name="home_quick_note">Nota</string>
+    <string name="home_open_settings_desc">Abrir ajustes</string>
+    <string name="home_no_finance">Sin datos de finanzas</string>
+    <string name="home_no_tasks">Sin tareas pendientes</string>
+    <string name="home_no_classes_short">Sin clases</string>
+    <string name="home_see_all">Ver todo</string>
+
+    <!-- Académico / Hoy -->
+    <string name="today_title">Hoy</string>
+    <string name="today_agenda">Agenda</string>
+    <string name="today_tasks_title">Para hoy</string>
+    <string name="today_no_tasks">No hay tareas para hoy</string>
+    <string name="today_no_classes">Sin clases este día</string>
+    <string name="today_no_classes_message">Tu horario está libre.</string>
+    <string name="today_open_week">Abrir semana</string>
+    <string name="today_open_tasks">Abrir tareas</string>
+    <string name="today_open_courses">Abrir materias</string>
+    <string name="today_task_done">Tarea completada</string>
+
+    <!-- Finanzas -->
+    <string name="finance_title">Finanzas</string>
+    <string name="finance_balance_total">Saldo total</string>
+    <string name="finance_income_amount">Ingresos: %1$s</string>
+    <string name="finance_expense_amount">Gastos: %1$s</string>
+    <string name="finance_movements">Movimientos</string>
+    <string name="finance_quick_expense">Gasto</string>
+    <string name="finance_quick_income">Ingreso</string>
+    <string name="finance_quick_transfer">Transferir</string>
+    <string name="finance_quick_withdraw">Retirar</string>
+    <string name="finance_manage_accounts">Gestionar cuentas</string>
+    <string name="finance_add_account">Nueva cuenta</string>
+    <string name="finance_no_accounts">Crea tu primera cuenta para empezar</string>
+    <string name="finance_month_summary">Resumen del mes</string>
+    <string name="finance_add_movement">Añadir movimiento</string>
+    <string name="finance_open_categories">Gestionar categorías</string>
+    <string name="finance_open_calendar">Ver calendario</string>
+    <string name="finance_tab_movements">Movimientos</string>
+    <string name="finance_tab_budgets">Presupuestos</string>
+    <string name="finance_tab_payments">Pagos</string>
+
+    <!-- Notas -->
+    <string name="notes_title">Notas</string>
+    <string name="notes_count">%1$d notas</string>
+    <string name="notes_count_one">1 nota</string>
+    <string name="notes_search_placeholder">Buscar notas</string>
+    <string name="notes_add_folder">Carpeta</string>
+    <string name="notes_all">Todas</string>
+    <string name="notes_folder_empty">No hay notas en esta carpeta</string>
+    <string name="notes_no_results">No hay notas que coincidan con la búsqueda</string>
+    <string name="notes_empty_heading">Sin notas</string>
+    <string name="notes_new">Nueva nota</string>
+    <string name="delete_note_confirm">¿Eliminar esta nota?</string>
+
+    <!-- Acción contextual del dock -->
+    <string name="dock_add">Añadir</string>
+    <string name="quick_add_title">¿Qué quieres añadir?</string>
+    <string name="quick_add_expense_desc">Registrar un gasto</string>
+    <string name="quick_add_income_desc">Registrar un ingreso</string>
+    <string name="quick_add_transfer_desc">Mover dinero entre cuentas</string>
+    <string name="quick_add_withdrawal_desc">Registrar un retiro en cajero</string>
+    <string name="quick_add_payment_desc">Programar un pago</string>
+    <string name="quick_add_task_desc">Añadir una tarea académica</string>
+    <string name="quick_add_note_desc">Escribir una nota</string>
 </resources>

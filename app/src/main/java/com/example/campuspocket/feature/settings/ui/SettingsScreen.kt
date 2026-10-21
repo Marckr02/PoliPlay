@@ -21,18 +21,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +48,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.BuildConfig
 import com.example.campuspocket.R
 import com.example.campuspocket.core.backup.BackupImportIssue
+import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.RoundIconButton
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.SettingsSectionCard
 import com.example.campuspocket.core.designsystem.components.descriptionRes
 import com.example.campuspocket.core.designsystem.components.iconRes
@@ -67,6 +68,7 @@ import java.util.Locale
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -160,21 +162,40 @@ fun SettingsScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.nav_settings),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RoundIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back),
+                onClick = onBack,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.nav_settings),
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
 
         // Banner de respaldo
         if (viewModel.delegateShouldShowBanner(lastBackupAt, prefs.lastBackupBannerDismissedAt)) {
-            Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.settings_backup_reminder), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { viewModel.dismissBackupBanner() }) { Text(stringResource(R.string.done)) }
+            BentoCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.settings_backup_reminder),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = { viewModel.dismissBackupBanner() }) {
+                        Text(stringResource(R.string.done))
+                    }
                 }
             }
         }
@@ -184,37 +205,35 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_profile),
             subtitle = stringResource(R.string.settings_profile_local_note)
         ) {
-            OutlinedTextField(
+            CampusTextField(
                 value = displayNameInput,
                 onValueChange = {
                     displayNameInput = it
                     nameSaved = false
                 },
-                label = { Text(stringResource(R.string.settings_profile_label)) },
+                label = stringResource(R.string.settings_profile_label),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
+                PrimaryPillButton(
+                    text = stringResource(R.string.save),
                     onClick = {
                         viewModel.setDisplayName(displayNameInput)
                         nameSaved = true
                     },
                     modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.save))
-                }
+                )
                 if (userPreferences.displayName.isNotBlank()) {
-                    OutlinedButton(
+                    SecondaryPillButton(
+                        text = stringResource(R.string.settings_profile_clear),
                         onClick = {
                             displayNameInput = ""
                             nameSaved = false
                             viewModel.clearDisplayName()
                         },
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.settings_profile_clear))
-                    }
+                    )
                 }
             }
             if (nameSaved) {
@@ -265,15 +284,12 @@ fun SettingsScreen(
 
         // ---- Apariencia ----
         SettingsSectionCard(title = stringResource(R.string.settings_appearance)) {
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                ThemeMode.entries.forEachIndexed { index, mode ->
-                    SegmentedButton(
-                        selected = userPreferences.themeMode == mode,
-                        onClick = { viewModel.setThemeMode(mode) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size)
-                    ) { Text(stringResource(themeLabelRes(mode))) }
-                }
-            }
+            PillSegmentedControl(
+                options = ThemeMode.entries,
+                selected = userPreferences.themeMode,
+                onSelect = viewModel::setThemeMode,
+                label = { mode -> stringResource(themeLabelRes(mode)) }
+            )
         }
 
         // ---- Respaldo ----
@@ -285,14 +301,18 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Button(onClick = { showExportWarning = true }, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.settings_export))
-            }
-            OutlinedButton(
+            PrimaryPillButton(
+                text = stringResource(R.string.settings_export),
+                onClick = { showExportWarning = true },
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth()
+            )
+            SecondaryPillButton(
+                text = stringResource(R.string.settings_import),
                 onClick = { openLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*")) },
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text(stringResource(R.string.settings_import)) }
+            )
             // Botón de debug solo en builds de depuración (el canal real es el aviso diario).
             if (BuildConfig.DEBUG) {
                 TextButton(
@@ -319,7 +339,7 @@ fun SettingsScreen(
                 context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
             } else true
             ToggleRow(
-                label = stringResource(R.string.settings_notifications) + " (sistema)",
+                label = stringResource(R.string.settings_notifications_system),
                 checked = notifGranted,
                 onCheckedChange = {
                     context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
@@ -376,25 +396,26 @@ fun SettingsScreen(
             }
             if (prefs.lockEnabled) {
                 Text(stringResource(R.string.settings_lock_timeout), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    listOf(
+                PillSegmentedControl(
+                    options = listOf(
                         0 to R.string.settings_lock_immediately,
                         60 to R.string.settings_lock_1min,
                         300 to R.string.settings_lock_5min
-                    ).forEachIndexed { index, (seconds, labelRes) ->
-                        SegmentedButton(
-                            selected = prefs.lockTimeoutSeconds == seconds,
-                            onClick = { viewModel.setLockTimeout(seconds) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = 3)
-                        ) { Text(stringResource(labelRes)) }
-                    }
-                }
+                    ),
+                    selected = listOf(
+                        0 to R.string.settings_lock_immediately,
+                        60 to R.string.settings_lock_1min,
+                        300 to R.string.settings_lock_5min
+                    ).first { it.first == prefs.lockTimeoutSeconds },
+                    onSelect = { viewModel.setLockTimeout(it.first) },
+                    label = { (_, labelRes) -> stringResource(labelRes) }
+                )
             }
         }
 
         // ---- Acerca de ----
         SettingsSectionCard(title = stringResource(R.string.settings_about)) {
-            Text("CampusPocket", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
             Text(
                 text = stringResource(R.string.settings_version) + ": " + BuildConfig.VERSION_NAME,
                 style = MaterialTheme.typography.bodyMedium,

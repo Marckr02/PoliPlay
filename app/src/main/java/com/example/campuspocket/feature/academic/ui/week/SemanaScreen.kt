@@ -7,93 +7,98 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
+import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.components.WeeklyScheduleGrid
-import com.example.campuspocket.feature.academic.ui.TodayWeekSwitch
+import androidx.compose.material3.Surface
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Semana: rejilla horaria sin FAB. Las acciones viven en la cabecera y el
+ * dock contextual añade la tarea desde la pestaña Académico.
+ */
 @Composable
 fun SemanaScreen(
     onShowToday: () -> Unit,
     onNavigateToCourses: () -> Unit,
     onNavigateToTasks: () -> Unit,
     onOpenCourse: (Long) -> Unit,
-    onAddTask: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WeekViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        modifier = modifier,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onAddTask,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.task_new)) }
-            )
-        },
-        content = { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                TodayWeekSwitch(
-                    isTodaySelected = false,
-                    onShowToday = onShowToday,
-                    onShowWeek = { /* ya estamos aquí */ },
-                    modifier = Modifier.padding(top = 16.dp)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.academic_week),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onNavigateToTasks) {
-                        Text(stringResource(R.string.academic_tasks))
-                    }
-                    TextButton(onClick = onNavigateToCourses) {
-                        Text(stringResource(R.string.academic_manage_courses))
-                    }
-                }
-
-                if (state.isLoading) {
-                    LoadingShimmer(modifier = Modifier.weight(1f))
-                } else {
-                    WeeklyScheduleGrid(
-                        modifier = Modifier.weight(1f),
-                        days = state.days,
-                        onClassClick = { entry ->
-                            onOpenCourse(entry.courseId)
-                        }
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.week_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RoundIconButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.academic_today),
+                    onClick = onShowToday,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+                RoundIconButton(
+                    icon = Icons.Filled.Check,
+                    contentDescription = stringResource(R.string.today_open_tasks),
+                    onClick = onNavigateToTasks,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+                RoundIconButton(
+                    iconRes = R.drawable.ic_schedule,
+                    contentDescription = stringResource(R.string.today_open_courses),
+                    onClick = onNavigateToCourses,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
-    )
+
+        if (state.isLoading) {
+            LoadingShimmer(modifier = Modifier.weight(1f))
+        } else {
+            WeeklyScheduleGrid(
+                modifier = Modifier.weight(1f),
+                days = state.days,
+                onClassClick = { entry -> onOpenCourse(entry.courseId) }
+            )
+        }
+    }
 }
 
 @Composable
@@ -105,8 +110,7 @@ fun PreviewSemanaScreen() {
                 onShowToday = {},
                 onNavigateToCourses = {},
                 onNavigateToTasks = {},
-                onOpenCourse = {},
-                onAddTask = {}
+                onOpenCourse = {}
             )
         }
     }

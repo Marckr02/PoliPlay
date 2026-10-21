@@ -37,9 +37,10 @@ class HomeScreenTest {
                 )
             }
         }
-        composeRule.onNodeWithText("Académico").assertIsDisplayed()
-        composeRule.onNodeWithText("Notas").assertIsDisplayed()
-        composeRule.onNodeWithText("Finanzas").assertDoesNotExist()
+        composeRule.onNodeWithText("TAREAS").assertIsDisplayed()
+        composeRule.onNodeWithText("+ Tarea").assertIsDisplayed()
+        composeRule.onNodeWithText("+ Nota").assertIsDisplayed()
+        composeRule.onNodeWithText("+ Gasto").assertDoesNotExist()
     }
 
     @Test
@@ -54,7 +55,7 @@ class HomeScreenTest {
                 )
             }
         }
-        composeRule.onNodeWithText("Finanzas").performClick()
+        composeRule.onNodeWithText("DISPONIBLE ESTE MES").performClick()
         assertEquals(CampusModule.FINANCE, abierto)
     }
 

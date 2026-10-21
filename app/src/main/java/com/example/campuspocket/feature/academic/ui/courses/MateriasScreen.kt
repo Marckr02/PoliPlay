@@ -1,36 +1,23 @@
 package com.example.campuspocket.feature.academic.ui.courses
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,8 +41,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.feature.academic.domain.model.Course
 import com.example.campuspocket.feature.academic.ui.TimeText
 import com.example.campuspocket.feature.academic.ui.shortLabelRes
@@ -75,24 +64,25 @@ fun MateriasScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = stringResource(R.string.academic_courses),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                FilledTonalButton(onClick = onImport) {
-                    Text(stringResource(R.string.import_pdf_title))
-                }
+                SecondaryPillButton(
+                    text = stringResource(R.string.import_pdf_title),
+                    onClick = onImport
+                )
             }
 
             when {
@@ -103,8 +93,8 @@ fun MateriasScreen(
                 state.courses.isEmpty() -> {
                     EmptyStateCard(
                         modifier = Modifier.weight(1f),
-                        title = stringResource(R.string.empty_courses),
-                        message = "No tienes materias registradas. Puedes crearlas manualmente o importar tu horario desde un PDF.",
+                        title = stringResource(R.string.academic_courses),
+                        message = stringResource(R.string.empty_courses),
                         icon = R.drawable.ic_schedule,
                         actionText = stringResource(R.string.import_pdf_title),
                         onAction = onImport
@@ -162,31 +152,8 @@ private fun CourseCard(
     modifier: Modifier = Modifier
 ) {
     val courseColor = Color(course.colorArgb)
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .height(110.dp)
-                    .background(courseColor)
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+    BentoCard(modifier = modifier, onClick = onClick) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -194,7 +161,7 @@ private fun CourseCard(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Box(
@@ -205,9 +172,9 @@ horizontalArrangement = Arrangement.spacedBy(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = course.name.firstOrNull()?.uppercase() ?: "M",
+                                text = course.name.firstOrNull()?.uppercase() ?: "?",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = courseColor
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Column(Modifier.weight(1f)) {
@@ -217,7 +184,7 @@ horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Row(
-horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Surface(
@@ -236,7 +203,10 @@ horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     shape = MaterialTheme.shapes.extraSmall
                                 ) {
                                     Text(
-                                        text = "Sec. " + course.section,
+                                        text = stringResource(
+                                            R.string.course_section_short,
+                                            course.section
+                                        ),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -310,5 +280,4 @@ horizontalArrangement = Arrangement.spacedBy(4.dp),
                 }
             }
         }
-    }
 }

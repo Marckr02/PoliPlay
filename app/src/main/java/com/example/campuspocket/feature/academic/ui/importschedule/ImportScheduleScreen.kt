@@ -20,17 +20,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,6 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.feature.academic.domain.model.SchoolDays
 import com.example.campuspocket.feature.academic.importer.ParseWarning
 import com.example.campuspocket.feature.academic.ui.TimeField
@@ -151,9 +150,7 @@ private fun PickPdfView(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
-        Button(onClick = onPick) {
-            Text(stringResource(R.string.import_pdf_select))
-        }
+        PrimaryPillButton(onClick = onPick, text = stringResource(R.string.import_pdf_select))
     }
 }
 
@@ -170,7 +167,7 @@ private fun ReviewContent(
         modifier = modifier,
         bottomBar = {
             Surface(
-                tonalElevation = 3.dp,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -185,19 +182,17 @@ private fun ReviewContent(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedButton(
+                        SecondaryPillButton(
+                            text = stringResource(R.string.cancel),
                             onClick = onDone,
                             modifier = Modifier.weight(1f)
-                        ) {
-                            Text(stringResource(R.string.cancel))
-                        }
-                        Button(
+                        )
+                        PrimaryPillButton(
+                            text = stringResource(R.string.import_pdf_confirm),
                             onClick = viewModel::confirm,
                             enabled = state.canSave && !state.isSaving,
                             modifier = Modifier.weight(1f)
-                        ) {
-                            Text(stringResource(R.string.import_pdf_confirm))
-                        }
+                        )
                     }
                 }
             }
@@ -283,12 +278,12 @@ private fun SemesterCard(
     onTermNameChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
+    BentoCard(modifier = modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            CampusTextField(
                 value = state.termName,
                 onValueChange = onTermNameChange,
-                label = { Text(stringResource(R.string.semester_name)) },
+                label = stringResource(R.string.semester_name),
                 isError = state.termNameError,
                 supportingText = if (state.termNameError) {
                     { Text(stringResource(R.string.error_required)) }
@@ -312,13 +307,13 @@ private fun SemesterCard(
 
 @Composable
 private fun WarningsBanner(warnings: List<ParseWarning>, modifier: Modifier = Modifier) {
-    Card(
+    BentoCard(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
+        containerColor = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = stringResource(R.string.import_pdf_warnings),
                 style = MaterialTheme.typography.titleSmall,
@@ -355,8 +350,8 @@ private fun CourseReviewCard(
     onAddSession: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    BentoCard(modifier = modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -371,32 +366,32 @@ private fun CourseReviewCard(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                CampusTextField(
                     value = course.code,
                     onValueChange = { onChange(course.copy(code = it)) },
-                    label = { Text(stringResource(R.string.course_code)) },
+                    label = stringResource(R.string.course_code),
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
-                OutlinedTextField(
+                CampusTextField(
                     value = course.section,
                     onValueChange = { onChange(course.copy(section = it)) },
-                    label = { Text(stringResource(R.string.course_section)) },
+                    label = stringResource(R.string.course_section),
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
             }
-            OutlinedTextField(
+            CampusTextField(
                 value = course.name,
                 onValueChange = { onChange(course.copy(name = it)) },
-                label = { Text(stringResource(R.string.course_name)) },
+                label = stringResource(R.string.course_name),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            CampusTextField(
                 value = course.teacher,
                 onValueChange = { onChange(course.copy(teacher = it)) },
-                label = { Text(stringResource(R.string.course_teacher)) },
+                label = stringResource(R.string.course_teacher),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -408,9 +403,11 @@ private fun CourseReviewCard(
                     onRemove = { onRemoveSession(index) }
                 )
             }
-            TextButton(onClick = onAddSession) {
-                Text(stringResource(R.string.course_add_session))
-            }
+            SecondaryPillButton(
+                text = stringResource(R.string.course_add_session),
+                onClick = onAddSession,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -486,10 +483,10 @@ private fun SessionEditDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SchoolDays.withSaturday.forEach { day ->
-                        FilterChip(
+                        CampusChip(
+                            label = stringResource(day.shortLabelRes()),
                             selected = draft.day == day,
-                            onClick = { draft = draft.copy(day = day) },
-                            label = { Text(stringResource(day.shortLabelRes())) }
+                            onClick = { draft = draft.copy(day = day) }
                         )
                     }
                 }
@@ -517,10 +514,10 @@ private fun SessionEditDialog(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                OutlinedTextField(
+                CampusTextField(
                     value = draft.room,
                     onValueChange = { draft = draft.copy(room = it) },
-                    label = { Text(stringResource(R.string.session_room)) },
+                    label = stringResource(R.string.session_room),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )

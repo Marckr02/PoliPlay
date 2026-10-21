@@ -1,29 +1,25 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.example.campuspocket.feature.finance.ui.accounts
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.DangerPillButton
+import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Transaction
@@ -65,39 +64,42 @@ fun AccountDetailScreen(
 
     val account = (state as? AccountDetailUiState.Content)?.account
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = account?.name ?: stringResource(R.string.finance_accounts),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                actions = {
-                    account?.id?.let { id ->
-                        TextButton(onClick = { onEditAccount(id) }) {
-                            Text(stringResource(R.string.edit))
-                        }
-                    }
-                }
+    Column(modifier = modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RoundIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back),
+                onClick = onBack,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = account?.name ?: stringResource(R.string.finance_accounts),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            account?.id?.let { id ->
+                RoundIconButton(
+                    icon = Icons.Filled.Edit,
+                    contentDescription = stringResource(R.string.edit),
+                    onClick = { onEditAccount(id) },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
-    ) { innerPadding ->
+
         when (state) {
             AccountDetailUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -106,7 +108,7 @@ fun AccountDetailScreen(
 
             AccountDetailUiState.NotFound -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -119,43 +121,45 @@ fun AccountDetailScreen(
 
             is AccountDetailUiState.Content -> {
                 val content = state as AccountDetailUiState.Content
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().weight(1f),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 8.dp,
+                        bottom = 24.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.account_movements),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    if (content.transactions.isEmpty()) {
+                    item {
                         Text(
-                            text = stringResource(R.string.empty_transactions),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = stringResource(R.string.account_movements),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                    if (content.transactions.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.empty_transactions),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(content.transactions, key = { it.id ?: 0L }) { tx ->
-                                TransactionRow(
-                                    tx,
-                                    accountId = content.account.id ?: 0L,
-                                    accountName = content.account.name
-                                )
-                            }
+                        items(content.transactions, key = { it.id ?: 0L }) { tx ->
+                            TransactionRow(
+                                tx,
+                                accountId = content.account.id ?: 0L,
+                                accountName = content.account.name
+                            )
                         }
                     }
-
-                    TextButton(
-                        onClick = { showArchiveDialog = true },
-                        modifier = Modifier.align(Alignment.End).padding(top = 8.dp)
-                    ) {
-                        Text(
+                    item {
+                        DangerPillButton(
                             text = stringResource(R.string.account_archive),
-                            color = MaterialTheme.colorScheme.error
+                            onClick = { showArchiveDialog = true },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                         )
                     }
                 }
@@ -200,31 +204,29 @@ internal fun TransactionRow(
         TransactionType.EXPENSE -> false
         TransactionType.TRANSFER -> tx.targetAccountId == accountId
     }
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = tx.description?.takeIf { it.isNotBlank() }
-                        ?: stringResource(transactionTypeLabelRes(tx.type)),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = Money.format(if (isPositive) tx.amountCents else -tx.amountCents),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+    BentoCard(modifier = modifier, contentPadding = PaddingValues(14.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Text(
-                text = DATE_FORMATTER.format(tx.date) + " · " + accountName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = tx.description?.takeIf { it.isNotBlank() }
+                    ?: stringResource(transactionTypeLabelRes(tx.type)),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = Money.format(if (isPositive) tx.amountCents else -tx.amountCents),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
+        Text(
+            text = DATE_FORMATTER.format(tx.date) + " · " + accountName,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

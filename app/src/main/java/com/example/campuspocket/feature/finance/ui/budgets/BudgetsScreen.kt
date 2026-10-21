@@ -5,7 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,15 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,9 +45,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.BudgetProgressBar
+import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
+import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
 import java.time.YearMonth
@@ -60,6 +62,7 @@ import java.util.Locale
 @Composable
 fun BudgetsScreen(
     modifier: Modifier = Modifier,
+    onManageCategories: () -> Unit = {},
     viewModel: BudgetsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,15 +92,17 @@ fun BudgetsScreen(
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = !state.semesterMode,
-                onClick = { if (state.semesterMode) viewModel.toggleSemesterMode() },
-                label = { Text(stringResource(R.string.budget_month)) }
-            )
-            FilterChip(
+            PillSegmentedControl(
+                options = listOf(false, true),
                 selected = state.semesterMode,
-                onClick = { if (!state.semesterMode) viewModel.toggleSemesterMode() },
-                label = { Text(stringResource(R.string.budget_semester)) }
+                onSelect = { semester ->
+                    if (state.semesterMode != semester) viewModel.toggleSemesterMode()
+                },
+                label = { semester ->
+                    stringResource(
+                        if (semester) R.string.budget_semester else R.string.budget_month
+                    )
+                }
             )
         }
 
@@ -110,6 +115,19 @@ fun BudgetsScreen(
             ) {
                 val withBudget = state.rows.filter { it.budgetCents != null }
                 val withoutBudget = state.rows.filter { it.budgetCents == null }
+
+                item(key = "categorias") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        CampusChip(
+                            label = stringResource(R.string.finance_categories),
+                            selected = false,
+                            onClick = onManageCategories
+                        )
+                    }
+                }
 
                 if (!state.semesterMode) {
                     item(key = "presupuesto_total") {
@@ -215,12 +233,13 @@ private fun MonthlyBudgetCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    BentoCard(
         modifier = modifier.fillMaxWidth(),
-        onClick = onClick
+        onClick = onClick,
+        contentPadding = PaddingValues(16.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -268,13 +287,13 @@ private fun MonthlyBudgetEditDialog(
             )
         },
         text = {
-            OutlinedTextField(
+            CampusTextField(
                 value = Money.toLocalDecimalString(value),
                 onValueChange = { text ->
                     value = text.filter(Char::isDigit).take(9).toLongOrNull() ?: 0L
                 },
-                label = { Text(stringResource(R.string.budget_amount)) },
-                prefix = { Text("$") },
+                label = stringResource(R.string.budget_amount),
+                prefix = "$",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
@@ -312,11 +331,12 @@ private fun BudgetRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    BentoCard(
         modifier = modifier.fillMaxWidth(),
-        onClick = onClick
+        onClick = onClick,
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -398,13 +418,13 @@ private fun BudgetEditDialog(
         onDismissRequest = onDismiss,
         title = { Text(row.name) },
         text = {
-            OutlinedTextField(
+            CampusTextField(
                 value = Money.toLocalDecimalString(amountCents),
                 onValueChange = { text ->
                     amountCents = text.filter(Char::isDigit).take(9).toLongOrNull() ?: 0L
                 },
-                label = { Text(stringResource(R.string.budget_amount)) },
-                prefix = { Text("$") },
+                label = stringResource(R.string.budget_amount),
+                prefix = "$",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()

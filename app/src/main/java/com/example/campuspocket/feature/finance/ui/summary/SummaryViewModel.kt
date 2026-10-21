@@ -26,6 +26,8 @@ import javax.inject.Inject
 data class SummaryUiState(
     val availableCents: Long = 0,
     val totalBalanceCents: Long = 0,
+    val incomeCents: Long = 0,
+    val expenseCents: Long = 0,
     val projectedBalanceCents: Long = 0,
     val projectedSpentCents: Long = 0,
     val topCategories: List<GetMonthSummary.CategoryRow> = emptyList(),
@@ -98,10 +100,18 @@ class SummaryViewModel @Inject constructor(
             budgetCents = monthlyBudgetCents,
             spentCents = summary.totalSpentCents
         )
+        val incomeCents = transactions
+            .filter {
+                it.type == com.example.campuspocket.feature.finance.data.TransactionType.INCOME &&
+                    it.date >= month.atDay(1) && it.date <= month.atEndOfMonth()
+            }
+            .sumOf { it.amountCents }
 
         SummaryUiState(
             availableCents = summary.availableCents,
             totalBalanceCents = totalBalance,
+            incomeCents = incomeCents,
+            expenseCents = summary.totalSpentCents,
             projectedBalanceCents = PaymentDomain.projectedBalance(totalBalance, activePayments, month.atEndOfMonth()),
             projectedSpentCents = PaymentDomain.projectedSpent(summary.totalSpentCents, activePayments, month),
             topCategories = summary.rows.filter { it.netSpentCents > 0 }.take(5),

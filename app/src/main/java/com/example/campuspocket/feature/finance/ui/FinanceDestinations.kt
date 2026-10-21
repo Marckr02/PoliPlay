@@ -15,6 +15,7 @@ object FinanceDestinations {
     const val CATEGORY_FORM_ROUTE = "finance/category_form?$CATEGORY_ID_ARG={$CATEGORY_ID_ARG}"
 
     const val WITHDRAWAL = "finance/withdrawal"
+    const val CALENDAR = "finance/calendar"
 
     const val TRANSACTION_TYPE_ARG = "type"
     const val TRANSACTION_ID_ARG = "transactionId"

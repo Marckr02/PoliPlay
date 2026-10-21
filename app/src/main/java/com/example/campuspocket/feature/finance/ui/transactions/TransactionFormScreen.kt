@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -23,7 +22,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,8 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.KeypadAmountInput
-import com.example.campuspocket.core.designsystem.components.TransactionTypeSegmentedButton
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.TransactionTypeSelector
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.TransactionError
@@ -162,11 +162,11 @@ fun TransactionFormScreen(
                     expanded = categoryExpanded,
                     onExpandedChange = { categoryExpanded = it }
                 ) {
-                    OutlinedTextField(
+                    CampusTextField(
                         value = categories.firstOrNull { it.id == state.categoryId }?.name ?: "",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text(stringResource(R.string.transaction_category)) },
+                        label = stringResource(R.string.transaction_category),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                         isError = state.error == TransactionError.MISSING_CATEGORY ||
                             state.error == TransactionError.WRONG_CATEGORY_KIND,
@@ -204,13 +204,13 @@ fun TransactionFormScreen(
                     expanded = refundExpanded,
                     onExpandedChange = { refundExpanded = it }
                 ) {
-                    OutlinedTextField(
+                    CampusTextField(
                         value = refundableExpenses.firstOrNull { it.id == state.refundOfId }
                             ?.let { it.description?.takeIf(String::isNotBlank) ?: Money.format(it.amountCents) }
                             ?: "",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text(stringResource(R.string.refund_original_expense)) },
+                        label = stringResource(R.string.refund_original_expense),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = refundExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                     )
@@ -254,19 +254,18 @@ fun TransactionFormScreen(
                 }
             }
 
-            OutlinedTextField(
+            CampusTextField(
                 value = state.description,
                 onValueChange = viewModel::onDescriptionChange,
-                label = { Text(stringResource(R.string.transaction_description)) },
+                label = stringResource(R.string.transaction_description),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Button(
+            PrimaryPillButton(
+                text = stringResource(R.string.save),
                 onClick = viewModel::save,
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-            ) {
-                Text(stringResource(R.string.save))
-            }
+            )
 
             if (state.isEditing) {
                 TextButton(
@@ -349,11 +348,11 @@ private fun AccountDropdown(
         onExpandedChange = { expanded = it },
         modifier = modifier
     ) {
-        OutlinedTextField(
+        CampusTextField(
             value = accounts.firstOrNull { it.id == selectedId }?.name ?: "",
             onValueChange = {},
             readOnly = true,
-            label = { Text(label) },
+            label = label,
             isError = error,
             supportingText = { if (error) Text(stringResource(errorRes)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },

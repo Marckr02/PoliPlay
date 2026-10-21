@@ -1,6 +1,5 @@
 package com.example.campuspocket.feature.finance.ui.withdrawal
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,8 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -28,7 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,7 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.AccountBalance
 import com.example.campuspocket.feature.finance.domain.WithdrawalError
@@ -131,13 +132,12 @@ fun WithdrawalScreen(
                     }
                 }
 
-                Button(
+                PrimaryPillButton(
+                    text = stringResource(R.string.withdrawal_confirm),
                     onClick = viewModel::save,
                     enabled = !state.isSaving,
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.withdrawal_confirm))
-                }
+                )
             }
         }
     }
@@ -174,11 +174,11 @@ private fun SavingsAccountDropdown(
         onExpandedChange = { expanded = it },
         modifier = modifier
     ) {
-        OutlinedTextField(
+        CampusTextField(
             value = selected?.account?.name.orEmpty(),
             onValueChange = {},
+            label = stringResource(R.string.withdrawal_from),
             readOnly = true,
-            label = { Text(stringResource(R.string.withdrawal_from)) },
             supportingText = selected?.let {
                 { Text(stringResource(R.string.withdrawal_balance, Money.format(it.balanceCents))) }
             },
@@ -224,11 +224,11 @@ private fun CashDestinationCard(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(
-                1.dp,
-                if (showError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
-            )
+            color = if (showError) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.extended.track
+            }
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -320,13 +320,12 @@ private fun AmountSection(
                     it == WithdrawalError.NOT_MULTIPLE_OF_5 ||
                     it == WithdrawalError.INSUFFICIENT_BALANCE
             }
-            OutlinedTextField(
+            CampusTextField(
                 value = Money.toLocalDecimalString(state.amountCents),
                 onValueChange = onAmountChange,
-                label = { Text(stringResource(R.string.withdrawal_other_amount)) },
-                prefix = { Text("$") },
+                label = stringResource(R.string.withdrawal_other_amount),
+                prefix = "$",
                 singleLine = true,
-                isError = amountError != null,
                 supportingText = amountError?.let {
                     { Text(errorText(it, state.selectedAccount?.account?.name)) }
                 },
@@ -356,20 +355,29 @@ private fun AmountChip(
         onClick = onClick,
         modifier = modifier.height(48.dp),
         shape = MaterialTheme.shapes.small,
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(
-            1.dp,
-            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-        )
+        color = if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.extended.track
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.titleSmall,
-                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
-                else MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }

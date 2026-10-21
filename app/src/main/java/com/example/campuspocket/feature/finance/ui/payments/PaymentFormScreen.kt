@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -25,11 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -50,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.Frequency
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
@@ -120,21 +118,20 @@ fun PaymentFormScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
+            CampusTextField(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
-                label = { Text(stringResource(R.string.scheduled_payment_name)) },
-                isError = state.nameError,
+                label = stringResource(R.string.scheduled_payment_name),
                 supportingText = { if (state.nameError) Text(stringResource(R.string.error_required)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
+            CampusTextField(
                 value = state.amountDisplay,
                 onValueChange = viewModel::onAmountChange,
-                label = { Text(stringResource(R.string.scheduled_payment_amount)) },
-                prefix = { Text("$") },
+                label = stringResource(R.string.scheduled_payment_amount),
+                prefix = "$",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
@@ -143,14 +140,19 @@ fun PaymentFormScreen(
             // Cuenta
             var accExpanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(expanded = accExpanded, onExpandedChange = { accExpanded = it }) {
-                OutlinedTextField(
+                CampusTextField(
                     value = accounts.firstOrNull { it.id == state.accountId }?.name ?: "",
                     onValueChange = {},
+                    label = stringResource(R.string.transaction_account),
                     readOnly = true,
-                    label = { Text(stringResource(R.string.transaction_account)) },
-                    isError = state.error == PaymentDomainError.MISSING_ACCOUNT,
-                    supportingText = { if (state.error == PaymentDomainError.MISSING_ACCOUNT) Text(stringResource(R.string.transaction_error_missing_account)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accExpanded) },
+                    supportingText = {
+                        if (state.error == PaymentDomainError.MISSING_ACCOUNT) {
+                            Text(stringResource(R.string.transaction_error_missing_account))
+                        }
+                    },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = accExpanded)
+                    },
                     modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 )
                 ExposedDropdownMenu(expanded = accExpanded, onDismissRequest = { accExpanded = false }) {
@@ -166,14 +168,19 @@ fun PaymentFormScreen(
             // Categoría (gasto)
             var catExpanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(expanded = catExpanded, onExpandedChange = { catExpanded = it }) {
-                OutlinedTextField(
+                CampusTextField(
                     value = categories.firstOrNull { it.id == state.categoryId }?.name ?: "",
                     onValueChange = {},
+                    label = stringResource(R.string.transaction_category),
                     readOnly = true,
-                    label = { Text(stringResource(R.string.transaction_category)) },
-                    isError = state.error == PaymentDomainError.MISSING_CATEGORY,
-                    supportingText = { if (state.error == PaymentDomainError.MISSING_CATEGORY) Text(stringResource(R.string.transaction_error_missing_category)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = catExpanded) },
+                    supportingText = {
+                        if (state.error == PaymentDomainError.MISSING_CATEGORY) {
+                            Text(stringResource(R.string.transaction_error_missing_category))
+                        }
+                    },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = catExpanded)
+                    },
                     modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 )
                 ExposedDropdownMenu(expanded = catExpanded, onDismissRequest = { catExpanded = false }) {
@@ -189,19 +196,22 @@ fun PaymentFormScreen(
             // Frecuencia
             Column {
                 Text(stringResource(R.string.scheduled_payment_frequency), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf(
-                        Frequency.WEEKLY to "Semanal",
-                        Frequency.MONTHLY to "Mensual",
-                        Frequency.YEARLY to "Anual"
-                    ).forEachIndexed { index, (f, label) ->
-                        SegmentedButton(
-                            selected = state.frequency == f.name,
-                            onClick = { viewModel.onFrequencyChange(f.name) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = 3)
-                        ) { Text(label) }
+                val selectedFrequency = Frequency.entries.firstOrNull { it.name == state.frequency }
+                    ?: Frequency.MONTHLY
+                PillSegmentedControl(
+                    options = Frequency.entries.toList(),
+                    selected = selectedFrequency,
+                    onSelect = { viewModel.onFrequencyChange(it.name) },
+                    label = { frequency ->
+                        stringResource(
+                            when (frequency) {
+                                Frequency.WEEKLY -> R.string.scheduled_payment_frequency_weekly
+                                Frequency.MONTHLY -> R.string.scheduled_payment_frequency_monthly
+                                Frequency.YEARLY -> R.string.scheduled_payment_frequency_yearly
+                            }
+                        )
                     }
-                }
+                )
             }
 
             // Próxima fecha de pago
@@ -236,9 +246,11 @@ fun PaymentFormScreen(
                 Switch(checked = state.active, onCheckedChange = viewModel::onActiveChange)
             }
 
-            Button(onClick = viewModel::save, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.save))
-            }
+            PrimaryPillButton(
+                text = stringResource(R.string.save),
+                onClick = viewModel::save,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 

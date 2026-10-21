@@ -17,17 +17,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -46,6 +41,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.ColorPalette
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.feature.finance.data.CategoryKind
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,16 +95,14 @@ fun CategoryFormScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
+            CampusTextField(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
-                label = { Text(stringResource(R.string.category_name)) },
-                isError = state.nameError,
+                label = stringResource(R.string.category_name),
+                modifier = Modifier.fillMaxWidth(),
                 supportingText = {
                     if (state.nameError) Text(stringResource(R.string.error_required))
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                }
             )
 
             Column {
@@ -115,20 +111,19 @@ fun CategoryFormScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf(
-                        CategoryKind.EXPENSE to R.string.category_kind_expense,
-                        CategoryKind.INCOME to R.string.category_kind_income
-                    ).forEachIndexed { index, (kind, labelRes) ->
-                        SegmentedButton(
-                            selected = state.kind == kind,
-                            onClick = { viewModel.onKindChange(kind) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = 2)
-                        ) {
-                            Text(stringResource(labelRes))
-                        }
+                PillSegmentedControl(
+                    options = CategoryKind.entries,
+                    selected = state.kind,
+                    onSelect = viewModel::onKindChange,
+                    label = { kind ->
+                        stringResource(
+                            when (kind) {
+                                CategoryKind.EXPENSE -> R.string.category_kind_expense
+                                CategoryKind.INCOME -> R.string.category_kind_income
+                            }
+                        )
                     }
-                }
+                )
             }
 
             Text(
@@ -154,12 +149,11 @@ fun CategoryFormScreen(
                 }
             }
 
-            Button(
+            PrimaryPillButton(
+                text = stringResource(R.string.save),
                 onClick = viewModel::save,
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-            ) {
-                Text(stringResource(R.string.save))
-            }
+            )
 
             if (state.isEditing) {
                 TextButton(

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -29,11 +29,9 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,6 +56,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.core.designsystem.components.SegmentedControl
 import com.example.campuspocket.feature.academic.domain.model.Priority
 import com.example.campuspocket.feature.academic.ui.TimePickerDialog
@@ -237,10 +238,10 @@ private fun TaskFormContent(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
+            CampusTextField(
                 value = state.title,
                 onValueChange = onTitleChange,
-                label = { Text(stringResource(R.string.task_title)) },
+                label = stringResource(R.string.task_title),
                 isError = state.titleError,
                 supportingText = {
                     if (state.titleError) Text(stringResource(R.string.error_required))
@@ -249,10 +250,10 @@ private fun TaskFormContent(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
+            CampusTextField(
                 value = state.description,
                 onValueChange = onDescriptionChange,
-                label = { Text(stringResource(R.string.task_description)) },
+                label = stringResource(R.string.task_description),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -309,22 +310,26 @@ private fun TaskFormContent(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                listOf(0, 10, 60, 24 * 60).forEach { minutes ->
-                    val labelRes = REMINDER_LABELS.getValue(minutes)
-                    FilterChip(
-                        selected = minutes in state.reminderMinutes,
-                        onClick = {
-                            if (minutes !in state.reminderMinutes && !notificationsGranted &&
-                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                            ) {
-                                // Primero se explica para qué sirve el permiso.
-                                showPermissionDialog = true
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(0, 10, 60, 24 * 60).forEach { minutes ->
+                        val labelRes = REMINDER_LABELS.getValue(minutes)
+                        CampusChip(
+                            label = stringResource(labelRes),
+                            selected = minutes in state.reminderMinutes,
+                            onClick = {
+                                if (minutes !in state.reminderMinutes && !notificationsGranted &&
+                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                                ) {
+                                    // Primero se explica para qué sirve el permiso.
+                                    showPermissionDialog = true
+                                }
+                                onToggleReminder(minutes)
                             }
-                            onToggleReminder(minutes)
-                        },
-                        label = { Text(stringResource(labelRes)) },
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
+                        )
+                    }
                 }
                 if (state.reminderMinutes.isNotEmpty()) {
                     if (!notificationsGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -359,14 +364,13 @@ private fun TaskFormContent(
                 }
             }
 
-            Button(
+            PrimaryPillButton(
+                text = stringResource(R.string.save),
                 onClick = onSave,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
-            ) {
-                Text(stringResource(R.string.save))
-            }
+            )
 
             // Notas vinculadas a esta tarea (Fase 6)
             if (state.isEditing && linkedNotes.isNotEmpty()) {
@@ -490,11 +494,11 @@ private fun CoursePicker(
         onExpandedChange = { expanded = it },
         modifier = modifier.fillMaxWidth()
     ) {
-        OutlinedTextField(
+        CampusTextField(
             value = selectedName,
             onValueChange = {},
             readOnly = true,
-            label = { Text(stringResource(R.string.task_course)) },
+            label = stringResource(R.string.task_course),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()

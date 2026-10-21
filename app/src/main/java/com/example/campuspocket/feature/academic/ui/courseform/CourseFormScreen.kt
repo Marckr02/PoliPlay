@@ -3,11 +3,13 @@ package com.example.campuspocket.feature.academic.ui.courseform
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,14 +22,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +43,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.feature.academic.domain.model.SchoolDays
 import com.example.campuspocket.feature.academic.ui.TimeField
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -179,36 +182,43 @@ private fun CourseFormContent(
             )
             Column(modifier = Modifier.padding(top = 4.dp)) {
                 Text(
-                    text = "Color de la materia",
+                    text = stringResource(R.string.course_color),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     paletteColors.forEach { colorArgb ->
                         val isSelected = state.colorArgb == colorArgb
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(48.dp)
                                 .clip(CircleShape)
-                                .background(Color(colorArgb))
-                                .clickable { onColorChange(colorArgb) }
-                                .then(
-                                    if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                    else Modifier
-                                ),
+                                .clickable { onColorChange(colorArgb) },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(colorArgb))
+                                    .then(
+                                        if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                        else Modifier
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Check,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -237,9 +247,11 @@ private fun CourseFormContent(
                 )
             }
 
-            TextButton(onClick = onAddSession) {
-                Text(stringResource(R.string.course_add_session))
-            }
+            SecondaryPillButton(
+                text = stringResource(R.string.course_add_session),
+                onClick = onAddSession,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -252,10 +264,10 @@ private fun FormField(
     errorRes: Int?,
     modifier: Modifier = Modifier
 ) {
-    OutlinedTextField(
+    CampusTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(stringResource(labelRes)) },
+        label = stringResource(labelRes),
         isError = errorRes != null,
         supportingText = errorRes?.let { { Text(stringResource(it)) } },
         singleLine = true,
@@ -271,8 +283,8 @@ private fun SessionEditor(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    BentoCard(modifier = modifier.fillMaxWidth(), contentPadding = PaddingValues(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -293,10 +305,10 @@ private fun SessionEditor(
 
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SchoolDays.withSaturday.forEach { day ->
-                    FilterChip(
+                    CampusChip(
+                        label = stringResource(day.shortLabelRes()),
                         selected = session.day == day,
-                        onClick = { onChange(session.copy(day = day)) },
-                        label = { Text(stringResource(day.shortLabelRes())) }
+                        onClick = { onChange(session.copy(day = day)) }
                     )
                 }
             }
@@ -324,10 +336,10 @@ private fun SessionEditor(
                     modifier = Modifier.weight(1f)
                 )
             }
-            OutlinedTextField(
+            CampusTextField(
                 value = session.room,
                 onValueChange = { onChange(session.copy(room = it)) },
-                label = { Text(stringResource(R.string.session_room)) },
+                label = stringResource(R.string.session_room),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )

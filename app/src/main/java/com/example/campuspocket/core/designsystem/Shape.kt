@@ -6,15 +6,24 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Escala de formas del rediseño:
- * - Tarjetas principales: 16–20 dp.
- * - Campos y botones: 12–16 dp.
- * - Chips e indicadores: formas compactas (8 dp).
- * - Hojas y diálogos: 28 dp, sin exagerar el resto de elementos.
+ * - Hero: 32 dp; tarjetas: 28 dp; tarjetas pequeñas: 24 dp; notas: 26 dp.
+ * - Campos y botones: 16 dp.
+ * - Chips, botones circulares y barra flotante: píldora.
+ * - Sin bordes ni elevación: la jerarquía viene del color y el tamaño.
  */
 val CampusShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(20.dp),
-    extraLarge = RoundedCornerShape(28.dp)
+    extraSmall = RoundedCornerShape(12.dp),
+    small = RoundedCornerShape(16.dp),
+    medium = RoundedCornerShape(24.dp),
+    large = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(32.dp)
 )
+
+/** Radio máximo: píldoras de cualquier altura. */
+val PillShape = RoundedCornerShape(percent = 50)
+
+/** Radio específico de las tarjetas de nota (26 dp). */
+val NoteShape = RoundedCornerShape(26.dp)
+
+/** Radio de las tarjetas pequeñas tintadas (24 dp). */
+val SmallCardShape = RoundedCornerShape(24.dp)

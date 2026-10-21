@@ -3,6 +3,7 @@ package com.example.campuspocket.feature.finance.ui.accounts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +18,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -28,7 +29,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -42,14 +42,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.ColorPalette
+import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.feature.finance.data.AccountType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,10 +107,10 @@ fun AccountFormScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
+            CampusTextField(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
-                label = { Text(stringResource(R.string.account_name)) },
+                label = stringResource(R.string.account_name),
                 isError = state.nameError,
                 supportingText = {
                     if (state.nameError) Text(stringResource(R.string.error_required))
@@ -120,11 +125,11 @@ fun AccountFormScreen(
                 expanded = typeExpanded,
                 onExpandedChange = { typeExpanded = it }
             ) {
-                OutlinedTextField(
+                CampusTextField(
                     value = stringResource(accountTypeLabelRes(state.type)),
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text(stringResource(R.string.account_type)) },
+                    label = stringResource(R.string.account_type),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
                     modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 )
@@ -144,22 +149,18 @@ fun AccountFormScreen(
                 }
             }
 
-            OutlinedTextField(
+            CampusTextField(
                 value = state.initialAmountDisplay,
                 onValueChange = viewModel::onInitialAmountChange,
                 // En tarjeta de crédito el campo es la deuda inicial (positivo en pantalla).
-                label = {
-                    Text(
-                        stringResource(
-                            if (state.type == AccountType.CREDIT_CARD) {
-                                R.string.account_debt_initial
-                            } else {
-                                R.string.account_initial_balance
-                            }
-                        )
-                    )
-                },
-                prefix = { Text("$") },
+                label = stringResource(
+                    if (state.type == AccountType.CREDIT_CARD) {
+                        R.string.account_debt_initial
+                    } else {
+                        R.string.account_initial_balance
+                    }
+                ),
+                prefix = "$",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
@@ -186,31 +187,53 @@ fun AccountFormScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 (0 until 10).forEach { index ->
                     val color = Color(ColorPalette[index])
+                    val isSelected = state.colorArgb == ColorPalette[index]
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .background(color, CircleShape)
-                            .clickable { viewModel.onColorChange(ColorPalette[index]) }
-                            .then(
-                                if (state.colorArgb == ColorPalette[index]) {
-                                    Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                } else {
-                                    Modifier
-                                }
-                            )
-                    )
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .semantics { selected = isSelected }
+                            .clickable { viewModel.onColorChange(ColorPalette[index]) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .then(
+                                    if (isSelected) {
+                                        Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            Button(
+            PrimaryPillButton(
+                text = stringResource(R.string.save),
                 onClick = viewModel::save,
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-            ) {
-                Text(stringResource(R.string.save))
-            }
+            )
 
             if (state.isEditing) {
                 TextButton(

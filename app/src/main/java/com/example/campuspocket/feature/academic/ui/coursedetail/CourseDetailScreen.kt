@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,23 +18,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,7 +43,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.DangerPillButton
 import com.example.campuspocket.core.designsystem.components.PriorityBadge
+import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.feature.academic.domain.model.ClassSession
 import com.example.campuspocket.feature.academic.domain.model.Course
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -107,7 +103,6 @@ fun CourseDetailScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CourseDetailContent(
     state: CourseDetailUiState,
@@ -118,42 +113,42 @@ private fun CourseDetailContent(
 ) {
     val course = (state as? CourseDetailUiState.Content)?.course
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = course?.name ?: stringResource(R.string.academic_courses),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                actions = {
-                    course?.id?.let { id ->
-                        IconButton(onClick = { onEditCourse(id) }) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = stringResource(R.string.edit)
-                            )
-                        }
-                    }
-                }
+    Column(modifier = modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RoundIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back),
+                onClick = onBack,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = course?.name ?: stringResource(R.string.academic_courses),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            course?.id?.let { id ->
+                RoundIconButton(
+                    icon = Icons.Filled.Edit,
+                    contentDescription = stringResource(R.string.edit),
+                    onClick = { onEditCourse(id) },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
-    ) { innerPadding ->
+
         when (state) {
             CourseDetailUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -162,7 +157,7 @@ private fun CourseDetailContent(
 
             CourseDetailUiState.NotFound -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -177,15 +172,12 @@ private fun CourseDetailContent(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Card Hero para la Materia
                     CourseHeroHeader(course = state.course)
 
-                    // Sesiones de Clase
                     Text(
                         text = stringResource(R.string.course_sessions_title),
                         style = MaterialTheme.typography.titleMedium,
@@ -206,7 +198,6 @@ private fun CourseDetailContent(
                         }
                     }
 
-                    // Tareas
                     Text(
                         text = stringResource(R.string.course_tasks_title),
                         style = MaterialTheme.typography.titleMedium,
@@ -220,9 +211,8 @@ private fun CourseDetailContent(
                         )
                     } else {
                         state.tasks.forEach { task ->
-                            Card(modifier = Modifier.fillMaxWidth()) {
+                            BentoCard(contentPadding = PaddingValues(14.dp)) {
                                 Row(
-                                    modifier = Modifier.padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -246,7 +236,6 @@ private fun CourseDetailContent(
                         }
                     }
 
-                    // Notas vinculadas
                     if (state.notes.isNotEmpty()) {
                         Text(
                             text = stringResource(R.string.notes_list),
@@ -254,41 +243,26 @@ private fun CourseDetailContent(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         state.notes.forEach { note ->
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(12.dp)) {
-                                    Text(
-                                        text = note.title.ifBlank { stringResource(R.string.notes_empty_title) },
-                                        style = MaterialTheme.typography.titleSmall
-                                    )
-                                    Text(
-                                        text = note.content.take(80).replace('\n', ' '),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1
-                                    )
-                                }
+                            BentoCard(contentPadding = PaddingValues(14.dp)) {
+                                Text(
+                                    text = note.title.ifBlank { stringResource(R.string.notes_empty_title) },
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                Text(
+                                    text = note.content.take(80).replace('\n', ' '),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }
 
-                    OutlinedButton(
+                    DangerPillButton(
+                        text = stringResource(R.string.delete),
                         onClick = onDeleteRequest,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.delete),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    )
                 }
             }
         }
@@ -298,17 +272,12 @@ private fun CourseDetailContent(
 @Composable
 private fun CourseHeroHeader(course: Course, modifier: Modifier = Modifier) {
     val courseColor = Color(course.colorArgb)
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = courseColor.copy(alpha = 0.15f)
-        )
+    BentoCard(
+        modifier = modifier,
+        containerColor = courseColor.copy(alpha = 0.16f),
+        contentPadding = PaddingValues(20.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -321,9 +290,9 @@ private fun CourseHeroHeader(course: Course, modifier: Modifier = Modifier) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = course.name.firstOrNull()?.uppercase() ?: "M",
+                        text = course.name.firstOrNull()?.uppercase() ?: "?",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Column(Modifier.weight(1f)) {
@@ -352,7 +321,10 @@ private fun CourseHeroHeader(course: Course, modifier: Modifier = Modifier) {
                             shape = MaterialTheme.shapes.small
                         ) {
                             Text(
-                                text = "Sección " + course.section,
+                                text = stringResource(
+                                    R.string.course_section_short,
+                                    course.section
+                                ),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -390,11 +362,8 @@ private fun SessionCard(
     colorArgb: Int,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    BentoCard(modifier = modifier, contentPadding = PaddingValues(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .width(4.dp)
