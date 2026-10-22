@@ -174,9 +174,7 @@ fun TasksScreen(
                                         courseName = state.courses.firstOrNull { it.id == task.courseId }?.name,
                                         onClick = { task.id?.let(onOpenTask) },
                                         onToggleCompleted = { done -> viewModel.setCompleted(task, done) },
-                                        onDelete = { pendingDelete = task },
-                                        onSwipeToComplete = { viewModel.setCompleted(task, true) },
-                                        onSwipeToDelete = { pendingDelete = task }
+                                        onDelete = { pendingDelete = task }
                                     )
                                 }
                             }

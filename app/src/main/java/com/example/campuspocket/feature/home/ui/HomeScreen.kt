@@ -2,12 +2,12 @@ package com.example.campuspocket.feature.home.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,23 +40,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
-import com.example.campuspocket.core.designsystem.components.CampusChip
 import com.example.campuspocket.core.designsystem.components.CampusSectionHeader
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
 import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.feature.finance.domain.BudgetPace
+import java.math.RoundingMode
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Acciones rápidas que Inicio delega a navegación (sin lógica propia). */
-enum class HomeQuickAdd { EXPENSE, TASK, NOTE }
-
 /**
- * Inicio bento: saludo, próxima clase, presupuesto restante del mes, tareas,
- * notas recientes y accesos rápidos. Solo pinta datos reales que recibe en [state];
- * si no hay datos, muestra estados vacíos honestos.
+ * Inicio bento: saludo, próxima clase, presupuesto restante del mes, tareas y
+ * notas recientes. Solo pinta datos reales que recibe en [state]; si no hay
+ * datos, muestra estados vacíos honestos.
  */
 @Composable
 fun HomeScreen(
@@ -66,8 +65,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     state: HomeUiState = HomeUiState(),
     onOpenCourse: (Long) -> Unit = {},
-    onOpenNotes: () -> Unit = {},
-    onQuickAdd: (HomeQuickAdd) -> Unit = {}
+    onOpenNotes: () -> Unit = {}
 ) {
     val activeModules = CampusModule.entries.filter { preferences.isModuleEnabled(it) }
     val displayName = preferences.displayName.ifBlank { null }
@@ -138,11 +136,12 @@ fun HomeScreen(
             ) {
                 if (showFinance) {
                     FinanceSummaryCard(
+                        today = state.today,
                         monthlyBudgetCents = state.monthlyBudgetCents,
                         monthlySpentCents = state.monthlySpentCents,
                         monthlyRemainingCents = state.monthlyRemainingCents,
                         onClick = { onOpenModule(CampusModule.FINANCE) },
-                        modifier = Modifier.weight(1f).fillMaxSize()
+                        modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                 }
                 if (showAcademic) {
@@ -150,7 +149,7 @@ fun HomeScreen(
                         pendingTasks = state.pendingTasks,
                         tasksDueToday = state.tasksDueToday,
                         onClick = { onOpenModule(CampusModule.ACADEMIC) },
-                        modifier = Modifier.weight(1f).fillMaxSize()
+                        modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                 }
             }
@@ -224,42 +223,6 @@ fun HomeScreen(
                             }
                         }
                     }
-                }
-            }
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                text = stringResource(R.string.home_quick_access),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (preferences.isModuleEnabled(CampusModule.FINANCE)) {
-                    CampusChip(
-                        label = "+ " + stringResource(R.string.home_quick_expense),
-                        selected = false,
-                        onClick = { onQuickAdd(HomeQuickAdd.EXPENSE) }
-                    )
-                }
-                if (preferences.isModuleEnabled(CampusModule.ACADEMIC)) {
-                    CampusChip(
-                        label = "+ " + stringResource(R.string.home_quick_task),
-                        selected = false,
-                        onClick = { onQuickAdd(HomeQuickAdd.TASK) }
-                    )
-                }
-                if (preferences.isModuleEnabled(CampusModule.NOTES)) {
-                    CampusChip(
-                        label = "+ " + stringResource(R.string.home_quick_note),
-                        selected = false,
-                        onClick = { onQuickAdd(HomeQuickAdd.NOTE) }
-                    )
                 }
             }
         }
@@ -426,6 +389,7 @@ private fun NextClassCard(
 
 @Composable
 private fun FinanceSummaryCard(
+    today: LocalDate,
     monthlyBudgetCents: Long?,
     monthlySpentCents: Long,
     monthlyRemainingCents: Long?,
@@ -439,6 +403,7 @@ private fun FinanceSummaryCard(
     } else {
         null
     }
+    val pace = BudgetPace.compute(today, monthlyBudgetCents, monthlySpentCents)
     BentoCard(
         modifier = modifier,
         onClick = onClick,
@@ -460,12 +425,12 @@ private fun FinanceSummaryCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        if (monthlyBudgetCents != null && monthlyRemainingCents != null) {
+        if (pace != null) {
             Text(
                 text = stringResource(
-                    R.string.home_budget_spent_of,
-                    Money.format(monthlyBudgetCents),
-                    Money.format(monthlySpentCents)
+                    R.string.home_budget_pace_line,
+                    pace.realPct.percentForUi(),
+                    pace.expectedPct.percentForUi()
                 ),
                 style = MaterialTheme.typography.labelSmall,
                 color = ext.onAccent.copy(alpha = 0.82f),
@@ -499,6 +464,9 @@ private fun FinanceSummaryCard(
         }
     }
 }
+
+private fun java.math.BigDecimal.percentForUi(): String =
+    setScale(0, RoundingMode.HALF_UP).toPlainString() + "%"
 
 @Composable
 private fun TasksSummaryCard(

@@ -24,6 +24,8 @@ import javax.inject.Inject
 data class WithdrawalUiState(
     val savingsAccounts: List<AccountBalance> = emptyList(),
     val cashAccount: Account? = null,
+    /** Saldo actual de la cuenta de efectivo, solo para la vista previa. */
+    val cashBalanceCents: Long = 0,
     val selectedAccountId: Long? = null,
     /** true cuando el usuario eligió el chip "Otro". */
     val isCustomAmount: Boolean = false,
@@ -74,6 +76,9 @@ class WithdrawalViewModel @Inject constructor(
         WithdrawalUiState(
             savingsAccounts = savings,
             cashAccount = cash,
+            cashBalanceCents = cash?.let { account ->
+                balances.firstOrNull { it.account.id == account.id }?.balanceCents ?: 0L
+            } ?: 0L,
             selectedAccountId = selectedId,
             isCustomAmount = current.isCustomAmount,
             presetDollars = current.presetDollars,

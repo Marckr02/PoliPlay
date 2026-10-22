@@ -41,9 +41,12 @@ import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
+import com.example.campuspocket.core.designsystem.components.CampusSelectField
+import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.KeypadAmountInput
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.TransactionTypeSelector
+import com.example.campuspocket.core.designsystem.components.campusDatePickerColors
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.TransactionError
@@ -142,87 +145,65 @@ fun TransactionFormScreen(
 
             if (state.type != TransactionType.TRANSFER) {
                 var categoryExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
+                CampusSelectField(
+                    value = categories.firstOrNull { it.id == state.categoryId }?.name ?: "",
+                    label = stringResource(R.string.transaction_category),
                     expanded = categoryExpanded,
-                    onExpandedChange = { categoryExpanded = it }
+                    onExpandedChange = { categoryExpanded = it },
+                    isError = state.error == TransactionError.MISSING_CATEGORY ||
+                        state.error == TransactionError.WRONG_CATEGORY_KIND,
+                    supportingText = when (state.error) {
+                        TransactionError.MISSING_CATEGORY ->
+                            stringResource(R.string.transaction_error_missing_category)
+                        TransactionError.WRONG_CATEGORY_KIND ->
+                            stringResource(R.string.transaction_error_wrong_kind)
+                        else -> null
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    CampusTextField(
-                        value = categories.firstOrNull { it.id == state.categoryId }?.name ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = stringResource(R.string.transaction_category),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
-                        isError = state.error == TransactionError.MISSING_CATEGORY ||
-                            state.error == TransactionError.WRONG_CATEGORY_KIND,
-                        supportingText = {
-                            when (state.error) {
-                                TransactionError.MISSING_CATEGORY ->
-                                    Text(stringResource(R.string.transaction_error_missing_category))
-                                TransactionError.WRONG_CATEGORY_KIND ->
-                                    Text(stringResource(R.string.transaction_error_wrong_kind))
-                                else -> {}
+                    categories.forEach { category ->
+                        CampusSelectItem(
+                            text = category.name,
+                            selected = category.id == state.categoryId,
+                            onClick = {
+                                viewModel.onCategoryChange(category.id ?: 0L)
+                                categoryExpanded = false
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    )
-                    ExposedDropdownMenu(
-                        expanded = categoryExpanded,
-                        onDismissRequest = { categoryExpanded = false }
-                    ) {
-                        categories.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(category.name) },
-                                onClick = {
-                                    viewModel.onCategoryChange(category.id ?: 0L)
-                                    categoryExpanded = false
-                                }
-                            )
-                        }
+                        )
                     }
                 }
             }
 
             if (state.type == TransactionType.REFUND) {
                 var refundExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
+                val refundValue = refundableExpenses.firstOrNull { it.id == state.refundOfId }
+                    ?.let { it.description?.takeIf(String::isNotBlank) ?: Money.format(it.amountCents) }
+                    ?: ""
+                CampusSelectField(
+                    value = refundValue,
+                    label = stringResource(R.string.refund_original_expense),
                     expanded = refundExpanded,
-                    onExpandedChange = { refundExpanded = it }
+                    onExpandedChange = { refundExpanded = it },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    CampusTextField(
-                        value = refundableExpenses.firstOrNull { it.id == state.refundOfId }
-                            ?.let { it.description?.takeIf(String::isNotBlank) ?: Money.format(it.amountCents) }
-                            ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = stringResource(R.string.refund_original_expense),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = refundExpanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    CampusSelectItem(
+                        text = stringResource(R.string.no),
+                        selected = state.refundOfId == null,
+                        onClick = {
+                            viewModel.onRefundOfChange(null)
+                            refundExpanded = false
+                        }
                     )
-                    ExposedDropdownMenu(
-                        expanded = refundExpanded,
-                        onDismissRequest = { refundExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.no)) },
+                    refundableExpenses.forEach { expense ->
+                        CampusSelectItem(
+                            text = expense.description?.takeIf { it.isNotBlank() }
+                                ?: Money.format(expense.amountCents),
+                            selected = expense.id == state.refundOfId,
                             onClick = {
-                                viewModel.onRefundOfChange(null)
+                                viewModel.onRefundOfChange(expense.id)
                                 refundExpanded = false
                             }
                         )
-                        refundableExpenses.forEach { expense ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        expense.description?.takeIf { it.isNotBlank() }
-                                            ?: Money.format(expense.amountCents)
-                                    )
-                                },
-                                onClick = {
-                                    viewModel.onRefundOfChange(expense.id)
-                                    refundExpanded = false
-                                }
-                            )
-                        }
                     }
                 }
             }
@@ -284,7 +265,7 @@ fun TransactionFormScreen(
                 }
                 showDatePicker = false
             },
-            content = { DatePicker(state = pickerState) }
+            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
         )
     }
 
@@ -316,34 +297,24 @@ private fun AccountDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
+    CampusSelectField(
+        value = accounts.firstOrNull { it.id == selectedId }?.name ?: "",
+        label = label,
         expanded = expanded,
         onExpandedChange = { expanded = it },
+        isError = error,
+        supportingText = if (error) stringResource(errorRes) else null,
         modifier = modifier
     ) {
-        CampusTextField(
-            value = accounts.firstOrNull { it.id == selectedId }?.name ?: "",
-            onValueChange = {},
-            readOnly = true,
-            label = label,
-            isError = error,
-            supportingText = { if (error) Text(stringResource(errorRes)) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            accounts.forEach { account ->
-                DropdownMenuItem(
-                    text = { Text(account.name) },
-                    onClick = {
-                        onSelect(account.id ?: 0L)
-                        expanded = false
-                    }
-                )
-            }
+        accounts.forEach { account ->
+            CampusSelectItem(
+                text = account.name,
+                selected = account.id == selectedId,
+                onClick = {
+                    onSelect(account.id ?: 0L)
+                    expanded = false
+                }
+            )
         }
     }
 }

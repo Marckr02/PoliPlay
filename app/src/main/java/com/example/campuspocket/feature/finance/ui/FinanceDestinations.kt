@@ -3,6 +3,7 @@ package com.example.campuspocket.feature.finance.ui
 /** Rutas del grafo de finanzas (Fase 4: solo Cuentas e Historial en la pestaña). */
 object FinanceDestinations {
     const val HOME = "finance/home"
+    const val SUMMARY = "finance/summary"
 
     const val ACCOUNT_ID_ARG = "accountId"
     const val ACCOUNT_DETAIL_ROUTE = "finance/account/{$ACCOUNT_ID_ARG}"

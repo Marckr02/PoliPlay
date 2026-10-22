@@ -18,7 +18,6 @@ fun HomeRoute(
     onOpenSettings: () -> Unit,
     onOpenCourse: (Long) -> Unit,
     onOpenNotes: () -> Unit,
-    onQuickAdd: (HomeQuickAdd) -> Unit,
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -30,7 +29,6 @@ fun HomeRoute(
         modifier = modifier,
         state = state,
         onOpenCourse = onOpenCourse,
-        onOpenNotes = onOpenNotes,
-        onQuickAdd = onQuickAdd
+        onOpenNotes = onOpenNotes
     )
 }

@@ -98,128 +98,71 @@ fun PaymentsScreen(
     var deleting by remember { mutableStateOf<ScheduledPaymentEntity?>(null) }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.finance_scheduled),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = if (state.payments.size == 1) {
-                        stringResource(R.string.payments_count_one)
-                    } else {
-                        stringResource(R.string.payments_count, state.payments.size)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                RoundIconButton(
-                    icon = Icons.Filled.DateRange,
-                    contentDescription = stringResource(R.string.finance_open_calendar),
-                    onClick = onOpenCalendar,
-                    size = 44.dp,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
-                RoundIconButton(
-                    icon = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.scheduled_payment_new),
-                    onClick = onAddPayment,
-                    size = 44.dp,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-
-        PillSegmentedControl(
-            options = PaymentsView.entries,
-            selected = view,
-            onSelect = { view = it },
-            label = { option ->
-                stringResource(
-                    if (option == PaymentsView.LIST) R.string.payments_view_list
-                    else R.string.finance_calendar
-                )
-            }
+        PaymentsHeader(
+            state = state,
+            onOpenCalendar = onOpenCalendar,
+            onAddPayment = onAddPayment
         )
+        PaymentsViewSelector(view = view, onSelect = { view = it })
 
-        when (view) {
-            PaymentsView.LIST -> when {
-            state.isLoading -> Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                LoadingShimmer()
-            }
-
-            state.payments.isEmpty() -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(bottom = 8.dp)
+        if (view == PaymentsView.LIST) {
+            when {
+                state.isLoading -> Box(
+                    Modifier.fillMaxWidth().height(160.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    item(key = "empty") {
-                        BentoCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(16.dp)
+                    LoadingShimmer()
+                }
+
+                state.payments.isEmpty() -> {
+                    BentoCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(ext.lavender),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape)
-                                        .background(ext.lavender),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_schedule),
-                                        contentDescription = null,
-                                        tint = ext.onLavender,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text(
-                                        text = stringResource(R.string.empty_scheduled_payments),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.empty_scheduled_payments_message),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                Icon(
+                                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_schedule),
+                                    contentDescription = null,
+                                    tint = ext.onLavender,
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
-                            Spacer(Modifier.height(12.dp))
-                            CampusButton(
-                                text = stringResource(R.string.scheduled_payment_new),
-                                onClick = onAddPayment,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    text = stringResource(R.string.empty_scheduled_payments),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = stringResource(R.string.empty_scheduled_payments_message),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(12.dp))
+                        CampusButton(
+                            text = stringResource(R.string.scheduled_payment_new),
+                            onClick = onAddPayment,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
-            }
 
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 8.dp)
-            ) {
-                items(state.payments, key = { it.id }) { payment ->
+                else -> state.payments.forEach { payment ->
                     PaymentCard(
                         payment = payment,
                         onToggleActive = { viewModel.toggleActive(payment) },
@@ -229,12 +172,11 @@ fun PaymentsScreen(
                     )
                 }
             }
-            }
-
-            PaymentsView.CALENDAR -> CalendarScreen(
+        } else {
+            CalendarScreen(
                 onDaySelected = {},
                 embedded = true,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth().height(520.dp)
             )
         }
     }
@@ -282,6 +224,71 @@ fun PaymentsScreen(
             }
         )
     }
+}
+
+@Composable
+private fun PaymentsHeader(
+    state: PaymentsUiState,
+    onOpenCalendar: () -> Unit,
+    onAddPayment: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.finance_scheduled),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = if (state.payments.size == 1) {
+                    stringResource(R.string.payments_count_one)
+                } else {
+                    stringResource(R.string.payments_count, state.payments.size)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            RoundIconButton(
+                icon = Icons.Filled.DateRange,
+                contentDescription = stringResource(R.string.finance_open_calendar),
+                onClick = onOpenCalendar,
+                size = 44.dp,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
+            RoundIconButton(
+                icon = Icons.Filled.Add,
+                contentDescription = stringResource(R.string.scheduled_payment_new),
+                onClick = onAddPayment,
+                size = 44.dp,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaymentsViewSelector(
+    view: PaymentsView,
+    onSelect: (PaymentsView) -> Unit
+) {
+    PillSegmentedControl(
+        options = PaymentsView.entries,
+        selected = view,
+        onSelect = onSelect,
+        label = { option ->
+            stringResource(
+                if (option == PaymentsView.LIST) R.string.payments_view_list
+                else R.string.finance_calendar
+            )
+        }
+    )
 }
 
 @Composable

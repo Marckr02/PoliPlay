@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.ContrastUtil
 import com.example.campuspocket.core.designsystem.components.AccountsCarousel
+import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.util.Money
@@ -150,11 +150,12 @@ private fun AccountRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    BentoCard(
+        modifier = modifier,
+        onClick = onClick,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(36.dp)

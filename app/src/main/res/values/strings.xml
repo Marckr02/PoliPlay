@@ -82,6 +82,7 @@
     <string name="task_mark_completed">Marcar como completada</string>
     <string name="task_mark_pending">Marcar como pendiente</string>
     <string name="delete_task_confirm">¿Eliminar esta tarea?</string>
+    <string name="delete_task_message">Se eliminará “%1$s” y sus recordatorios. No se puede deshacer.</string>
     <string name="filter_all_courses">Todas las materias</string>
     <string name="empty_tasks_here">No hay tareas aquí.</string>
     <string name="reminder_at_time">A la hora</string>
@@ -273,6 +274,12 @@
     <string name="withdrawal_other">Otro</string>
     <string name="withdrawal_other_amount">Otro monto</string>
     <string name="withdrawal_confirm">Confirmar retiro</string>
+    <string name="withdrawal_after_title">DESPUÉS DEL RETIRO</string>
+    <string name="withdrawal_savings_label">Ahorros</string>
+    <string name="withdrawal_cash_label">Efectivo</string>
+    <string name="withdrawal_after_savings">Ahorros: %1$s</string>
+    <string name="withdrawal_after_cash">Efectivo: %1$s</string>
+    <string name="withdrawal_insufficient_reason">El saldo de %1$s no alcanza para este retiro.</string>
     <string name="withdrawal_success_title">Retiro registrado</string>
     <string name="withdrawal_success">Retiro de %1$s registrado</string>
     <string name="withdrawal_error_amount">Elige un monto</string>
@@ -441,8 +448,9 @@
     <string name="home_up_next">Luego · %1$s · %2$s</string>
     <string name="home_no_next_class">Sin clases próximas</string>
     <string name="home_no_next_class_message">Disfruta el descanso o revisa tu semana.</string>
-    <string name="home_remaining_label">PRESUPUESTO RESTANTE</string>
+    <string name="home_remaining_label">DISPONIBLE PARA GASTAR</string>
     <string name="home_budget_spent_of">de %1$s · Gastado %2$s</string>
+    <string name="home_budget_pace_line">%1$s gastado · %2$s esperado a hoy</string>
     <string name="home_tasks_label">TAREAS</string>
     <string name="home_tasks_pending">%1$d pendientes</string>
     <string name="home_tasks_due_today">%1$d vencen hoy</string>
@@ -495,6 +503,25 @@
     <string name="finance_tab_movements">Movimientos</string>
     <string name="finance_tab_budgets">Presupuestos</string>
     <string name="finance_tab_payments">Pagos</string>
+    <string name="finance_summary_row_title">Resumen del mes</string>
+    <string name="finance_summary_view">Ver</string>
+    <string name="finance_summary_open">Abrir el resumen del mes</string>
+    <string name="finance_new_movement">Nuevo movimiento</string>
+    <string name="finance_pace_spent_word">gastado</string>
+    <string name="pace_real_value">%1$s %2$s</string>
+    <string name="finance_pace_overline">PRESUPUESTO DE %1$s · DÍA %2$d DE %3$d</string>
+    <string name="finance_pace_spent_label">Gastado</string>
+    <string name="finance_pace_expected_label">Esperado a hoy</string>
+    <string name="finance_pace_below_badge">Por debajo del ritmo</string>
+    <string name="finance_pace_above_badge">Por encima del ritmo</string>
+    <string name="finance_pace_below_message">Puedes gastar %1$s más y seguir al ritmo.</string>
+    <string name="finance_pace_above_message">Llevas %1$s más de lo esperado a hoy.</string>
+    <string name="finance_pace_over_budget_message">Superaste el presupuesto por %1$s.</string>
+    <string name="finance_pace_no_budget_title">Aún no tienes presupuesto</string>
+    <string name="finance_pace_no_budget_message">Define un presupuesto total del mes para ver tu ritmo de gasto.</string>
+    <string name="finance_pace_create_budget">Crear presupuesto</string>
+    <string name="finance_pace_accessibility">Has gastado %1$s del presupuesto; lo esperado a hoy es %2$s.</string>
+    <string name="summary_title">Resumen del mes</string>
 
     <!-- Notas -->
     <string name="notes_title">Notas</string>
@@ -511,7 +538,16 @@
 
     <!-- Acción contextual del dock -->
     <string name="dock_add">Añadir</string>
+    <string name="dock_action_home">Añadir</string>
+    <string name="dock_action_task">Nueva tarea</string>
+    <string name="dock_action_movement">Movimiento</string>
+    <string name="dock_action_note">Nota</string>
+    <string name="dock_action_home_desc">Añadir gasto, tarea o nota</string>
+    <string name="dock_action_task_desc">Crear una nueva tarea</string>
+    <string name="dock_action_movement_desc">Nuevo movimiento financiero</string>
+    <string name="dock_action_note_desc">Crear una nueva nota</string>
     <string name="quick_add_title">¿Qué quieres añadir?</string>
+    <string name="quick_add_title_movement">Nuevo movimiento</string>
     <string name="quick_add_expense_desc">Registrar un gasto</string>
     <string name="quick_add_income_desc">Registrar un ingreso</string>
     <string name="quick_add_transfer_desc">Mover dinero entre cuentas</string>

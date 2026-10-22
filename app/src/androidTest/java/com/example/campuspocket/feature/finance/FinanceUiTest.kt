@@ -178,9 +178,9 @@ class FinanceUiTest {
         }
 
         composeRule.waitUntil(5_000) {
-            composeRule.onAllNodes(hasText("Ritmo del mes")).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodes(hasText("Esperado a hoy")).fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("Ritmo del mes").assertIsDisplayed()
+        composeRule.onNodeWithText("Esperado a hoy").assertIsDisplayed()
     }
 
     @Test
@@ -264,9 +264,9 @@ class FinanceUiTest {
         }
 
         composeRule.waitUntil(5_000) {
-            composeRule.onAllNodes(hasText("Ritmo del mes")).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodes(hasText("Por debajo del ritmo")).fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onAllNodes(hasText("Vas por debajo del ritmo esperado.", substring = true))
+        composeRule.onAllNodes(hasText("Puedes gastar", substring = true))
             .fetchSemanticsNodes()
             .also { assertTrue(it.isNotEmpty()) }
 
@@ -281,7 +281,7 @@ class FinanceUiTest {
 
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodes(
-                hasText("Vas por encima del ritmo esperado", substring = true)
+                hasText("Por encima del ritmo")
             ).fetchSemanticsNodes().isNotEmpty()
         }
     }

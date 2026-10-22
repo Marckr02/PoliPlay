@@ -129,6 +129,12 @@ class HoyViewModel @Inject constructor(
         }
     }
 
+    fun delete(taskId: Long) {
+        viewModelScope.launch {
+            taskRepository.delete(taskId)
+        }
+    }
+
     private fun classesFor(courses: List<Course>, date: LocalDate, today: LocalDate): List<HoyClass> {
         val now = LocalTime.now(clock)
         return courses.flatMap { course ->

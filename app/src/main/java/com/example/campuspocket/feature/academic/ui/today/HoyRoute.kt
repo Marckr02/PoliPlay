@@ -26,6 +26,7 @@ fun HoyRoute(
         state = state,
         onSelectDate = viewModel::selectDate,
         onToggleTask = viewModel::setCompleted,
-        onOpenTask = onOpenTask
+        onOpenTask = onOpenTask,
+        onDeleteTask = viewModel::delete
     )
 }

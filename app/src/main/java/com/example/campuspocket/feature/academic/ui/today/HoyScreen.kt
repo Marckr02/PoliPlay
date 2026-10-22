@@ -11,11 +11,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusSectionHeader
 import com.example.campuspocket.core.designsystem.components.DayStrip
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
@@ -47,8 +52,10 @@ fun HoyScreen(
     state: HoyUiState = HoyUiState(),
     onSelectDate: (LocalDate) -> Unit = {},
     onToggleTask: (Task, Boolean) -> Unit = { _, _ -> },
-    onOpenTask: (Long) -> Unit = {}
+    onOpenTask: (Long) -> Unit = {},
+    onDeleteTask: (Long) -> Unit = {}
 ) {
+    var pendingDelete by remember { mutableStateOf<Task?>(null) }
     val dateText = state.selectedDate.format(
         DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale.forLanguageTag("es"))
     ).replaceFirstChar { it.titlecase(Locale.forLanguageTag("es")) }
@@ -85,7 +92,7 @@ fun HoyScreen(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 )
                 RoundIconButton(
-                    icon = Icons.Filled.Check,
+                    iconRes = R.drawable.ic_action_task_list,
                     contentDescription = stringResource(R.string.today_open_tasks),
                     onClick = onNavigateToTasks,
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -168,12 +175,25 @@ fun HoyScreen(
                         courseName = entry.courseName,
                         onClick = { entry.task.id?.let(onOpenTask) },
                         onToggleCompleted = { done -> onToggleTask(entry.task, done) },
-                        onDelete = {},
-                        onSwipeToComplete = { onToggleTask(entry.task, true) },
-                        onSwipeToDelete = {}
+                        onDelete = { pendingDelete = entry.task }
                     )
                 }
             }
         }
+    }
+
+    pendingDelete?.let { task ->
+        CampusDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = stringResource(R.string.delete_task_confirm),
+            message = stringResource(R.string.delete_task_message, task.title),
+            icon = Icons.Filled.Delete,
+            destructive = true,
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                task.id?.let(onDeleteTask)
+                pendingDelete = null
+            }
+        )
     }
 }

@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.campusTimePickerColors
 import com.example.campuspocket.core.designsystem.extended
 import java.time.LocalTime
 
@@ -122,7 +123,7 @@ fun TimePickerDialog(
         confirmText = stringResource(R.string.ok),
         onConfirm = { onConfirm(LocalTime.of(pickerState.hour, pickerState.minute)) },
         content = {
-            TimePicker(state = pickerState)
+            TimePicker(state = pickerState, colors = campusTimePickerColors())
         }
     )
 }

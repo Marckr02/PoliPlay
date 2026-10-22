@@ -1,10 +1,10 @@
 package com.example.campuspocket.feature.finance.ui.calendar
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -22,8 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.util.Money
@@ -164,12 +163,13 @@ private fun DayCell(
     val negative = day.balanceCents < 0
     val container = if (isToday) ext.accent else MaterialTheme.colorScheme.surface
     val content = if (isToday) ext.onAccent else MaterialTheme.colorScheme.onSurface
-    Card(
-        modifier = modifier
-            .aspectRatio(0.85f)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-        colors = CardDefaults.cardColors(containerColor = container),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    BentoCard(
+        modifier = modifier.aspectRatio(0.85f),
+        containerColor = container,
+        contentColor = content,
+        shape = MaterialTheme.shapes.small,
+        contentPadding = PaddingValues(0.dp),
+        onClick = onClick
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(2.dp),

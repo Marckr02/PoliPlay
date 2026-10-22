@@ -3,9 +3,11 @@ package com.example.campuspocket.core.designsystem.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,12 +39,17 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -556,6 +563,7 @@ enum class TaskFilter(val label: Int) {
     COMPLETED(R.string.task_filter_completed)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskItemCard(
     modifier: Modifier = Modifier,
@@ -563,47 +571,66 @@ fun TaskItemCard(
     courseName: String?,
     onClick: () -> Unit,
     onToggleCompleted: (Boolean) -> Unit,
-    onDelete: () -> Unit,
-    onSwipeToComplete: () -> Unit,
-    onSwipeToDelete: () -> Unit
+    onDelete: () -> Unit
 ) {
     val ext = MaterialTheme.extended
     val isCompleted = task.completedAt != null
-    BentoCard(
-        modifier = modifier.clickable(onClick = onClick),
-        containerColor = if (isCompleted) ext.successContainer else MaterialTheme.colorScheme.surface,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RoundCheckbox(
-                checked = isCompleted,
-                onCheckedChange = onToggleCompleted,
-                contentDescription = task.title
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null
+    var menuExpanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        BentoCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = { menuExpanded = true },
+                    role = Role.Button
+                ),
+            containerColor = if (isCompleted) ext.successContainer else MaterialTheme.colorScheme.surface,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RoundCheckbox(
+                    checked = isCompleted,
+                    onCheckedChange = onToggleCompleted,
+                    contentDescription = task.title
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
                     Text(
-                        text = formatDueAt(task) + (courseName?.let { " · $it" } ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        text = task.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (isCompleted) TextDecoration.LineThrough else null
                     )
-                    PriorityBadge(priority = task.priority)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = formatDueAt(task) + (courseName?.let { " · $it" } ?: ""),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        PriorityBadge(priority = task.priority)
+                    }
                 }
             }
+        }
+        DropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = { menuExpanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete)) },
+                onClick = {
+                    menuExpanded = false
+                    onDelete()
+                }
+            )
         }
     }
 }

@@ -5,7 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,12 +23,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,8 +41,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.CampusSelectField
+import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
@@ -88,6 +89,8 @@ fun WithdrawalScreen(
             }
 
             else -> {
+                val source = state.selectedAccount
+                val insufficientBalance = source != null && state.amountCents > source.balanceCents
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -114,16 +117,32 @@ fun WithdrawalScreen(
                         onAmountChange = viewModel::onAmountChange
                     )
 
+                    if (source != null && state.cashAccount != null && state.amountCents > 0L) {
+                        AfterWithdrawalCard(
+                            savingsAfterCents = (source.balanceCents - state.amountCents)
+                                .coerceAtLeast(0L),
+                            cashAfterCents = state.cashBalanceCents + state.amountCents
+                        )
+                    }
+
                     state.error?.let { error ->
                         if (error == WithdrawalError.MISSING_SOURCE_ACCOUNT) {
                             InlineError(errorText(error = error, accountName = state.selectedAccount?.account?.name))
                         }
                     }
+                    if (insufficientBalance) {
+                        InlineError(
+                            stringResource(
+                                R.string.withdrawal_insufficient_reason,
+                                source?.account?.name.orEmpty()
+                            )
+                        )
+                    }
                 }
                 CampusButton(
                     text = stringResource(R.string.withdrawal_confirm),
                     onClick = viewModel::save,
-                    enabled = !state.isSaving,
+                    enabled = !state.isSaving && !insufficientBalance,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 12.dp)
@@ -156,46 +175,75 @@ private fun SavingsAccountDropdown(
     var expanded by remember { mutableStateOf(false) }
     val selected = accounts.firstOrNull { it.account.id == selectedId }
 
-    ExposedDropdownMenuBox(
+    CampusSelectField(
+        value = selected?.account?.name.orEmpty(),
+        label = stringResource(R.string.withdrawal_from),
         expanded = expanded,
         onExpandedChange = { expanded = it },
+        supportingText = selected?.let {
+            stringResource(R.string.withdrawal_balance, Money.format(it.balanceCents))
+        },
         modifier = modifier
     ) {
-        CampusTextField(
-            value = selected?.account?.name.orEmpty(),
-            onValueChange = {},
-            label = stringResource(R.string.withdrawal_from),
-            readOnly = true,
-            supportingText = selected?.let {
-                { Text(stringResource(R.string.withdrawal_balance, Money.format(it.balanceCents))) }
-            },
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
+        accounts.forEach { balance ->
+            CampusSelectItem(
+                text = balance.account.name + " · " + Money.format(balance.balanceCents),
+                selected = balance.account.id == selectedId,
+                onClick = {
+                    balance.account.id?.let(onSelect)
+                    expanded = false
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun AfterWithdrawalCard(
+    savingsAfterCents: Long,
+    cashAfterCents: Long,
+    modifier: Modifier = Modifier
+) {
+    BentoCard(
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.withdrawal_after_title),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            accounts.forEach { balance ->
-                DropdownMenuItem(
-                    text = {
-                        Column {
-                            Text(balance.account.name)
-                            Text(
-                                text = Money.format(balance.balanceCents),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    onClick = {
-                        balance.account.id?.let(onSelect)
-                        expanded = false
-                    }
-                )
-            }
+            Text(
+                text = stringResource(R.string.withdrawal_savings_label),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = Money.format(savingsAfterCents),
+                style = MaterialTheme.typography.titleSmall
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.withdrawal_cash_label),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = Money.format(cashAfterCents),
+                style = MaterialTheme.typography.titleSmall
+            )
         }
     }
 }
@@ -206,8 +254,7 @@ private fun CashDestinationCard(
     showError: Boolean,
     onCreateAccount: () -> Unit,
     modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+) {    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,

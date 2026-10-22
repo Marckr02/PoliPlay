@@ -13,17 +13,47 @@ import com.example.campuspocket.core.preferences.UserPreferences
 enum class TopLevelDestination(
     val route: String,
     @StringRes val labelRes: Int,
-    @DrawableRes val iconRes: Int,
+    @DrawableRes val outlineIconRes: Int,
+    @DrawableRes val filledIconRes: Int,
     /** Módulo que debe estar activo para mostrarlo; null = siempre visible. */
     val module: CampusModule? = null,
     /** Si forma parte de la barra flotante inferior. */
     val showInDock: Boolean = true
 ) {
-    HOME("home", R.string.nav_home, R.drawable.ic_home),
-    ACADEMIC("academic", R.string.nav_academic, R.drawable.ic_schedule, CampusModule.ACADEMIC),
-    FINANCE("finance", R.string.nav_finance, R.drawable.ic_wallet, CampusModule.FINANCE),
-    NOTES("notes", R.string.nav_notes, R.drawable.ic_notes, CampusModule.NOTES),
-    SETTINGS("settings", R.string.nav_settings, R.drawable.ic_settings, showInDock = false);
+    HOME(
+        "home",
+        R.string.nav_home,
+        R.drawable.ic_dock_home_outline,
+        R.drawable.ic_dock_home_filled
+    ),
+    ACADEMIC(
+        "academic",
+        R.string.nav_academic,
+        R.drawable.ic_dock_school_outline,
+        R.drawable.ic_dock_school_filled,
+        CampusModule.ACADEMIC
+    ),
+    FINANCE(
+        "finance",
+        R.string.nav_finance,
+        R.drawable.ic_dock_wallet_outline,
+        R.drawable.ic_dock_wallet_filled,
+        CampusModule.FINANCE
+    ),
+    NOTES(
+        "notes",
+        R.string.nav_notes,
+        R.drawable.ic_dock_notes_outline,
+        R.drawable.ic_dock_notes_filled,
+        CampusModule.NOTES
+    ),
+    SETTINGS(
+        "settings",
+        R.string.nav_settings,
+        R.drawable.ic_settings,
+        R.drawable.ic_settings,
+        showInDock = false
+    );
 
     companion object {
         val start = HOME

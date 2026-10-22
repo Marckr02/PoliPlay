@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -81,7 +82,7 @@ fun HistoryScreen(
     val ext = MaterialTheme.extended
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         SearchPill(
@@ -163,121 +164,59 @@ fun HistoryScreen(
 
         when {
             state.isLoading -> {
-                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.fillMaxWidth().height(160.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     LoadingShimmer()
                 }
             }
 
             state.transactions.isEmpty() -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(bottom = 8.dp)
+                BentoCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(16.dp)
                 ) {
-                    item(key = "empty") {
-                        BentoCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(16.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(ext.lavender),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(14.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape)
-                                        .background(ext.lavender),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_wallet),
-                                        contentDescription = null,
-                                        tint = ext.onLavender,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text(
-                                        text = stringResource(R.string.empty_transactions),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.empty_transactions_message),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
+                            Icon(
+                                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_wallet),
+                                contentDescription = null,
+                                tint = ext.onLavender,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = stringResource(R.string.empty_transactions),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.empty_transactions_message),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
             }
 
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 8.dp)
-                ) {
-                    items(state.transactions, key = { it.id ?: 0L }) { tx ->
-                        val category = state.categories[tx.categoryId]?.name.orEmpty()
-                        val accountName = state.accounts[tx.accountId]?.name.orEmpty()
-                        val targetAccountName = tx.targetAccountId
-                            ?.let { id -> state.accounts[id]?.name }
-                            .orEmpty()
-                        val typeLabel = stringResource(transactionTypeLabelRes(tx.type))
-                        val (iconContainer, iconContent) = when (tx.type) {
-                            TransactionType.EXPENSE -> ext.peach to ext.onPeach
-                            TransactionType.INCOME -> ext.mint to ext.onMint
-                            TransactionType.TRANSFER -> ext.sky to ext.onSky
-                            TransactionType.REFUND -> ext.lavender to ext.onLavender
-                        }
-                        val accountsLabel = if (
-                            tx.subtype == TransactionSubtype.RETIRO_CAJERO &&
-                            targetAccountName.isNotBlank()
-                        ) {
-                            "$accountName → $targetAccountName"
-                        } else {
-                            accountName
-                        }
-                        val title = tx.description?.takeIf { it.isNotBlank() }
-                            ?: if (tx.subtype == TransactionSubtype.RETIRO_CAJERO) {
-                                stringResource(R.string.finance_withdrawal)
-                            } else {
-                                typeLabel
-                            }
-                        val meta = DATE_WITH_YEAR.format(tx.date) +
-                            (if (accountsLabel.isNotBlank()) " · $accountsLabel" else "") +
-                            (if (category.isNotBlank()) " · $category" else "")
-                        BentoCard(
-                            contentPadding = PaddingValues(0.dp),
-                            shape = MaterialTheme.shapes.large
-                        ) {
-                            TransactionRow(
-                                title = title,
-                                meta = meta,
-                                amount = Money.format(
-                                    when (tx.type) {
-                                        TransactionType.EXPENSE,
-                                        TransactionType.TRANSFER -> -tx.amountCents
-                                        else -> tx.amountCents
-                                    }
-                                ),
-                                iconText = category.takeIf { it.isNotBlank() } ?: typeLabel,
-                                iconColor = iconContainer,
-                                onIconColor = iconContent,
-                                amountColor = when (tx.type) {
-                                    TransactionType.INCOME,
-                                    TransactionType.REFUND -> ext.success
-                                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                                    TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface
-                                },
-                                onClick = { tx.id?.let { onOpenTransaction(it, tx.type) } }
-                            )
-                        }
-                    }
-                }
+            else -> state.transactions.forEach { tx ->
+                HistoryTransactionCard(
+                    tx = tx,
+                    state = state,
+                    onOpenTransaction = onOpenTransaction
+                )
             }
         }
     }
@@ -315,6 +254,70 @@ fun HistoryScreen(
         ) {
             DateRangePicker(state = pickerState, modifier = Modifier.weight(1f))
         }
+    }
+}
+
+@Composable
+private fun HistoryTransactionCard(
+    tx: Transaction,
+    state: HistoryUiState,
+    onOpenTransaction: (Long, TransactionType) -> Unit
+) {
+    val ext = MaterialTheme.extended
+    val category = state.categories[tx.categoryId]?.name.orEmpty()
+    val accountName = state.accounts[tx.accountId]?.name.orEmpty()
+    val targetAccountName = tx.targetAccountId
+        ?.let { id -> state.accounts[id]?.name }
+        .orEmpty()
+    val typeLabel = stringResource(transactionTypeLabelRes(tx.type))
+    val (iconContainer, iconContent) = when (tx.type) {
+        TransactionType.EXPENSE -> ext.peach to ext.onPeach
+        TransactionType.INCOME -> ext.mint to ext.onMint
+        TransactionType.TRANSFER -> ext.sky to ext.onSky
+        TransactionType.REFUND -> ext.lavender to ext.onLavender
+    }
+    val accountsLabel = if (
+        tx.subtype == TransactionSubtype.RETIRO_CAJERO &&
+        targetAccountName.isNotBlank()
+    ) {
+        "$accountName → $targetAccountName"
+    } else {
+        accountName
+    }
+    val title = tx.description?.takeIf { it.isNotBlank() }
+        ?: if (tx.subtype == TransactionSubtype.RETIRO_CAJERO) {
+            stringResource(R.string.finance_withdrawal)
+        } else {
+            typeLabel
+        }
+    val meta = DATE_WITH_YEAR.format(tx.date) +
+        (if (accountsLabel.isNotBlank()) " · $accountsLabel" else "") +
+        (if (category.isNotBlank()) " · $category" else "")
+    BentoCard(
+        contentPadding = PaddingValues(0.dp),
+        shape = MaterialTheme.shapes.large
+    ) {
+        TransactionRow(
+            title = title,
+            meta = meta,
+            amount = Money.format(
+                when (tx.type) {
+                    TransactionType.EXPENSE,
+                    TransactionType.TRANSFER -> -tx.amountCents
+                    else -> tx.amountCents
+                }
+            ),
+            iconText = category.takeIf { it.isNotBlank() } ?: typeLabel,
+            iconColor = iconContainer,
+            onIconColor = iconContent,
+            amountColor = when (tx.type) {
+                TransactionType.INCOME,
+                TransactionType.REFUND -> ext.success
+                TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface
+            },
+            onClick = { tx.id?.let { onOpenTransaction(it, tx.type) } }
+        )
     }
 }
 

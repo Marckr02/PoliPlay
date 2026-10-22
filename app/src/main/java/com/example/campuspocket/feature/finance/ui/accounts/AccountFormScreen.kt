@@ -52,6 +52,8 @@ import com.example.campuspocket.core.designsystem.ContrastUtil
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.CampusSelectField
+import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.CampusSwitch
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
@@ -107,31 +109,22 @@ fun AccountFormScreen(
 
             // Tipo de cuenta
             var typeExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
+            CampusSelectField(
+                value = stringResource(accountTypeLabelRes(state.type)),
+                label = stringResource(R.string.account_type),
                 expanded = typeExpanded,
-                onExpandedChange = { typeExpanded = it }
+                onExpandedChange = { typeExpanded = it },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                CampusTextField(
-                    value = stringResource(accountTypeLabelRes(state.type)),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = stringResource(R.string.account_type),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = typeExpanded,
-                    onDismissRequest = { typeExpanded = false }
-                ) {
-                    AccountType.entries.forEach { type ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(accountTypeLabelRes(type))) },
-                            onClick = {
-                                viewModel.onTypeChange(type)
-                                typeExpanded = false
-                            }
-                        )
-                    }
+                AccountType.entries.forEach { type ->
+                    CampusSelectItem(
+                        text = stringResource(accountTypeLabelRes(type)),
+                        selected = type == state.type,
+                        onClick = {
+                            viewModel.onTypeChange(type)
+                            typeExpanded = false
+                        }
+                    )
                 }
             }
 

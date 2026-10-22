@@ -16,9 +16,13 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.DatePickerColors
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePickerColors
+import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +32,44 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.core.designsystem.extended
+
+/** Colores del selector de fecha alineados con la paleta CampusPocket. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun campusDatePickerColors(): DatePickerColors {
+    val scheme = MaterialTheme.colorScheme
+    return DatePickerDefaults.colors(
+        containerColor = scheme.surface,
+        titleContentColor = scheme.onSurfaceVariant,
+        headlineContentColor = scheme.onSurface,
+        weekdayContentColor = scheme.onSurfaceVariant,
+        dayContentColor = scheme.onSurface,
+        selectedDayContainerColor = scheme.primary,
+        selectedDayContentColor = scheme.onPrimary,
+        todayContentColor = scheme.primary,
+        todayDateBorderColor = scheme.primary,
+        dividerColor = scheme.outlineVariant
+    )
+}
+
+/** Colores del selector de hora alineados con la paleta CampusPocket. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun campusTimePickerColors(): TimePickerColors {
+    val scheme = MaterialTheme.colorScheme
+    return TimePickerDefaults.colors(
+        clockDialColor = scheme.surfaceVariant,
+        clockDialSelectedContentColor = scheme.onPrimary,
+        clockDialUnselectedContentColor = scheme.onSurface,
+        selectorColor = scheme.primary,
+        containerColor = scheme.surface,
+        timeSelectorSelectedContainerColor = scheme.primaryContainer,
+        timeSelectorUnselectedContainerColor = scheme.surfaceVariant,
+        timeSelectorSelectedContentColor = scheme.onPrimaryContainer,
+        timeSelectorUnselectedContentColor = scheme.onSurface
+    )
+}
+
 
 /**
  * Selector de formulario con el mismo aspecto que CampusTextField. El menú se

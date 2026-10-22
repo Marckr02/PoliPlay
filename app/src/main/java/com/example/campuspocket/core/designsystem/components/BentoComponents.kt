@@ -2,6 +2,7 @@ package com.example.campuspocket.core.designsystem.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -10,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,10 +33,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -58,12 +61,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -72,6 +78,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -85,114 +92,110 @@ import com.example.campuspocket.feature.notes.data.NoteEntity
 data class DockDestination(
     val route: String,
     val label: String,
-    @DrawableRes val iconRes: Int
+    @DrawableRes val outlineRes: Int,
+    @DrawableRes val filledRes: Int
 )
 
 /**
- * Barra flotante del rediseño: píldora de tinta con el destino activo en lima
- * y un botón circular de acento para la acción contextual de cada pantalla.
+ * Barra flotante v4: cuatro celdas iguales con icono sobre etiqueta siempre
+ * visible. El activo usa icono relleno e indicador honey; los inactivos,
+ * contorno en inkMuted. La acción contextual vive fuera de esta barra.
  */
 @Composable
 fun FloatingDock(
     destinations: List<DockDestination>,
     currentRoute: String?,
     onNavigate: (DockDestination) -> Unit,
-    onAddClick: () -> Unit,
-    addContentDescription: String,
     modifier: Modifier = Modifier
 ) {
     val ext = MaterialTheme.extended
+    val isDark = isSystemInDarkTheme()
+    val haptic = LocalHapticFeedback.current
+    val dockShape = PillShape
+    val elevationModifier = if (isDark) {
+        Modifier.border(1.dp, ext.inkLine, dockShape)
+    } else {
+        Modifier.shadow(
+            elevation = 8.dp,
+            shape = dockShape,
+            clip = false,
+            ambientColor = Color(0x4704252E),
+            spotColor = Color(0x4704252E)
+        )
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp)
+            .height(68.dp)
+            .then(elevationModifier)
+            .clip(dockShape)
+            .background(ext.dock)
+            .padding(horizontal = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .height(64.dp)
-                .clip(PillShape)
-                .background(ext.dock)
-                .padding(horizontal = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(1.dp)
-        ) {
-            destinations.forEach { destination ->
-                val selected = destination.route == currentRoute
-                if (selected) {
-                    Row(
-                        modifier = Modifier
-                            .height(48.dp)
-                            .clip(PillShape)
-                            .background(ext.lime)
-                            .semantics { this.selected = true }
-                            .combinedClickable(
-                                onClick = { onNavigate(destination) },
-                                onLongClick = null,
-                                role = Role.Tab
-                            )
-                            .padding(horizontal = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
+        destinations.forEach { destination ->
+            val selected = destination.route == currentRoute
+            val indicatorColor by animateColorAsState(
+                targetValue = if (selected) ext.lime else Color.Transparent,
+                animationSpec = tween(180),
+                label = "dockIndicator"
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(18.dp))
+                    .semantics(mergeDescendants = true) { this.selected = selected }
+                    .combinedClickable(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onNavigate(destination)
+                        },
+                        onLongClick = null,
+                        role = Role.Tab
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(56.dp)
+                        .height(32.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(indicatorColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Crossfade(
+                        targetState = selected,
+                        animationSpec = tween(120),
+                        label = "dockIcon"
+                    ) { active ->
                         Icon(
-                            painter = painterResource(destination.iconRes),
-                            contentDescription = null,
-                            tint = ext.onLime,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = destination.label,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = ext.onLime,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .semantics { this.selected = false }
-                            .combinedClickable(
-                                onClick = { onNavigate(destination) },
-                                onLongClick = null,
-                                role = Role.Tab
+                            painter = painterResource(
+                                if (active) destination.filledRes else destination.outlineRes
                             ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(destination.iconRes),
-                            contentDescription = destination.label,
-                            tint = ext.dockInactive,
-                            modifier = Modifier.size(22.dp)
+                            contentDescription = null,
+                            tint = if (active) ext.onLime else ext.inkMuted,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = destination.label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold
+                    ),
+                    color = if (selected) ext.onDock else ext.inkMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
             }
-        }
-        Spacer(Modifier.width(8.dp))
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(ext.accent)
-                .semantics { contentDescription = addContentDescription }
-                .combinedClickable(
-                    onClick = onAddClick,
-                    onLongClick = null,
-                    role = Role.Button
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = null,
-                tint = ext.onAccent,
-                modifier = Modifier.size(28.dp)
-            )
         }
     }
 }

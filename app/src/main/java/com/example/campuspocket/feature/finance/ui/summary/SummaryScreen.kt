@@ -16,8 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,12 +43,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.extended
+import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.BudgetProgressBar
+import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.CategoryExpenseChart
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.components.MonthlyOverviewCard
+import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
 import com.example.campuspocket.feature.finance.domain.MonthPace
@@ -59,108 +66,119 @@ import kotlin.math.min
 fun SummaryScreen(
     modifier: Modifier = Modifier,
     onDefineBudget: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
     viewModel: SummaryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    if (state.isLoading) {
-        LoadingShimmer(modifier = modifier.fillMaxSize())
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item(key = "available_card") {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(
-                        Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.finance_remaining_summary),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        val remainingCents = state.monthlyRemainingCents
-                        Text(
-                            text = remainingCents?.let { Money.format(it) } ?: "—",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = if ((remainingCents ?: 0L) < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                        )
-                        CategoryExpenseChart(
-                            slices = state.donutSlices,
-                            modifier = Modifier.size(140.dp)
-                        )
+    Column(modifier = modifier.fillMaxSize()) {
+        CampusTopBar(
+            title = stringResource(R.string.summary_title),
+            onBack = onBack
+        )
+        if (state.isLoading) {
+            LoadingShimmer(modifier = Modifier.fillMaxSize())
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 20.dp,
+                    end = 20.dp,
+                    bottom = 24.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item(key = "available_card") {
+                    BentoCard(Modifier.fillMaxWidth()) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.finance_remaining_summary),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            val remainingCents = state.monthlyRemainingCents
+                            Text(
+                                text = remainingCents?.let { Money.format(it) } ?: "—",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = if ((remainingCents ?: 0L) < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                            )
+                            CategoryExpenseChart(
+                                slices = state.donutSlices,
+                                modifier = Modifier.size(140.dp)
+                            )
+                        }
                     }
                 }
-            }
 
-            item(key = "overview_card") {
-                MonthlyOverviewCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    income = max(state.totalBalanceCents, 0L),
-                    expense = min(state.projectedSpentCents, 0L),
-                    net = state.projectedBalanceCents
-                )
-            }
-
-            item(key = "pace_card") {
-                val pace = state.pace
-                if (pace != null) {
-                    BudgetPaceCard(pace = pace, onEditBudget = onDefineBudget)
-                } else {
-                    BudgetPaceSuggestionCard(onDefineBudget = onDefineBudget)
+                item(key = "overview_card") {
+                    MonthlyOverviewCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        income = max(state.totalBalanceCents, 0L),
+                        expense = min(state.projectedSpentCents, 0L),
+                        net = state.projectedBalanceCents
+                    )
                 }
-            }
 
-            if (state.upcomingPayments.isNotEmpty()) {
-                item(key = "payments_card") {
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = stringResource(R.string.summary_upcoming_payments),
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            state.upcomingPayments.forEach { p ->
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(
-                                        p.name,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(
-                                        Money.format(p.amountCents) + " · " + p.nextDueDate.toString(),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                item(key = "pace_card") {
+                    val pace = state.pace
+                    if (pace != null) {
+                        BudgetPaceCard(pace = pace, onEditBudget = onDefineBudget)
+                    } else {
+                        BudgetPaceSuggestionCard(onDefineBudget = onDefineBudget)
+                    }
+                }
+
+                if (state.upcomingPayments.isNotEmpty()) {
+                    item(key = "payments_card") {
+                        BentoCard(Modifier.fillMaxWidth()) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = stringResource(R.string.summary_upcoming_payments),
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                state.upcomingPayments.forEach { p ->
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(
+                                            p.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Text(
+                                            Money.format(p.amountCents) + " · " + p.nextDueDate.toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            item(key = "top_categories_header") {
-                Text(
-                    text = stringResource(R.string.summary_top_categories),
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 4.dp, start = 4.dp)
-                )
-            }
-
-            if (state.topCategories.isEmpty()) {
-                item(key = "empty_categories") {
-                    EmptyStateCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        title = stringResource(R.string.empty_budgets),
-                        message = stringResource(R.string.empty_budgets),
-                        icon = painterResource(R.drawable.ic_wallet)
+                item(key = "top_categories_header") {
+                    Text(
+                        text = stringResource(R.string.summary_top_categories),
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(top = 4.dp, start = 4.dp)
                     )
                 }
-            } else {
-                items(state.topCategories, key = { it.categoryId }) { row ->
-                    CategoryBudgetRow(row)
+
+                if (state.topCategories.isEmpty()) {
+                    item(key = "empty_categories") {
+                        EmptyStateCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            title = stringResource(R.string.empty_budgets),
+                            message = stringResource(R.string.empty_budgets),
+                            icon = painterResource(R.drawable.ic_wallet)
+                        )
+                    }
+                } else {
+                    items(state.topCategories, key = { it.categoryId }) { row ->
+                        CategoryBudgetRow(row)
+                    }
                 }
             }
         }
@@ -168,9 +186,8 @@ fun SummaryScreen(
 }
 
 /**
- * Indicador de ritmo del presupuesto total (Fase 8B): esperado vs. real, con
- * marca del día actual sobre la barra. El relleno se limita al 100 %, pero el
- * porcentaje real se muestra completo.
+ * Indicador de ritmo del presupuesto total (Fase 8B): hero ink que lidera con
+ * lo gastado, marca blanca del esperado y estado por debajo/por encima.
  */
 @Composable
 internal fun BudgetPaceCard(
@@ -178,75 +195,140 @@ internal fun BudgetPaceCard(
     onEditBudget: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val statusColor = if (pace.isOver) MaterialTheme.colorScheme.error else MaterialTheme.extended.success
+    val ext = MaterialTheme.extended
     val monthName = pace.date.month
         .getDisplayName(TextStyle.FULL, Locale.getDefault())
         .replaceFirstChar { it.titlecase(Locale.getDefault()) }
+    val overBudget = pace.spentCents > pace.budgetCents
+    val statusContainer = if (pace.isOver) ext.dangerSoft else ext.mint
+    val statusContent = if (pace.isOver) ext.onDangerSoft else ext.onMint
+    val statusColor = if (pace.isOver) ext.dangerSoft else ext.mint
+    val statusText = if (pace.isOver) {
+        stringResource(R.string.finance_pace_above_badge)
+    } else {
+        stringResource(R.string.finance_pace_below_badge)
+    }
+    val phrase = when {
+        overBudget -> stringResource(
+            R.string.finance_pace_over_budget_message,
+            Money.format(pace.spentCents - pace.budgetCents)
+        )
+        pace.isOver -> stringResource(
+            R.string.finance_pace_above_message,
+            Money.format(pace.overCents)
+        )
+        else -> stringResource(
+            R.string.finance_pace_below_message,
+            Money.format(pace.expectedCents - pace.spentCents)
+        )
+    }
 
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.pace_card_title),
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.pace_month_day,
-                            monthName,
-                            pace.day,
-                            pace.daysInMonth
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                TextButton(onClick = onEditBudget) {
-                    Text(stringResource(R.string.budget_total_edit))
-                }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                PaceStat(
-                    label = stringResource(R.string.pace_expected),
-                    percent = formatPacePercent(pace.expectedPct),
-                    amount = Money.format(pace.expectedCents),
-                    valueColor = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                PaceStat(
-                    label = stringResource(R.string.pace_real),
-                    percent = formatPacePercent(pace.realPct),
-                    amount = Money.format(pace.spentCents),
-                    valueColor = statusColor,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            PaceBar(pace = pace, statusColor = statusColor)
-
+    BentoCard(
+        modifier = modifier,
+        containerColor = ext.ink,
+        contentColor = ext.onInk,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = if (pace.isOver) {
-                    stringResource(R.string.pace_above, Money.format(pace.overCents))
-                } else {
-                    stringResource(R.string.pace_below)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = statusColor
+                text = stringResource(
+                    R.string.finance_pace_overline,
+                    monthName.uppercase(Locale.getDefault()),
+                    pace.day,
+                    pace.daysInMonth
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = ext.onInk.copy(alpha = 0.72f),
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(
+                onClick = onEditBudget,
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    contentColor = ext.lime
+                )
+            ) {
+                Text(stringResource(R.string.budget_total_edit))
+            }
+        }
+        Text(
+            text = stringResource(
+                R.string.pace_real_value,
+                formatPacePercent(pace.realPct),
+                stringResource(R.string.finance_pace_spent_word)
+            ),
+            style = MaterialTheme.typography.displaySmall,
+            color = ext.onInk,
+            maxLines = 2
+        )
+        Spacer(Modifier.height(14.dp))
+        PaceBar(
+            pace = pace,
+            trackColor = ext.onInk.copy(alpha = 0.18f),
+            fillColor = statusColor,
+            markerColor = ext.onInk
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            PaceStat(
+                label = stringResource(R.string.finance_pace_spent_label),
+                amount = Money.format(pace.spentCents),
+                valueColor = ext.onInk,
+                modifier = Modifier.weight(1f)
+            )
+            PaceStat(
+                label = stringResource(R.string.finance_pace_expected_label),
+                amount = Money.format(pace.expectedCents),
+                valueColor = ext.onInk.copy(alpha = 0.72f),
+                modifier = Modifier.weight(1f)
             )
         }
+        Spacer(Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .clip(PillShape)
+                    .background(statusContainer)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (pace.isOver) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_arrow_up),
+                        contentDescription = null,
+                        tint = statusContent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = statusContent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = statusContent
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = phrase,
+            style = MaterialTheme.typography.bodySmall,
+            color = ext.onInk.copy(alpha = 0.82f)
+        )
     }
 }
 
 @Composable
 private fun PaceStat(
     label: String,
-    percent: String,
     amount: String,
     valueColor: Color,
     modifier: Modifier = Modifier
@@ -254,22 +336,25 @@ private fun PaceStat(
     Column(modifier = modifier) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelSmall,
+            color = valueColor.copy(alpha = 0.72f)
         )
-        Text(text = percent, style = MaterialTheme.typography.titleMedium, color = valueColor)
         Text(
             text = amount,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.titleMedium,
+            color = valueColor
         )
     }
 }
 
 @Composable
-private fun PaceBar(pace: MonthPace, statusColor: Color, modifier: Modifier = Modifier) {
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val markerColor = MaterialTheme.colorScheme.onSurface
+private fun PaceBar(
+    pace: MonthPace,
+    trackColor: Color,
+    fillColor: Color,
+    markerColor: Color,
+    modifier: Modifier = Modifier
+) {
     Canvas(
         modifier = modifier
             .fillMaxWidth()
@@ -280,7 +365,7 @@ private fun PaceBar(pace: MonthPace, statusColor: Color, modifier: Modifier = Mo
 
         if (pace.barProgress > 0f) {
             drawRoundRect(
-                color = statusColor,
+                color = fillColor,
                 size = Size(size.width * pace.barProgress, size.height),
                 cornerRadius = radius
             )
@@ -300,25 +385,28 @@ private fun PaceBar(pace: MonthPace, statusColor: Color, modifier: Modifier = Mo
 }
 
 @Composable
-private fun BudgetPaceSuggestionCard(onDefineBudget: () -> Unit, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = stringResource(R.string.pace_no_budget_title),
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
-                text = stringResource(R.string.pace_no_budget_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            TextButton(
-                onClick = onDefineBudget,
-                modifier = Modifier.align(Alignment.Start)
-            ) {
-                Text(stringResource(R.string.budget_total_define))
-            }
-        }
+internal fun BudgetPaceSuggestionCard(onDefineBudget: () -> Unit, modifier: Modifier = Modifier) {
+    BentoCard(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.finance_pace_no_budget_title),
+            style = MaterialTheme.typography.titleSmall
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.finance_pace_no_budget_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(12.dp))
+        PrimaryPillButton(
+            text = stringResource(R.string.finance_pace_create_budget),
+            onClick = onDefineBudget,
+            modifier = Modifier.align(Alignment.Start)
+        )
     }
 }
 
@@ -327,8 +415,11 @@ private fun formatPacePercent(value: java.math.BigDecimal): String =
 
 @Composable
 private fun CategoryBudgetRow(row: GetMonthSummary.CategoryRow, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    BentoCard(
+        modifier = modifier,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

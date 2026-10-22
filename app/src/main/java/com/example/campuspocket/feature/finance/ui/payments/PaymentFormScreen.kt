@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -38,11 +39,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.CampusSelectField
+import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.CampusSwitch
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
+import com.example.campuspocket.core.designsystem.components.campusDatePickerColors
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.Frequency
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
@@ -125,57 +129,55 @@ fun PaymentFormScreen(
 
             // Cuenta
             var accExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(expanded = accExpanded, onExpandedChange = { accExpanded = it }) {
-                CampusTextField(
-                    value = accounts.firstOrNull { it.id == state.accountId }?.name ?: "",
-                    onValueChange = {},
-                    label = stringResource(R.string.transaction_account),
-                    readOnly = true,
-                    supportingText = {
-                        if (state.error == PaymentDomainError.MISSING_ACCOUNT) {
-                            Text(stringResource(R.string.transaction_error_missing_account))
+            CampusSelectField(
+                value = accounts.firstOrNull { it.id == state.accountId }?.name ?: "",
+                label = stringResource(R.string.transaction_account),
+                expanded = accExpanded,
+                onExpandedChange = { accExpanded = it },
+                isError = state.error == PaymentDomainError.MISSING_ACCOUNT,
+                supportingText = if (state.error == PaymentDomainError.MISSING_ACCOUNT) {
+                    stringResource(R.string.transaction_error_missing_account)
+                } else {
+                    null
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                accounts.forEach { acc ->
+                    CampusSelectItem(
+                        text = acc.name,
+                        selected = acc.id == state.accountId,
+                        onClick = {
+                            viewModel.onAccountChange(acc.id ?: 0L)
+                            accExpanded = false
                         }
-                    },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = accExpanded)
-                    },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(expanded = accExpanded, onDismissRequest = { accExpanded = false }) {
-                    accounts.forEach { acc ->
-                        DropdownMenuItem(
-                            text = { Text(acc.name) },
-                            onClick = { viewModel.onAccountChange(acc.id ?: 0L); accExpanded = false }
-                        )
-                    }
+                    )
                 }
             }
 
             // Categoría (gasto)
             var catExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(expanded = catExpanded, onExpandedChange = { catExpanded = it }) {
-                CampusTextField(
-                    value = categories.firstOrNull { it.id == state.categoryId }?.name ?: "",
-                    onValueChange = {},
-                    label = stringResource(R.string.transaction_category),
-                    readOnly = true,
-                    supportingText = {
-                        if (state.error == PaymentDomainError.MISSING_CATEGORY) {
-                            Text(stringResource(R.string.transaction_error_missing_category))
+            CampusSelectField(
+                value = categories.firstOrNull { it.id == state.categoryId }?.name ?: "",
+                label = stringResource(R.string.transaction_category),
+                expanded = catExpanded,
+                onExpandedChange = { catExpanded = it },
+                isError = state.error == PaymentDomainError.MISSING_CATEGORY,
+                supportingText = if (state.error == PaymentDomainError.MISSING_CATEGORY) {
+                    stringResource(R.string.transaction_error_missing_category)
+                } else {
+                    null
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                categories.forEach { c ->
+                    CampusSelectItem(
+                        text = c.name,
+                        selected = c.id == state.categoryId,
+                        onClick = {
+                            viewModel.onCategoryChange(c.id ?: 0L)
+                            catExpanded = false
                         }
-                    },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = catExpanded)
-                    },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(expanded = catExpanded, onDismissRequest = { catExpanded = false }) {
-                    categories.forEach { c ->
-                        DropdownMenuItem(
-                            text = { Text(c.name) },
-                            onClick = { viewModel.onCategoryChange(c.id ?: 0L); catExpanded = false }
-                        )
-                    }
+                    )
                 }
             }
 
@@ -221,7 +223,12 @@ fun PaymentFormScreen(
                     value = state.remindDaysBefore.toFloat(),
                     onValueChange = { viewModel.onRemindDaysChange(it.toInt()) },
                     valueRange = 0f..14f,
-                    steps = 13
+                    steps = 13,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 )
             }
 
@@ -262,7 +269,7 @@ fun PaymentFormScreen(
                 }
                 showDatePicker = false
             },
-            content = { DatePicker(state = pickerState) }
+            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
         )
     }
 }

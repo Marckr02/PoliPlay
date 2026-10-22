@@ -55,8 +55,11 @@ import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusChip
 import com.example.campuspocket.core.designsystem.components.CampusDialog
+import com.example.campuspocket.core.designsystem.components.CampusSelectField
+import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
+import com.example.campuspocket.core.designsystem.components.campusDatePickerColors
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.SegmentedControl
@@ -410,7 +413,7 @@ private fun TaskFormContent(
                 }
                 showDatePicker = false
             },
-            content = { DatePicker(state = pickerState) }
+            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
         )
     }
 
@@ -453,41 +456,30 @@ private fun CoursePicker(
     val selectedName = courses.firstOrNull { it.id == selectedCourseId }?.name
         ?: stringResource(R.string.task_no_course)
 
-    ExposedDropdownMenuBox(
+    CampusSelectField(
+        value = selectedName,
+        label = stringResource(R.string.task_course),
         expanded = expanded,
         onExpandedChange = { expanded = it },
         modifier = modifier.fillMaxWidth()
     ) {
-        CampusTextField(
-            value = selectedName,
-            onValueChange = {},
-            readOnly = true,
-            label = stringResource(R.string.task_course),
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+        CampusSelectItem(
+            text = stringResource(R.string.task_no_course),
+            selected = selectedCourseId == null,
+            onClick = {
+                onCourseChange(null)
+                expanded = false
+            }
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.task_no_course)) },
+        courses.forEach { course ->
+            CampusSelectItem(
+                text = course.name,
+                selected = course.id == selectedCourseId,
                 onClick = {
-                    onCourseChange(null)
+                    onCourseChange(course.id)
                     expanded = false
                 }
             )
-            courses.forEach { course ->
-                DropdownMenuItem(
-                    text = { Text(course.name) },
-                    onClick = {
-                        onCourseChange(course.id)
-                        expanded = false
-                    }
-                )
-            }
         }
     }
 }

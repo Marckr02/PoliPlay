@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,10 +39,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -54,6 +63,9 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.PillShape
+import com.example.campuspocket.core.designsystem.components.ContextualActionButton
+import com.example.campuspocket.core.designsystem.components.DockAction
 import com.example.campuspocket.core.designsystem.components.DockDestination
 import com.example.campuspocket.core.designsystem.components.FloatingDock
 import com.example.campuspocket.core.designsystem.extended
@@ -74,9 +86,9 @@ import com.example.campuspocket.feature.finance.ui.accounts.AccountFormScreen
 import com.example.campuspocket.feature.finance.ui.categories.CategoriesScreen
 import com.example.campuspocket.feature.finance.ui.categories.CategoryFormScreen
 import com.example.campuspocket.feature.finance.ui.home.FinanceHomeScreen
+import com.example.campuspocket.feature.finance.ui.summary.SummaryScreen
 import com.example.campuspocket.feature.finance.ui.transactions.TransactionFormScreen
 import com.example.campuspocket.feature.finance.ui.withdrawal.WithdrawalScreen
-import com.example.campuspocket.feature.home.ui.HomeQuickAdd
 import com.example.campuspocket.feature.home.ui.HomeRoute
 import com.example.campuspocket.feature.notes.ui.NoteEditorScreen
 import com.example.campuspocket.feature.notes.ui.NotesDestinations
@@ -157,8 +169,72 @@ fun CampusNavHost(
         DockDestination(
             route = destination.route,
             label = stringResource(destination.labelRes),
-            iconRes = destination.iconRes
+            outlineRes = destination.outlineIconRes,
+            filledRes = destination.filledIconRes
         )
+    }
+
+    var actionExpanded by remember { mutableStateOf(true) }
+    LaunchedEffect(currentTopLevel?.route) { actionExpanded = true }
+    val density = LocalDensity.current
+    val scrollConnection = remember(showDock, density) {
+        object : NestedScrollConnection {
+            private var accumulated = 0f
+
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (!showDock) return Offset.Zero
+                val threshold = with(density) { 8.dp.toPx() }
+                accumulated = (accumulated + available.y).coerceIn(-threshold * 2, threshold * 2)
+                if (accumulated <= -threshold) {
+                    actionExpanded = false
+                    accumulated = 0f
+                } else if (accumulated >= threshold) {
+                    actionExpanded = true
+                    accumulated = 0f
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
+    val dockAction: DockAction? = if (showDock) {
+        when (currentTopLevel) {
+            TopLevelDestination.HOME -> DockAction(
+                labelRes = null,
+                iconRes = R.drawable.ic_action_add,
+                descriptionRes = R.string.dock_action_home_desc,
+                onClick = { quickAddTarget = TopLevelDestination.HOME }
+            )
+            TopLevelDestination.ACADEMIC -> DockAction(
+                labelRes = R.string.dock_action_task,
+                iconRes = R.drawable.ic_action_add_task,
+                descriptionRes = R.string.dock_action_task_desc,
+                onClick = {
+                    navController.navigate(AcademicDestinations.taskForm()) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+            TopLevelDestination.FINANCE -> DockAction(
+                labelRes = R.string.dock_action_movement,
+                iconRes = R.drawable.ic_action_swap,
+                descriptionRes = R.string.dock_action_movement_desc,
+                onClick = { quickAddTarget = TopLevelDestination.FINANCE }
+            )
+            TopLevelDestination.NOTES -> DockAction(
+                labelRes = R.string.dock_action_note,
+                iconRes = R.drawable.ic_action_edit_note,
+                descriptionRes = R.string.dock_action_note_desc,
+                onClick = {
+                    navController.navigate(NotesDestinations.editor(null)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+            TopLevelDestination.SETTINGS, null -> null
+        }
+    } else {
+        null
     }
 
     Scaffold(
@@ -173,65 +249,78 @@ fun CampusNavHost(
                     destinations = dockDestinations,
                     currentRoute = currentTopLevel?.route,
                     onNavigate = { destination -> navigateToTopLevel(destination.route) },
-                    onAddClick = {
-                        when (currentTopLevel) {
-                            TopLevelDestination.HOME -> quickAddTarget = TopLevelDestination.HOME
-                            TopLevelDestination.FINANCE -> quickAddTarget = TopLevelDestination.FINANCE
-                            TopLevelDestination.ACADEMIC -> navController.navigate(AcademicDestinations.taskForm()) {
-                                launchSingleTop = true
-                            }
-                            TopLevelDestination.NOTES -> navController.navigate(NotesDestinations.editor(null)) {
-                                launchSingleTop = true
-                            }
-                            TopLevelDestination.SETTINGS, null -> Unit
-                        }
-                    },
-                    addContentDescription = stringResource(R.string.dock_add),
-                    modifier = Modifier.navigationBarsPadding().padding(bottom = 4.dp)
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = 22.dp)
                 )
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = TopLevelDestination.start.route,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = { fadeIn(tween(180)) },
-            exitTransition = { fadeOut(tween(120)) },
-            popEnterTransition = { fadeIn(tween(180)) },
-            popExitTransition = { fadeOut(tween(120)) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollConnection)
         ) {
-            composable(TopLevelDestination.HOME.route) {
-                HomeRoute(
-                    preferences = preferences,
-                    onOpenModule = { module ->
-                        val route = TopLevelDestination.entries
-                            .first { it.module == module }
-                            .route
-                        navigateToTopLevel(route)
-                    },
-                    onOpenSettings = { navigateToTopLevel(TopLevelDestination.SETTINGS.route) },
-                    onOpenCourse = { courseId ->
-                        if (preferences.academicEnabled) {
-                            navController.navigate(AcademicDestinations.courseDetail(courseId))
+            NavHost(
+                navController = navController,
+                startDestination = TopLevelDestination.start.route,
+                modifier = Modifier
+                    .padding(innerPadding)
+                    // En Finanzas el botón contextual flota sobre la pestaña; su
+                    // contenido reserva el espacio inferior dentro de cada lista.
+                    .padding(
+                        bottom = if (showDock && currentDestination?.route != FinanceDestinations.HOME) {
+                            68.dp
+                        } else {
+                            0.dp
                         }
-                    },
-                    onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) },
-                    onQuickAdd = { action ->
-                        when (action) {
-                            HomeQuickAdd.EXPENSE -> navController.navigate(
-                                FinanceDestinations.transactionForm(TransactionType.EXPENSE.name)
-                            )
-                            HomeQuickAdd.TASK -> navController.navigate(AcademicDestinations.taskForm())
-                            HomeQuickAdd.NOTE -> navController.navigate(NotesDestinations.editor(null))
-                        }
-                    }
-                )
+                    ),
+                enterTransition = { fadeIn(tween(180)) },
+                exitTransition = { fadeOut(tween(120)) },
+                popEnterTransition = { fadeIn(tween(180)) },
+                popExitTransition = { fadeOut(tween(120)) }
+            ) {
+                composable(TopLevelDestination.HOME.route) {
+                    HomeRoute(
+                        preferences = preferences,
+                        onOpenModule = { module ->
+                            val route = TopLevelDestination.entries
+                                .first { it.module == module }
+                                .route
+                            navigateToTopLevel(route)
+                        },
+                        onOpenSettings = { navigateToTopLevel(TopLevelDestination.SETTINGS.route) },
+                        onOpenCourse = { courseId ->
+                            if (preferences.academicEnabled) {
+                                navController.navigate(AcademicDestinations.courseDetail(courseId))
+                            }
+                        },
+                        onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) }
+                    )
+                }
+                academicGraph(navController)
+                financeGraph(navController)
+                notesGraph(navController)
+                settingsGraph(navController)
             }
-            academicGraph(navController)
-            financeGraph(navController)
-            notesGraph(navController)
-            settingsGraph(navController)
+
+            val action = dockAction
+            AnimatedVisibility(
+                visible = showDock && action != null,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 20.dp, bottom = 102.dp),
+                enter = fadeIn(tween(180)),
+                exit = fadeOut(tween(120))
+            ) {
+                if (action != null) {
+                    ContextualActionButton(
+                        action = action,
+                        expanded = actionExpanded
+                    )
+                }
+            }
         }
     }
 
@@ -264,7 +353,7 @@ private fun QuickAddSheet(
                     QuickAddOption(
                         labelRes = R.string.finance_expense,
                         descriptionRes = R.string.quick_add_expense_desc,
-                        iconRes = R.drawable.ic_wallet,
+                        iconRes = R.drawable.ic_move_expense,
                         containerColor = ext.peach,
                         contentColor = ext.onPeach,
                         onClick = {
@@ -280,7 +369,7 @@ private fun QuickAddSheet(
                     QuickAddOption(
                         labelRes = R.string.task_new,
                         descriptionRes = R.string.quick_add_task_desc,
-                        iconRes = R.drawable.ic_schedule,
+                        iconRes = R.drawable.ic_action_add_task,
                         containerColor = ext.lavender,
                         contentColor = ext.onLavender,
                         onClick = { onNavigate(AcademicDestinations.taskForm()) }
@@ -292,9 +381,9 @@ private fun QuickAddSheet(
                     QuickAddOption(
                         labelRes = R.string.note_title,
                         descriptionRes = R.string.quick_add_note_desc,
-                        iconRes = R.drawable.ic_notes,
-                        containerColor = ext.limeSoft,
-                        contentColor = ext.onLimeSoft,
+                        iconRes = R.drawable.ic_action_edit_note,
+                        containerColor = ext.sky,
+                        contentColor = ext.onSky,
                         onClick = { onNavigate(NotesDestinations.editor(null)) }
                     )
                 )
@@ -305,7 +394,7 @@ private fun QuickAddSheet(
             QuickAddOption(
                 labelRes = R.string.finance_expense,
                 descriptionRes = R.string.quick_add_expense_desc,
-                iconRes = R.drawable.ic_wallet,
+                iconRes = R.drawable.ic_move_expense,
                 containerColor = ext.peach,
                 contentColor = ext.onPeach,
                 onClick = {
@@ -315,7 +404,7 @@ private fun QuickAddSheet(
             QuickAddOption(
                 labelRes = R.string.finance_income,
                 descriptionRes = R.string.quick_add_income_desc,
-                iconRes = R.drawable.ic_wallet,
+                iconRes = R.drawable.ic_move_income,
                 containerColor = ext.mint,
                 contentColor = ext.onMint,
                 onClick = {
@@ -325,7 +414,7 @@ private fun QuickAddSheet(
             QuickAddOption(
                 labelRes = R.string.finance_quick_transfer,
                 descriptionRes = R.string.quick_add_transfer_desc,
-                iconRes = R.drawable.ic_wallet,
+                iconRes = R.drawable.ic_move_transfer,
                 containerColor = ext.sky,
                 contentColor = ext.onSky,
                 onClick = {
@@ -335,7 +424,7 @@ private fun QuickAddSheet(
             QuickAddOption(
                 labelRes = R.string.finance_withdrawal,
                 descriptionRes = R.string.quick_add_withdrawal_desc,
-                iconRes = R.drawable.ic_wallet,
+                iconRes = R.drawable.ic_move_withdraw,
                 containerColor = ext.lavender,
                 contentColor = ext.onLavender,
                 onClick = { onNavigate(FinanceDestinations.WITHDRAWAL) }
@@ -343,9 +432,9 @@ private fun QuickAddSheet(
             QuickAddOption(
                 labelRes = R.string.payment_new,
                 descriptionRes = R.string.quick_add_payment_desc,
-                iconRes = R.drawable.ic_schedule,
-                containerColor = ext.limeSoft,
-                contentColor = ext.onLimeSoft,
+                iconRes = R.drawable.ic_move_payment,
+                containerColor = ext.track,
+                contentColor = ext.onTrack,
                 onClick = { onNavigate(FinanceDestinations.paymentForm()) }
             )
         )
@@ -356,7 +445,18 @@ private fun QuickAddSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        scrimColor = Color(0x9E042229),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp, bottom = 8.dp)
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(PillShape)
+                    .background(ext.track)
+            )
+        }
     ) {
         Column(
             modifier = Modifier
@@ -367,7 +467,13 @@ private fun QuickAddSheet(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = stringResource(R.string.quick_add_title),
+                text = stringResource(
+                    if (target == TopLevelDestination.FINANCE) {
+                        R.string.quick_add_title_movement
+                    } else {
+                        R.string.quick_add_title
+                    }
+                ),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -376,7 +482,8 @@ private fun QuickAddSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
+                        .heightIn(min = 64.dp)
+                        .clip(RoundedCornerShape(18.dp))
                         .clickable {
                             option.onClick()
                             onDismiss()
@@ -386,7 +493,7 @@ private fun QuickAddSheet(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(44.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(option.containerColor),
                         contentAlignment = Alignment.Center
@@ -395,14 +502,17 @@ private fun QuickAddSheet(
                             painter = painterResource(option.iconRes),
                             contentDescription = null,
                             tint = option.contentColor,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
                             text = stringResource(option.labelRes),
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            ),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -524,13 +634,16 @@ private fun NavGraphBuilder.financeGraph(navController: NavHostController) {
                 onOpenTransaction = { id, type ->
                     navController.navigate(FinanceDestinations.transactionForm(type.name, id))
                 },
-                onAddTransaction = { type ->
-                    navController.navigate(FinanceDestinations.transactionForm(type.name))
-                },
                 onAddPayment = { navController.navigate(FinanceDestinations.paymentForm()) },
                 onEditPayment = { id -> navController.navigate(FinanceDestinations.paymentForm(id)) },
-                onWithdrawal = { navController.navigate(FinanceDestinations.WITHDRAWAL) },
-                onOpenCalendar = { navController.navigate(FinanceDestinations.CALENDAR) }
+                onOpenCalendar = { navController.navigate(FinanceDestinations.CALENDAR) },
+                onOpenSummary = { navController.navigate(FinanceDestinations.SUMMARY) }
+            )
+        }
+        composable(FinanceDestinations.SUMMARY) {
+            SummaryScreen(
+                onDefineBudget = { navController.popBackStack() },
+                onBack = { navController.popBackStack() }
             )
         }
         composable(FinanceDestinations.CALENDAR) {

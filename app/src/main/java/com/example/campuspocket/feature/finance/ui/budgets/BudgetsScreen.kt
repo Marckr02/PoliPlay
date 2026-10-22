@@ -72,17 +72,19 @@ fun BudgetsScreen(
     var showTotalBudgetDialog by remember { mutableStateOf(false) }
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Selector de mes + modo semestre
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = viewModel::previousMonth) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = stringResource(R.string.calendar_previous_month)
+                )
             }
             Text(
                 text = state.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("es"))
@@ -90,9 +92,13 @@ fun BudgetsScreen(
                 style = MaterialTheme.typography.titleMedium
             )
             IconButton(onClick = viewModel::nextMonth) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.calendar_next_month)
+                )
             }
         }
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PillSegmentedControl(
                 options = listOf(false, true),
@@ -109,94 +115,77 @@ fun BudgetsScreen(
         }
 
         if (state.isLoading) {
-            LoadingShimmer(modifier = Modifier.weight(1f))
+            LoadingShimmer(modifier = Modifier.fillMaxWidth().height(160.dp))
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            val withBudget = state.rows.filter { it.budgetCents != null }
+            val withoutBudget = state.rows.filter { it.budgetCents == null }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
             ) {
-                val withBudget = state.rows.filter { it.budgetCents != null }
-                val withoutBudget = state.rows.filter { it.budgetCents == null }
+                CampusChip(
+                    label = stringResource(R.string.finance_categories),
+                    selected = false,
+                    onClick = onManageCategories
+                )
+            }
 
-                item(key = "categorias") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        CampusChip(
-                            label = stringResource(R.string.finance_categories),
-                            selected = false,
-                            onClick = onManageCategories
-                        )
-                    }
-                }
-
-                if (!state.semesterMode) {
-                    item(key = "presupuesto_total") {
-                        MonthlyBudgetCard(
-                            amountCents = state.monthlyBudgetCents,
-                            spentCents = state.totalSpentCents,
-                            onClick = { showTotalBudgetDialog = true }
-                        )
-                    }
-                    state.pace?.let { pace ->
-                        item(key = "ritmo") {
-                            BudgetPaceCard(
-                                pace = pace,
-                                onEditBudget = { showTotalBudgetDialog = true }
-                            )
-                        }
-                    }
-                }
-
-                if (withBudget.isNotEmpty()) {
-                    item(key = "hdr_definidos") {
-                        Text(
-                            text = stringResource(R.string.budgets_monthly),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    items(withBudget, key = { it.categoryId }) { row ->
-                        BudgetRow(
-                            row = row,
-                            onClick = { editingCategory = row }
-                        )
-                    }
-                }
-                if (withoutBudget.isNotEmpty()) {
-                    item(key = "hdr_sin") {
-                        Text(
-                            text = stringResource(R.string.budgets_no_budget),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                    items(withoutBudget, key = { it.categoryId }) { row ->
-                        BudgetRow(row = row, onClick = { editingCategory = row })
-                    }
-                }
-                if (state.rows.isEmpty()) {
-                    item(key = "vacio") {
-                        EmptyStateCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            title = stringResource(R.string.empty_budgets),
-                            message = stringResource(R.string.empty_budgets_message),
-                            icon = painterResource(R.drawable.ic_wallet)
-                        )
-                    }
-                }
-
-                item(key = "copiar") {
-                    CampusButton(
-                        text = stringResource(R.string.budget_copy_previous),
-                        onClick = { viewModel.copyFromPreviousMonth() },
-                        style = CampusButtonStyle.SECONDARY,
-                        modifier = Modifier.fillMaxWidth()
+            if (!state.semesterMode) {
+                val pace = state.pace
+                if (pace != null) {
+                    BudgetPaceCard(
+                        pace = pace,
+                        onEditBudget = { showTotalBudgetDialog = true }
+                    )
+                } else {
+                    MonthlyBudgetCard(
+                        amountCents = state.monthlyBudgetCents,
+                        spentCents = state.totalSpentCents,
+                        onClick = { showTotalBudgetDialog = true }
                     )
                 }
             }
+
+            if (withBudget.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.budgets_monthly),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                withBudget.forEach { row ->
+                    BudgetRow(
+                        row = row,
+                        onClick = { editingCategory = row }
+                    )
+                }
+            }
+            if (withoutBudget.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.budgets_no_budget),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                withoutBudget.forEach { row ->
+                    BudgetRow(row = row, onClick = { editingCategory = row })
+                }
+            }
+            if (state.rows.isEmpty() && (state.semesterMode || state.monthlyBudgetCents == null)) {
+                EmptyStateCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    title = stringResource(R.string.empty_budgets),
+                    message = stringResource(R.string.empty_budgets_message),
+                    icon = painterResource(R.drawable.ic_wallet)
+                )
+            }
+
+            CampusButton(
+                text = stringResource(R.string.budget_copy_previous),
+                onClick = { viewModel.copyFromPreviousMonth() },
+                style = CampusButtonStyle.SECONDARY,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 

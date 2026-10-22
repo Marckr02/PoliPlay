@@ -73,6 +73,8 @@ internal object CampusPalette {
         val OnSelected = Color(0xFFFFFFFF)
         val Danger = Color(0xFFB4232C)
         val OnDanger = Color(0xFFFFFFFF)
+        val DangerSoft = Color(0xFFFF9A9E)
+        val OnDangerSoft = Color(0xFF490C12)
         val Track = Color(0xFFE3E9E8)
         val OnTrack = Color(0xFF0A2229)
         val Lavender = Color(0xFFFFF1CC)
@@ -89,7 +91,7 @@ internal object CampusPalette {
         val OnViolet = Color(0xFF3B2A7A)
         val Dock = Color(0xFF044455)
         val OnDock = Color(0xFFFFFFFF)
-        val DockInactive = Color(0xFF8FB4BC)
+        val DockInactive = Color(0xFFB7D0D6)
     }
 
     object Dark {
@@ -146,6 +148,8 @@ internal object CampusPalette {
         val OnSelected = Color(0xFF04252E)
         val Danger = Color(0xFFFF9A9E)
         val OnDanger = Color(0xFF490C12)
+        val DangerSoft = Color(0xFFFF9A9E)
+        val OnDangerSoft = Color(0xFF490C12)
         val Track = Color(0xFF143540)
         val OnTrack = Color(0xFFEAF2F3)
         val Lavender = Color(0xFF4A3A12)
@@ -162,7 +166,7 @@ internal object CampusPalette {
         val OnViolet = Color(0xFFDCD2FF)
         val Dock = Color(0xFF0F3B48)
         val OnDock = Color(0xFFEAF2F3)
-        val DockInactive = Color(0xFF8FB4BC)
+        val DockInactive = Color(0xFFA9C4CA)
     }
 }
 
@@ -201,6 +205,8 @@ data class CampusExtendedColors(
     val onSelected: Color,
     val danger: Color,
     val onDanger: Color,
+    val dangerSoft: Color,
+    val onDangerSoft: Color,
     val track: Color,
     val onTrack: Color,
     val lavender: Color,
@@ -250,6 +256,8 @@ internal val LightExtendedColors = CampusExtendedColors(
     onSelected = CampusPalette.Light.OnSelected,
     danger = CampusPalette.Light.Danger,
     onDanger = CampusPalette.Light.OnDanger,
+    dangerSoft = CampusPalette.Light.DangerSoft,
+    onDangerSoft = CampusPalette.Light.OnDangerSoft,
     track = CampusPalette.Light.Track,
     onTrack = CampusPalette.Light.OnTrack,
     lavender = CampusPalette.Light.Lavender,
@@ -299,6 +307,8 @@ internal val DarkExtendedColors = CampusExtendedColors(
     onSelected = CampusPalette.Dark.OnSelected,
     danger = CampusPalette.Dark.Danger,
     onDanger = CampusPalette.Dark.OnDanger,
+    dangerSoft = CampusPalette.Dark.DangerSoft,
+    onDangerSoft = CampusPalette.Dark.OnDangerSoft,
     track = CampusPalette.Dark.Track,
     onTrack = CampusPalette.Dark.OnTrack,
     lavender = CampusPalette.Dark.Lavender,

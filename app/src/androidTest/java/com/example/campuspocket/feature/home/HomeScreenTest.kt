@@ -2,6 +2,7 @@ package com.example.campuspocket.feature.home
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -39,10 +40,9 @@ class HomeScreenTest {
                 )
             }
         }
-        composeRule.onNodeWithText("TAREAS").assertIsDisplayed()
-        composeRule.onNodeWithText("+ Tarea").assertIsDisplayed()
-        composeRule.onNodeWithText("+ Nota").assertIsDisplayed()
-        composeRule.onNodeWithText("+ Gasto").assertDoesNotExist()
+        composeRule.onNodeWithText("Notas recientes").assertIsDisplayed()
+        composeRule.onNodeWithText("PRÓXIMA CLASE").assertIsDisplayed()
+        composeRule.onNodeWithText("DISPONIBLE PARA GASTAR").assertDoesNotExist()
     }
 
     @Test
@@ -57,7 +57,7 @@ class HomeScreenTest {
                 )
             }
         }
-        composeRule.onNodeWithText("PRESUPUESTO RESTANTE").performClick()
+        composeRule.onNodeWithText("DISPONIBLE PARA GASTAR").performClick()
         assertEquals(CampusModule.FINANCE, abierto)
     }
 
@@ -78,11 +78,9 @@ class HomeScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("PRESUPUESTO RESTANTE").assertIsDisplayed()
+        composeRule.onNodeWithText("DISPONIBLE PARA GASTAR").assertIsDisplayed()
         composeRule.onNodeWithText(Money.format(11_000L)).assertIsDisplayed()
-        composeRule.onNodeWithText(
-            "de ${Money.format(16_000L)} · Gastado ${Money.format(5_000L)}"
-        ).assertIsDisplayed()
+        composeRule.onAllNodes(hasText("gastado", substring = true))[0].assertIsDisplayed()
     }
 
     @Test
