@@ -20,3 +20,6 @@ session-*.md
 
 # Salidas del arnés de diagnóstico del importador (nunca subir PDFs reales ni volcados)
 tools/pdf-dumps/
+
+# Firebase/Google services config (contiene API keys - NUNCA subir)
+app/google-services.json
