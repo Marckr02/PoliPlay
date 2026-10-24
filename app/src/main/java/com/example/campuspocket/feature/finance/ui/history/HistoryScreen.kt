@@ -53,7 +53,8 @@ import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.components.SearchPill
 import com.example.campuspocket.core.designsystem.components.TransactionRow
 import com.example.campuspocket.core.designsystem.extended
-import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
+import com.example.campuspocket.core.designsystem.formatMoneyOrHiddenSigned
 import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Transaction
@@ -324,7 +325,7 @@ private fun DayGroupHeader(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = Money.formatSigned(netCents),
+            text = formatMoneyOrHiddenSigned(netCents),
             style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
             color = if (netCents >= 0) ext.success else MaterialTheme.colorScheme.error
         )
@@ -421,7 +422,7 @@ private fun HistoryTransactionCard(
         TransactionRow(
             title = title,
             meta = meta,
-            amount = Money.format(
+            amount = formatMoneyOrHidden(
                 when (tx.type) {
                     TransactionType.EXPENSE,
                     TransactionType.TRANSFER -> -tx.amountCents

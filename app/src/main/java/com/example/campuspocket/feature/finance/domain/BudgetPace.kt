@@ -38,6 +38,37 @@ data class MonthPace(
     /** Posición de la marca vertical del esperado (0..1). */
     val expectedFraction: Float
         get() = (day.toDouble() / daysInMonth.toDouble()).coerceIn(0.0, 1.0).toFloat()
+
+    /** Días que quedan del mes, incluido hoy (v5 §2.3). */
+    val daysRemaining: Int
+        get() = daysInMonth - day + 1
+
+    /** Presupuesto restante repartido entre los días que quedan; 0 si ya se agotó. */
+    val perDayCents: Long
+        get() = BudgetPace.perDayCents(budgetCents, spentCents, daysRemaining)
+
+    /**
+     * Cierre del mes al ritmo actual. Antes del día 3 es una extrapolación poco
+     * fiable y la UI muestra "Aún faltan datos" (v5 §2.3).
+     */
+    val estimatedClosingCents: Long
+        get() = BudgetPace.estimatedClosingCents(spentCents, day, daysInMonth)
+
+    /** El cierre estimado solo se considera fiable a partir del día 3. */
+    val hasEnoughDataForClosing: Boolean
+        get() = day >= MIN_DAYS_FOR_CLOSING
+
+    /** Ya se gastó el presupuesto completo (o más). */
+    val isBudgetExhausted: Boolean
+        get() = spentCents >= budgetCents
+
+    /** El cierre estimado terminaría por encima del presupuesto. */
+    val isClosingOverBudget: Boolean
+        get() = estimatedClosingCents > budgetCents
+
+    companion object {
+        const val MIN_DAYS_FOR_CLOSING = 3
+    }
 }
 
 object BudgetPace {
@@ -81,6 +112,31 @@ object BudgetPace {
             isOver = isOver,
             overCents = if (isOver) spent - expectedCents else 0L
         )
+    }
+
+    /**
+     * Presupuesto restante por día, redondeado a centavos con HALF_UP.
+     * Incluye hoy entre los días restantes. Nunca divide entre cero y devuelve
+     * 0 cuando el presupuesto ya se agotó.
+     */
+    fun perDayCents(budgetCents: Long, spentCents: Long, daysRemaining: Int): Long {
+        if (daysRemaining <= 0) return 0L
+        val remaining = (budgetCents - spentCents).coerceAtLeast(0L)
+        return BigDecimal.valueOf(remaining)
+            .divide(BigDecimal.valueOf(daysRemaining.toLong()), 0, RoundingMode.HALF_UP)
+            .longValueExact()
+    }
+
+    /**
+     * Cierre estimado = gastado / día actual × días del mes, redondeado a
+     * centavos con HALF_UP (v5 §2.3).
+     */
+    fun estimatedClosingCents(spentCents: Long, day: Int, daysInMonth: Int): Long {
+        if (day <= 0) return 0L
+        return BigDecimal.valueOf(spentCents.coerceAtLeast(0L))
+            .multiply(BigDecimal.valueOf(daysInMonth.toLong()))
+            .divide(BigDecimal.valueOf(day.toLong()), 0, RoundingMode.HALF_UP)
+            .longValueExact()
     }
 
     /** Porcentaje con 1 decimal, half-up. */

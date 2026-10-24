@@ -521,7 +521,37 @@
     <string name="finance_pace_no_budget_message">Define un presupuesto total del mes para ver tu ritmo de gasto.</string>
     <string name="finance_pace_create_budget">Crear presupuesto</string>
     <string name="finance_pace_accessibility">Has gastado %1$s del presupuesto; lo esperado a hoy es %2$s.</string>
+    <string name="finance_insight_per_day_title">Puedes gastar por día</string>
+    <plurals name="finance_insight_days_remaining">
+        <item quantity="one">%1$d día restante</item>
+        <item quantity="other">%1$d días restantes</item>
+    </plurals>
+    <string name="finance_insight_budget_exhausted">Presupuesto agotado</string>
+    <string name="finance_insight_closing_title">Cierre estimado</string>
+    <string name="finance_insight_closing_of">de %1$s</string>
+    <string name="finance_insight_not_enough_data">Aún faltan datos</string>
+    <string name="finance_insight_closing_over_budget">Cierre por encima del presupuesto</string>
     <string name="summary_title">Resumen del mes</string>
+    <string name="summary_pace_chart_title">Ritmo del gasto</string>
+    <string name="summary_chart_legend_spent">Gastado</string>
+    <string name="summary_chart_legend_expected">Esperado</string>
+    <string name="summary_chart_legend_projection">Proyección</string>
+    <string name="summary_chart_today">Hoy</string>
+    <string name="summary_chart_guide_50">50 %</string>
+    <string name="summary_chart_guide_100">100 %</string>
+    <string name="summary_stat_spent">Gastado</string>
+    <string name="summary_stat_expected">Esperado a hoy</string>
+    <string name="summary_stat_closing">Cierre estimado</string>
+    <string name="summary_chart_accessibility">Has gastado %1$s; lo esperado a hoy es %2$s; cierre estimado %3$s.</string>
+    <string name="summary_chart_accessibility_hidden">Gráfico del ritmo del gasto con montos ocultos.</string>
+
+    <!-- Modo privado -->
+    <string name="amount_hidden">Monto oculto</string>
+    <string name="amount_hidden_placeholder">$ ••••</string>
+    <string name="privacy_hide_amounts">Ocultar montos</string>
+    <string name="privacy_show_amounts">Mostrar montos</string>
+    <string name="privacy_amounts_hidden">Montos ocultos</string>
+    <string name="privacy_amounts_visible">Montos visibles</string>
 
     <!-- Notas -->
     <string name="notes_title">Notas</string>

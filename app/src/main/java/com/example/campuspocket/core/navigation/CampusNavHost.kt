@@ -115,7 +115,8 @@ fun CampusNavHost(
     preferences: UserPreferences,
     modifier: Modifier = Modifier,
     pendingTaskId: StateFlow<Long> = remember { MutableStateFlow(-1L) },
-    onPendingTaskHandled: () -> Unit = {}
+    onPendingTaskHandled: () -> Unit = {},
+    onToggleAmountsPrivacy: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -301,11 +302,12 @@ fun CampusNavHost(
                                     navController.navigate(AcademicDestinations.courseDetail(courseId))
                                 }
                             },
-                            onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) }
+                            onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) },
+                            onTogglePrivacy = onToggleAmountsPrivacy
                         )
                     }
                     academicGraph(navController)
-                    financeGraph(navController)
+                    financeGraph(navController, onToggleAmountsPrivacy)
                     notesGraph(navController)
                     settingsGraph(navController)
                 }
@@ -640,7 +642,10 @@ private fun NavGraphBuilder.academicGraph(navController: NavHostController) {
     }
 }
 
-private fun NavGraphBuilder.financeGraph(navController: NavHostController) {
+private fun NavGraphBuilder.financeGraph(
+    navController: NavHostController,
+    onToggleAmountsPrivacy: () -> Unit
+) {
     navigation(startDestination = FinanceDestinations.HOME, route = TopLevelDestination.FINANCE.route) {
         composable(FinanceDestinations.HOME) {
             FinanceHomeScreen(
@@ -653,7 +658,8 @@ private fun NavGraphBuilder.financeGraph(navController: NavHostController) {
                 onAddPayment = { navController.navigate(FinanceDestinations.paymentForm()) },
                 onEditPayment = { id -> navController.navigate(FinanceDestinations.paymentForm(id)) },
                 onOpenCalendar = { navController.navigate(FinanceDestinations.CALENDAR) },
-                onOpenSummary = { navController.navigate(FinanceDestinations.SUMMARY) }
+                onOpenSummary = { navController.navigate(FinanceDestinations.SUMMARY) },
+                onTogglePrivacy = onToggleAmountsPrivacy
             )
         }
         composable(FinanceDestinations.SUMMARY) {

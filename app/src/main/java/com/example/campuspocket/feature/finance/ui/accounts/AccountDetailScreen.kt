@@ -33,11 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.DangerPillButton
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
-import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Transaction
 import java.time.format.DateTimeFormatter
@@ -208,8 +208,8 @@ internal fun TransactionRow(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
-            Text(
-                text = Money.format(if (isPositive) tx.amountCents else -tx.amountCents),
+            MoneyText(
+                amountCents = if (isPositive) tx.amountCents else -tx.amountCents,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )

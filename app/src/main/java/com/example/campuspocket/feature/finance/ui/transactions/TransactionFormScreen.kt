@@ -47,7 +47,7 @@ import com.example.campuspocket.core.designsystem.components.KeypadAmountInput
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.TransactionTypeSelector
 import com.example.campuspocket.core.designsystem.components.campusDatePickerColors
-import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.TransactionError
 import com.example.campuspocket.feature.finance.domain.model.Account
@@ -177,7 +177,7 @@ fun TransactionFormScreen(
             if (state.type == TransactionType.REFUND) {
                 var refundExpanded by remember { mutableStateOf(false) }
                 val refundValue = refundableExpenses.firstOrNull { it.id == state.refundOfId }
-                    ?.let { it.description?.takeIf(String::isNotBlank) ?: Money.format(it.amountCents) }
+                    ?.let { it.description?.takeIf(String::isNotBlank) ?: formatMoneyOrHidden(it.amountCents) }
                     ?: ""
                 CampusSelectField(
                     value = refundValue,
@@ -197,7 +197,7 @@ fun TransactionFormScreen(
                     refundableExpenses.forEach { expense ->
                         CampusSelectItem(
                             text = expense.description?.takeIf { it.isNotBlank() }
-                                ?: Money.format(expense.amountCents),
+                                ?: formatMoneyOrHidden(expense.amountCents),
                             selected = expense.id == state.refundOfId,
                             onClick = {
                                 viewModel.onRefundOfChange(expense.id)

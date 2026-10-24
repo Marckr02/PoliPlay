@@ -6,11 +6,13 @@ import android.annotation.SuppressLint
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.lifecycle.SavedStateHandle
 import com.example.campuspocket.core.designsystem.CampusTheme
@@ -269,6 +271,11 @@ class FinanceUiTest {
         composeRule.onAllNodes(hasText("Puedes gastar", substring = true))
             .fetchSemanticsNodes()
             .also { assertTrue(it.isNotEmpty()) }
+
+        // El gráfico nuevo antecede al hero del ritmo; desplázalo a la vista
+        // antes de comprobar el cambio de estado.
+        composeRule.onNode(hasScrollAction())
+            .performScrollToNode(hasText("Por debajo del ritmo"))
 
         repo.transactionsFlow.value = repo.transactionsFlow.value + Transaction(
             id = 99,

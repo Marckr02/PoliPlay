@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.MoneyText
+import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.BudgetProgressBar
 import com.example.campuspocket.core.designsystem.components.CampusButton
@@ -338,7 +340,7 @@ private fun MonthlyBudgetCard(
                 )
                 Text(
                     text = if (amountCents != null) {
-                        Money.format(spentCents) + " / " + Money.format(amountCents)
+                        formatMoneyOrHidden(spentCents) + " / " + formatMoneyOrHidden(amountCents)
                     } else {
                         stringResource(R.string.budget_total_define)
                     },
@@ -347,8 +349,8 @@ private fun MonthlyBudgetCard(
                 )
             }
             if (amountCents != null) {
-                Text(
-                    text = Money.format(amountCents),
+                MoneyText(
+                    amountCents = amountCents,
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -431,9 +433,10 @@ private fun BudgetRow(
                 }
                 Text(
                     text = if (row.budgetCents != null) {
-                        Money.format(row.netSpentCents) + " / " + Money.format(row.budgetCents)
+                        formatMoneyOrHidden(row.netSpentCents) + " / " +
+                            formatMoneyOrHidden(row.budgetCents)
                     } else {
-                        Money.format(row.netSpentCents)
+                        formatMoneyOrHidden(row.netSpentCents)
                     },
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -442,8 +445,8 @@ private fun BudgetRow(
             if (row.budgetCents != null) {
                 BudgetProgressBar(
                     progress = row.percent ?: 0f,
-                    spent = Money.format(row.netSpentCents),
-                    limit = Money.format(row.budgetCents!!)
+                    spent = formatMoneyOrHidden(row.netSpentCents),
+                    limit = formatMoneyOrHidden(row.budgetCents!!)
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -457,10 +460,10 @@ private fun BudgetRow(
                     Text(
                         text = if ((row.remainingCents ?: 0) < 0) {
                             stringResource(R.string.budget_exceeded) + ": " +
-                                Money.format(kotlin.math.abs(row.remainingCents!!))
+                                formatMoneyOrHidden(kotlin.math.abs(row.remainingCents!!))
                         } else {
                             stringResource(R.string.budget_remaining) + ": " +
-                                Money.format(row.remainingCents ?: 0)
+                                formatMoneyOrHidden(row.remainingCents ?: 0)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if ((row.remainingCents ?: 0) < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant

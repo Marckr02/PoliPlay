@@ -10,11 +10,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.LocalPrivacyMode
 import com.example.campuspocket.core.navigation.CampusNavHost
 import com.example.campuspocket.core.notifications.ReminderReceiver
 import com.example.campuspocket.core.preferences.ThemeMode
@@ -25,6 +28,7 @@ import com.example.campuspocket.feature.settings.security.LockChecker
 import com.example.campuspocket.feature.settings.security.LockInterceptor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -64,11 +68,18 @@ class MainActivity : FragmentActivity() {
                     when {
                         prefs == null -> Box(Modifier.fillMaxSize())
                         !prefs.onboardingCompleted -> OnboardingScreen()
-                        else -> CampusNavHost(
-                            preferences = prefs,
-                            pendingTaskId = pendingTaskId,
-                            onPendingTaskHandled = { pendingTaskId.value = -1L }
-                        )
+                        else -> CompositionLocalProvider(LocalPrivacyMode provides prefs.hideAmounts) {
+                            CampusNavHost(
+                                preferences = prefs,
+                                pendingTaskId = pendingTaskId,
+                                onPendingTaskHandled = { pendingTaskId.value = -1L },
+                                onToggleAmountsPrivacy = {
+                                    lifecycleScope.launch {
+                                        userPreferencesRepository.setHideAmounts(!prefs.hideAmounts)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

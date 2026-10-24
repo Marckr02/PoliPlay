@@ -19,6 +19,7 @@ fun HomeRoute(
     onOpenCourse: (Long) -> Unit,
     onOpenNotes: () -> Unit,
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    onTogglePrivacy: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -29,6 +30,7 @@ fun HomeRoute(
         modifier = modifier,
         state = state,
         onOpenCourse = onOpenCourse,
-        onOpenNotes = onOpenNotes
+        onOpenNotes = onOpenNotes,
+        onTogglePrivacy = onTogglePrivacy
     )
 }

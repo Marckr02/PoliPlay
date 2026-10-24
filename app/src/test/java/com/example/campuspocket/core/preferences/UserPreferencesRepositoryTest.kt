@@ -38,6 +38,17 @@ class UserPreferencesRepositoryTest {
         assertTrue(prefs.notesEnabled)
         assertEquals(ThemeMode.SYSTEM, prefs.themeMode)
         assertFalse(prefs.onboardingCompleted)
+        assertFalse(prefs.hideAmounts)
+    }
+
+    @Test
+    fun `modo privado se persiste y se recupera`() = runTest {
+        val repo = UserPreferencesRepository(newStore(backgroundScope, "privacy"))
+        repo.setHideAmounts(true)
+        assertTrue(repo.preferences.first().hideAmounts)
+
+        repo.setHideAmounts(false)
+        assertFalse(repo.preferences.first().hideAmounts)
     }
 
     @Test

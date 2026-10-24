@@ -76,6 +76,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -252,16 +253,21 @@ fun RoundIconButton(
     modifier: Modifier = Modifier,
     size: Dp = 44.dp,
     containerColor: Color = MaterialTheme.colorScheme.surface,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    role: Role = Role.Button,
+    stateDescription: String? = null
 ) {
     Box(
         modifier = modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-            .semantics { this.contentDescription = contentDescription }
+            .semantics {
+                this.contentDescription = contentDescription
+                if (stateDescription != null) this.stateDescription = stateDescription
+            }
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = null,
-                role = Role.Button
+                role = role
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -291,16 +297,21 @@ fun RoundIconButton(
     modifier: Modifier = Modifier,
     size: Dp = 44.dp,
     containerColor: Color = MaterialTheme.colorScheme.surface,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    role: Role = Role.Button,
+    stateDescription: String? = null
 ) {
     Box(
         modifier = modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-            .semantics { this.contentDescription = contentDescription }
+            .semantics {
+                this.contentDescription = contentDescription
+                if (stateDescription != null) this.stateDescription = stateDescription
+            }
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = null,
-                role = Role.Button
+                role = role
             ),
         contentAlignment = Alignment.Center
     ) {

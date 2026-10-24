@@ -1,12 +1,15 @@
 package com.example.campuspocket.feature.home
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.LocalPrivacyMode
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
 import com.example.campuspocket.core.util.Money
@@ -81,6 +84,47 @@ class HomeScreenTest {
         composeRule.onNodeWithText("DISPONIBLE PARA GASTAR").assertIsDisplayed()
         composeRule.onNodeWithText(Money.format(11_000L)).assertIsDisplayed()
         composeRule.onAllNodes(hasText("gastado", substring = true))[0].assertIsDisplayed()
+    }
+
+    @Test
+    fun modoPrivadoOcultaElRemanenteYExponeMontoOculto() {
+        composeRule.setContent {
+            CampusTheme {
+                CompositionLocalProvider(LocalPrivacyMode provides true) {
+                    HomeScreen(
+                        preferences = UserPreferences(),
+                        onOpenModule = {},
+                        onOpenSettings = {},
+                        state = HomeUiState(
+                            monthlyBudgetCents = 16_000L,
+                            monthlySpentCents = 5_000L,
+                            monthlyRemainingCents = 11_000L
+                        )
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Monto oculto").assertIsDisplayed()
+        composeRule.onNodeWithText(Money.format(11_000L)).assertDoesNotExist()
+    }
+
+    @Test
+    fun laCabeceraOfreceOcultarMontos() {
+        var alternado = false
+        composeRule.setContent {
+            CampusTheme {
+                HomeScreen(
+                    preferences = UserPreferences(),
+                    onOpenModule = {},
+                    onOpenSettings = {},
+                    onTogglePrivacy = { alternado = true }
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Ocultar montos").performClick()
+        assertEquals(true, alternado)
     }
 
     @Test

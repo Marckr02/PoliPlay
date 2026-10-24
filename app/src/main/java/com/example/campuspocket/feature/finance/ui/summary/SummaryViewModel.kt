@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.feature.finance.data.CategoryKind
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
+import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.BudgetPace
 import com.example.campuspocket.feature.finance.domain.ComputeAccountBalances
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
@@ -34,6 +35,8 @@ data class SummaryUiState(
     val donutSlices: List<Pair<Int, Long>> = emptyList(),
     val upcomingPayments: List<ScheduledPaymentEntity> = emptyList(),
     val pace: MonthPace? = null,
+    /** Gasto acumulado por día del mes (índice 0 = día 1), para el gráfico v5. */
+    val dailySpentCents: List<Long> = emptyList(),
     val isLoading: Boolean = true
 ) {
     /** Remanente del presupuesto total; null si no hay presupuesto mensual. */
@@ -104,6 +107,23 @@ class SummaryViewModel @Inject constructor(
             budgetCents = monthlyBudgetCents,
             spentCents = summary.totalSpentCents
         )
+
+        // Serie acumulada para el gráfico: mismo criterio que GetMonthSummary
+        // (gastos menos reembolsos, sin transferencias) y solo hasta hoy.
+        val spentByDay = LongArray(month.lengthOfMonth())
+        transactions.forEach { tx ->
+            if (tx.date >= month.atDay(1) && tx.date <= today &&
+                (tx.type == TransactionType.EXPENSE || tx.type == TransactionType.REFUND)
+            ) {
+                val delta = if (tx.type == TransactionType.EXPENSE) tx.amountCents else -tx.amountCents
+                spentByDay[tx.date.dayOfMonth - 1] += delta
+            }
+        }
+        var running = 0L
+        val dailySpent = spentByDay.map { day ->
+            running += day
+            running
+        }
         val incomeCents = transactions
             .filter {
                 it.type == com.example.campuspocket.feature.finance.data.TransactionType.INCOME &&
@@ -123,6 +143,7 @@ class SummaryViewModel @Inject constructor(
                 .map { it.colorArgb to it.netSpentCents },
             upcomingPayments = PaymentDomain.upcomingPayments(payments, today),
             pace = pace,
+            dailySpentCents = dailySpent,
             isLoading = false
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SummaryUiState())

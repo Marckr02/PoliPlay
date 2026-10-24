@@ -43,7 +43,7 @@ import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.extended
-import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -183,7 +183,11 @@ private fun DayCell(
                 color = content
             )
             Text(
-                text = if (negative) "-" + Money.format(-day.balanceCents) else "+" + Money.format(day.balanceCents),
+                text = if (negative) {
+                    "-" + formatMoneyOrHidden(-day.balanceCents)
+                } else {
+                    "+" + formatMoneyOrHidden(day.balanceCents)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = when {
                     isToday -> content.copy(alpha = 0.86f)

@@ -73,9 +73,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.extended
-import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.feature.academic.domain.model.Priority
 import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -672,7 +673,7 @@ fun AccountsCarousel(
             WalletCard(
                 name = balance.account.name,
                 typeLabel = stringResource(accountTypeLabelRes(balance.account.type)),
-                amount = Money.format(balance.balanceCents),
+                amount = formatMoneyOrHidden(balance.balanceCents),
                 containerColor = container,
                 contentColor = content,
                 onClick = { onAccountClick(balance) }
@@ -708,8 +709,8 @@ fun MonthlyOverviewCard(modifier: Modifier = Modifier, income: Long, expense: Lo
                         style = MaterialTheme.typography.labelMedium,
                         color = ext.success
                     )
-                    Text(
-                        text = Money.format(income),
+                    MoneyText(
+                        amountCents = income,
                         style = MaterialTheme.typography.titleMedium,
                         color = ext.success
                     )
@@ -720,8 +721,8 @@ fun MonthlyOverviewCard(modifier: Modifier = Modifier, income: Long, expense: Lo
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.error
                     )
-                    Text(
-                        text = Money.format(expense),
+                    MoneyText(
+                        amountCents = expense,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -732,8 +733,8 @@ fun MonthlyOverviewCard(modifier: Modifier = Modifier, income: Long, expense: Lo
                         style = MaterialTheme.typography.labelMedium,
                         color = if (net >= 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
                     )
-                    Text(
-                        text = Money.format(net),
+                    MoneyText(
+                        amountCents = net,
                         style = MaterialTheme.typography.headlineSmall,
                         color = if (net >= 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
                     )

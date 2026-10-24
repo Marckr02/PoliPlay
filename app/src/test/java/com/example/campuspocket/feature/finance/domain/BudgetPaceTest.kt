@@ -105,4 +105,52 @@ class BudgetPaceTest {
         assertEquals(0L, pace.spentCents)
         assertEquals(BigDecimal("0.0"), pace.realPct)
     }
+
+    @Test
+    fun `v5 ejemplo dia 20 de 31 presupuesto 200 gastado 106`() {
+        val pace = BudgetPace.compute(
+            today = day(2026, 10, 20),
+            budgetCents = 20_000,
+            spentCents = 10_600
+        )!!
+
+        assertEquals(12, pace.daysRemaining) // 31 - 20 + 1, incluye hoy
+        assertEquals(783L, pace.perDayCents) // 94,00 / 12 = 7,833…
+        assertEquals(16_430L, pace.estimatedClosingCents) // 106,00 / 20 × 31
+        assertTrue(pace.hasEnoughDataForClosing)
+        assertFalse(pace.isBudgetExhausted)
+        assertFalse(pace.isClosingOverBudget)
+    }
+
+    @Test
+    fun `antes del dia 3 el cierre no es fiable`() {
+        val dia1 = BudgetPace.compute(day(2026, 10, 1), 20_000, 1_000)!!
+        val dia2 = BudgetPace.compute(day(2026, 10, 2), 20_000, 1_000)!!
+        val dia3 = BudgetPace.compute(day(2026, 10, 3), 20_000, 1_000)!!
+
+        assertFalse(dia1.hasEnoughDataForClosing)
+        assertFalse(dia2.hasEnoughDataForClosing)
+        assertTrue(dia3.hasEnoughDataForClosing)
+    }
+
+    @Test
+    fun `presupuesto agotado deja cero por dia`() {
+        val justo = BudgetPace.compute(day(2026, 10, 20), 20_000, 20_000)!!
+        val excedido = BudgetPace.compute(day(2026, 10, 20), 20_000, 25_000)!!
+
+        assertEquals(0L, justo.perDayCents)
+        assertEquals(0L, excedido.perDayCents)
+        assertTrue(justo.isBudgetExhausted)
+        assertTrue(excedido.isBudgetExhausted)
+        assertTrue(excedido.isClosingOverBudget)
+    }
+
+    @Test
+    fun `cierre y por dia redondean a centavos con half up`() {
+        // 1,00 / 3 días = 0,333… → 33 centavos.
+        assertEquals(33L, BudgetPace.perDayCents(100, 0, 3))
+        // 1,00 / 3 × 7 = 2,333… → 233 centavos.
+        assertEquals(233L, BudgetPace.estimatedClosingCents(100, 3, 7))
+        assertEquals(0L, BudgetPace.perDayCents(100, 100, 10))
+    }
 }

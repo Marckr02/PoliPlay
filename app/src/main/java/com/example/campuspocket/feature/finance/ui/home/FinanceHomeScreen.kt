@@ -42,6 +42,7 @@ import com.example.campuspocket.core.designsystem.components.AccountsCarousel
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
+import com.example.campuspocket.core.designsystem.components.PrivacyToggleButton
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.finance.data.TransactionType
@@ -53,6 +54,7 @@ import com.example.campuspocket.feature.finance.ui.history.historyItems
 import com.example.campuspocket.feature.finance.ui.payments.PaymentsView
 import com.example.campuspocket.feature.finance.ui.payments.PaymentsViewModel
 import com.example.campuspocket.feature.finance.ui.payments.paymentItems
+import com.example.campuspocket.feature.finance.ui.summary.BudgetInsightsRow
 import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceCard
 import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceSuggestionCard
 import com.example.campuspocket.feature.finance.ui.summary.SummaryViewModel
@@ -76,6 +78,7 @@ fun FinanceHomeScreen(
     onOpenCalendar: () -> Unit,
     onOpenSummary: () -> Unit,
     modifier: Modifier = Modifier,
+    onTogglePrivacy: () -> Unit = {},
     summaryViewModel: SummaryViewModel = hiltViewModel(),
     accountsViewModel: AccountsViewModel = hiltViewModel()
 ) {
@@ -157,6 +160,8 @@ fun FinanceHomeScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
+                PrivacyToggleButton(onToggle = onTogglePrivacy)
+                Spacer(Modifier.width(4.dp))
                 RoundIconButton(
                     icon = Icons.Filled.DateRange,
                     contentDescription = stringResource(R.string.finance_open_calendar),
@@ -181,6 +186,16 @@ fun FinanceHomeScreen(
                         onEditBudget = { selectTab(FinanceTab.BUDGETS) }
                     )
                 }
+            }
+        }
+
+        item(key = "insights") {
+            val pace = summary.pace
+            if (pace != null) {
+                BudgetInsightsRow(
+                    pace = pace,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
             }
         }
 

@@ -44,6 +44,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusChip
@@ -400,8 +401,8 @@ private fun PaymentCard(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.width(8.dp))
-            Text(
-                text = Money.format(payment.amountCents),
+            MoneyText(
+                amountCents = payment.amountCents,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

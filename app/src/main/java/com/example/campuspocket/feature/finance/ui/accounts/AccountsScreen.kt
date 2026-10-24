@@ -34,11 +34,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.ContrastUtil
+import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.AccountsCarousel
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
-import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.domain.AccountBalance
 
@@ -63,7 +64,8 @@ fun AccountsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.total_balance) + ": " + Money.format(state.totalCents),
+                text = stringResource(R.string.total_balance) + ": " +
+                    formatMoneyOrHidden(state.totalCents),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -176,8 +178,8 @@ private fun AccountRow(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            Text(
-                text = Money.format(balance.balanceCents),
+            MoneyText(
+                amountCents = balance.balanceCents,
                 style = MaterialTheme.typography.titleMedium,
                 color = if (balance.balanceCents < 0) {
                     MaterialTheme.colorScheme.error

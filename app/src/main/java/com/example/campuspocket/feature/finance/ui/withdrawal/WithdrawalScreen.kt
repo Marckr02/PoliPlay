@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusDialog
@@ -50,6 +51,7 @@ import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.extended
+import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.AccountBalance
 import com.example.campuspocket.feature.finance.domain.WithdrawalError
@@ -155,7 +157,7 @@ fun WithdrawalScreen(
         CampusDialog(
             onDismissRequest = onDone,
             title = stringResource(R.string.withdrawal_success_title),
-            message = stringResource(R.string.withdrawal_success, Money.format(amount)),
+            message = stringResource(R.string.withdrawal_success, formatMoneyOrHidden(amount)),
             icon = Icons.Filled.CheckCircle,
             confirmText = stringResource(R.string.ok),
             onConfirm = onDone,
@@ -181,13 +183,13 @@ private fun SavingsAccountDropdown(
         expanded = expanded,
         onExpandedChange = { expanded = it },
         supportingText = selected?.let {
-            stringResource(R.string.withdrawal_balance, Money.format(it.balanceCents))
+            stringResource(R.string.withdrawal_balance, formatMoneyOrHidden(it.balanceCents))
         },
         modifier = modifier
     ) {
         accounts.forEach { balance ->
             CampusSelectItem(
-                text = balance.account.name + " · " + Money.format(balance.balanceCents),
+                text = balance.account.name + " · " + formatMoneyOrHidden(balance.balanceCents),
                 selected = balance.account.id == selectedId,
                 onClick = {
                     balance.account.id?.let(onSelect)
@@ -224,8 +226,8 @@ private fun AfterWithdrawalCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                text = Money.format(savingsAfterCents),
+            MoneyText(
+                amountCents = savingsAfterCents,
                 style = MaterialTheme.typography.titleSmall
             )
         }
@@ -240,8 +242,8 @@ private fun AfterWithdrawalCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                text = Money.format(cashAfterCents),
+            MoneyText(
+                amountCents = cashAfterCents,
                 style = MaterialTheme.typography.titleSmall
             )
         }

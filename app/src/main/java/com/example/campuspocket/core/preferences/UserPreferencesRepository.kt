@@ -29,6 +29,7 @@ object PreferenceKeys {
     val FINANCE_ENABLED = booleanPreferencesKey("module_finance_enabled")
     val NOTES_ENABLED = booleanPreferencesKey("module_notes_enabled")
     val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+    val HIDE_AMOUNTS = booleanPreferencesKey("hide_amounts")
 
     // Ajustes existentes (respaldo, notificaciones, seguridad)
     val LAST_BACKUP = longPreferencesKey("last_backup_at")
@@ -66,7 +67,9 @@ data class UserPreferences(
     val financeEnabled: Boolean = true,
     val notesEnabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val onboardingCompleted: Boolean = false
+    val onboardingCompleted: Boolean = false,
+    /** Modo privado: oculta montos en Inicio y Finanzas (v5 §2.4). */
+    val hideAmounts: Boolean = false
 ) {
     fun isModuleEnabled(module: CampusModule): Boolean = when (module) {
         CampusModule.ACADEMIC -> academicEnabled
@@ -87,7 +90,8 @@ data class UserPreferences(
             financeEnabled = preferences[PreferenceKeys.FINANCE_ENABLED] ?: true,
             notesEnabled = preferences[PreferenceKeys.NOTES_ENABLED] ?: true,
             themeMode = ThemeMode.fromStorage(preferences[PreferenceKeys.THEME]),
-            onboardingCompleted = preferences[PreferenceKeys.ONBOARDING_COMPLETED] ?: false
+            onboardingCompleted = preferences[PreferenceKeys.ONBOARDING_COMPLETED] ?: false,
+            hideAmounts = preferences[PreferenceKeys.HIDE_AMOUNTS] ?: false
         )
     }
 }
@@ -122,6 +126,11 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setThemeMode(mode: ThemeMode) = editOrLog {
         set(PreferenceKeys.THEME, mode.storageValue)
+    }
+
+    /** Modo privado global; se recuerda entre reinicios. */
+    suspend fun setHideAmounts(hidden: Boolean) = editOrLog {
+        set(PreferenceKeys.HIDE_AMOUNTS, hidden)
     }
 
     suspend fun setModuleEnabled(module: CampusModule, enabled: Boolean) = editOrLog {

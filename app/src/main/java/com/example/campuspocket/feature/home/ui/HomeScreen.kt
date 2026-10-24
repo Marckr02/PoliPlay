@@ -41,11 +41,12 @@ import androidx.compose.ui.unit.sp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusSectionHeader
+import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.PrivacyToggleButton
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
-import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.BudgetPace
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -65,7 +66,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     state: HomeUiState = HomeUiState(),
     onOpenCourse: (Long) -> Unit = {},
-    onOpenNotes: () -> Unit = {}
+    onOpenNotes: () -> Unit = {},
+    onTogglePrivacy: () -> Unit = {}
 ) {
     val activeModules = CampusModule.entries.filter { preferences.isModuleEnabled(it) }
     val displayName = preferences.displayName.ifBlank { null }
@@ -100,6 +102,8 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+            PrivacyToggleButton(onToggle = onTogglePrivacy)
+            Spacer(Modifier.width(4.dp))
             HomeAvatar(
                 displayName = displayName,
                 onClick = onOpenSettings
@@ -418,13 +422,23 @@ private fun FinanceSummaryCard(
             color = ext.onAccent.copy(alpha = 0.82f)
         )
         Spacer(Modifier.height(6.dp))
-        Text(
-            text = monthlyRemainingCents?.let { Money.format(it) } ?: "—",
-            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
-            color = ext.onAccent,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        if (monthlyRemainingCents != null) {
+            MoneyText(
+                amountCents = monthlyRemainingCents,
+                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
+                color = ext.onAccent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        } else {
+            Text(
+                text = "—",
+                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
+                color = ext.onAccent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
         if (pace != null) {
             Text(
                 text = stringResource(
