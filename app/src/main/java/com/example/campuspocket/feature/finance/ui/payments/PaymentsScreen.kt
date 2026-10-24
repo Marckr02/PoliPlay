@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,7 +58,6 @@ import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
 import com.example.campuspocket.feature.finance.ui.calendar.CalendarScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -71,7 +71,7 @@ import javax.inject.Inject
 private val DATE_FMT: DateTimeFormatter =
     DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es"))
 
-private enum class PaymentsView { LIST, CALENDAR }
+enum class PaymentsView { LIST, CALENDAR }
 
 private fun freqLabelRes(f: String): Int = when (f) {
     "WEEKLY" -> R.string.scheduled_payment_frequency_weekly
@@ -82,6 +82,9 @@ private fun freqLabelRes(f: String): Int = when (f) {
 /**
  * Pagos programados dentro de la pestaña Pagos: lista sin FAB, con calendario
  * y creación en la cabecera. La lógica del ViewModel se conserva intacta.
+ *
+ * En v5 el contenido se expone como [paymentItems]; esta pantalla queda como
+ * envoltorio para previews y pruebas.
  */
 @Composable
 fun PaymentsScreen(
@@ -92,127 +95,129 @@ fun PaymentsScreen(
     viewModel: PaymentsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val ext = MaterialTheme.extended
     var view by rememberSaveable { mutableStateOf(PaymentsView.LIST) }
-    var payNow by remember { mutableStateOf<ScheduledPaymentEntity?>(null) }
-    var deleting by remember { mutableStateOf<ScheduledPaymentEntity?>(null) }
 
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        PaymentsHeader(
+    LazyColumn(modifier = modifier.fillMaxWidth()) {
+        paymentItems(
             state = state,
-            onOpenCalendar = onOpenCalendar,
-            onAddPayment = onAddPayment
+            viewModel = viewModel,
+            view = view,
+            onViewChange = { view = it },
+            onAddPayment = onAddPayment,
+            onEditPayment = onEditPayment,
+            onOpenCalendar = onOpenCalendar
         )
-        PaymentsViewSelector(view = view, onSelect = { view = it })
+    }
+}
 
-        if (view == PaymentsView.LIST) {
-            when {
-                state.isLoading -> Box(
-                    Modifier.fillMaxWidth().height(160.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LoadingShimmer()
-                }
-
-                state.payments.isEmpty() -> {
-                    BentoCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(ext.lavender),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_schedule),
-                                    contentDescription = null,
-                                    tint = ext.onLavender,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(
-                                    text = stringResource(R.string.empty_scheduled_payments),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = stringResource(R.string.empty_scheduled_payments_message),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        CampusButton(
-                            text = stringResource(R.string.scheduled_payment_new),
-                            onClick = onAddPayment,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                else -> state.payments.forEach { payment ->
-                    PaymentCard(
-                        payment = payment,
-                        onToggleActive = { viewModel.toggleActive(payment) },
-                        onMarkPaid = { payNow = payment },
-                        onEdit = { onEditPayment(payment.id) },
-                        onDelete = { deleting = payment }
-                    )
-                }
-            }
-        } else {
-            CalendarScreen(
-                onDaySelected = {},
-                embedded = true,
-                modifier = Modifier.fillMaxWidth().height(520.dp)
+/**
+ * Ítems de la pestaña Pagos (Fase 2 v5): cabecera, selector lista/calendario y
+ * una tarjeta perezosa por pago con clave estable.
+ */
+fun LazyListScope.paymentItems(
+    state: PaymentsUiState,
+    viewModel: PaymentsViewModel,
+    view: PaymentsView,
+    onViewChange: (PaymentsView) -> Unit,
+    onAddPayment: () -> Unit,
+    onEditPayment: (Long) -> Unit,
+    onOpenCalendar: () -> Unit
+) {
+    item(key = "payments_header", contentType = "header") {
+        Box(Modifier.padding(horizontal = 20.dp)) {
+            PaymentsHeader(
+                state = state,
+                onOpenCalendar = onOpenCalendar,
+                onAddPayment = onAddPayment
             )
         }
     }
 
-    payNow?.let { payment ->
-        var amountCents by remember(payment.id) { mutableStateOf(payment.amountCents) }
-        CampusDialog(
-            onDismissRequest = { payNow = null },
-            title = payment.name,
-            confirmText = stringResource(R.string.confirm),
-            confirmEnabled = amountCents > 0,
-            onConfirm = {
-                if (amountCents > 0) {
-                    viewModel.markPaid(payment, amountCents, LocalDate.now())
-                    payNow = null
+    item(key = "payments_selector", contentType = "selector") {
+        Box(Modifier.padding(horizontal = 20.dp)) {
+            PaymentsViewSelector(view = view, onSelect = onViewChange)
+        }
+    }
+
+    if (view == PaymentsView.LIST) {
+        when {
+            state.isLoading -> item(key = "payments_loading", contentType = "loading") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingShimmer()
                 }
-            },
-            content = {
-                CampusTextField(
-                    value = Money.toLocalDecimalString(amountCents),
-                    onValueChange = { raw ->
-                        amountCents = raw.filter(Char::isDigit).take(9).toLongOrNull() ?: 0L
-                    },
-                    label = stringResource(R.string.transaction_amount),
-                    prefix = "$",
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
+            }
+
+            state.payments.isEmpty() -> item(key = "payments_empty", contentType = "empty") {
+                Box(Modifier.padding(horizontal = 20.dp)) {
+                    PaymentsEmptyCard(onAddPayment = onAddPayment)
+                }
+            }
+
+            else -> items(
+                items = state.payments,
+                key = { payment -> "payment_${payment.id}" },
+                contentType = { "payment" }
+            ) { payment ->
+                PaymentCardItem(
+                    payment = payment,
+                    viewModel = viewModel,
+                    onEditPayment = onEditPayment
                 )
+            }
+        }
+    } else {
+        item(key = "payments_calendar", contentType = "calendar") {
+            Box(Modifier.padding(horizontal = 20.dp)) {
+                CalendarScreen(
+                    onDaySelected = {},
+                    embedded = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(520.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaymentCardItem(
+    payment: ScheduledPaymentEntity,
+    viewModel: PaymentsViewModel,
+    onEditPayment: (Long) -> Unit
+) {
+    var payNow by remember(payment.id) { mutableStateOf(false) }
+    var deleting by remember(payment.id) { mutableStateOf(false) }
+
+    Box(Modifier.padding(horizontal = 20.dp)) {
+        PaymentCard(
+            payment = payment,
+            onToggleActive = { viewModel.toggleActive(payment) },
+            onMarkPaid = { payNow = true },
+            onEdit = { onEditPayment(payment.id) },
+            onDelete = { deleting = true }
+        )
+    }
+
+    if (payNow) {
+        PayNowDialog(
+            payment = payment,
+            onDismiss = { payNow = false },
+            onConfirm = { amountCents ->
+                viewModel.markPaid(payment, amountCents, LocalDate.now())
+                payNow = false
             }
         )
     }
 
-    deleting?.let { payment ->
+    if (deleting) {
         CampusDialog(
-            onDismissRequest = { deleting = null },
+            onDismissRequest = { deleting = false },
             title = payment.name,
             message = stringResource(R.string.scheduled_payment_delete_confirm),
             icon = Icons.Filled.Warning,
@@ -220,8 +225,87 @@ fun PaymentsScreen(
             confirmText = stringResource(R.string.delete),
             onConfirm = {
                 viewModel.delete(payment.id)
-                deleting = null
+                deleting = false
             }
+        )
+    }
+}
+
+@Composable
+private fun PayNowDialog(
+    payment: ScheduledPaymentEntity,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit
+) {
+    var amountCents by remember(payment.id) { mutableStateOf(payment.amountCents) }
+
+    CampusDialog(
+        onDismissRequest = onDismiss,
+        title = payment.name,
+        confirmText = stringResource(R.string.confirm),
+        confirmEnabled = amountCents > 0,
+        onConfirm = {
+            if (amountCents > 0) onConfirm(amountCents)
+        },
+        content = {
+            CampusTextField(
+                value = Money.toLocalDecimalString(amountCents),
+                onValueChange = { raw ->
+                    amountCents = raw.filter(Char::isDigit).take(9).toLongOrNull() ?: 0L
+                },
+                label = stringResource(R.string.transaction_amount),
+                prefix = "$",
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    )
+}
+
+@Composable
+private fun PaymentsEmptyCard(onAddPayment: () -> Unit) {
+    val ext = MaterialTheme.extended
+    BentoCard(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(ext.lavender),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_schedule),
+                    contentDescription = null,
+                    tint = ext.onLavender,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(R.string.empty_scheduled_payments),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(R.string.empty_scheduled_payments_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        CampusButton(
+            text = stringResource(R.string.scheduled_payment_new),
+            onClick = onAddPayment,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
@@ -299,7 +383,6 @@ private fun PaymentCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val ext = MaterialTheme.extended
     BentoCard(
         shape = MaterialTheme.shapes.large,
         contentPadding = PaddingValues(16.dp)

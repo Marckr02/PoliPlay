@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -29,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -44,19 +46,24 @@ import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.ui.accounts.AccountsViewModel
-import com.example.campuspocket.feature.finance.ui.budgets.BudgetsScreen
-import com.example.campuspocket.feature.finance.ui.history.HistoryScreen
-import com.example.campuspocket.feature.finance.ui.payments.PaymentsScreen
+import com.example.campuspocket.feature.finance.ui.budgets.BudgetsViewModel
+import com.example.campuspocket.feature.finance.ui.budgets.budgetItems
+import com.example.campuspocket.feature.finance.ui.history.HistoryViewModel
+import com.example.campuspocket.feature.finance.ui.history.historyItems
+import com.example.campuspocket.feature.finance.ui.payments.PaymentsView
+import com.example.campuspocket.feature.finance.ui.payments.PaymentsViewModel
+import com.example.campuspocket.feature.finance.ui.payments.paymentItems
 import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceCard
 import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceSuggestionCard
 import com.example.campuspocket.feature.finance.ui.summary.SummaryViewModel
+import kotlinx.coroutines.flow.filterNotNull
 
 enum class FinanceTab { MOVEMENTS, BUDGETS, PAYMENTS }
 
 /**
- * Finanzas v4: cabecera fija con título, hero de ritmo del presupuesto, cuentas
- * compactas, fila de resumen y tres pestañas. La creación vive en el botón
- * contextual del dock y su hoja; aquí no se duplican acciones.
+ * Finanzas v5: un único LazyColumn de página completa. Cabecera, ritmo, cuentas
+ * y resumen arriba; pestañas fijas (`stickyHeader`); debajo, cada pestaña
+ * aporta sus propios ítems perezosos. La posición de scroll se guarda por pestaña.
  */
 @Composable
 fun FinanceHomeScreen(
@@ -74,26 +81,62 @@ fun FinanceHomeScreen(
 ) {
     val summary by summaryViewModel.uiState.collectAsStateWithLifecycle()
     val accounts by accountsViewModel.uiState.collectAsStateWithLifecycle()
-    var tab by rememberSaveable { mutableStateOf(FinanceTab.MOVEMENTS.name) }
-    val currentTab = FinanceTab.entries.firstOrNull { it.name == tab } ?: FinanceTab.MOVEMENTS
     val ext = MaterialTheme.extended
 
+    var tab by rememberSaveable { mutableStateOf(FinanceTab.MOVEMENTS.name) }
+    val currentTab = FinanceTab.entries.firstOrNull { it.name == tab } ?: FinanceTab.MOVEMENTS
+    var paymentsView by rememberSaveable { mutableStateOf(PaymentsView.LIST) }
+
     val listState = rememberLazyListState()
-    var scrollToTabs by remember { mutableStateOf(false) }
+
+    // Posición por pestaña: firstVisibleItemIndex + offset (v5).
+    val scrollPositions = rememberSaveable {
+        mutableStateOf(HashMap<String, Pair<Int, Int>>())
+    }
+    var scrollRequest by remember { mutableStateOf(0) }
+
+    // Último índice conocido de la cabecera de pestañas, calculado del layout.
+    var tabsIndex by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo
+                .firstOrNull { it.key == "pestanas" }
+                ?.index
+        }.filterNotNull().collect { tabsIndex = it }
+    }
 
     fun selectTab(selected: FinanceTab) {
-        if (tab != selected.name) {
-            tab = selected.name
-            scrollToTabs = true
+        if (selected.name == tab) return
+        scrollPositions.value[currentTab.name] =
+            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+        tab = selected.name
+        scrollRequest += 1
+    }
+
+    LaunchedEffect(scrollRequest) {
+        if (scrollRequest == 0) return@LaunchedEffect
+        val saved = scrollPositions.value[currentTab.name]
+        if (saved != null) {
+            listState.scrollToItem(saved.first, saved.second)
+        } else {
+            // Índice calculado de la cabecera de pestañas, nunca un número fijo.
+            val target = tabsIndex ?: listState.layoutInfo.visibleItemsInfo
+                .firstOrNull { it.key == "pestanas" }
+                ?.index
+            if (target != null) listState.animateScrollToItem(target)
         }
     }
 
-    LaunchedEffect(scrollToTabs) {
-        if (scrollToTabs) {
-            listState.animateScrollToItem(4)
-            scrollToTabs = false
-        }
-    }
+    val tabContent = financeTabContent(
+        currentTab = currentTab,
+        paymentsView = paymentsView,
+        onPaymentsViewChange = { paymentsView = it },
+        onOpenTransaction = onOpenTransaction,
+        onManageCategories = onManageCategories,
+        onAddPayment = onAddPayment,
+        onEditPayment = onEditPayment,
+        onOpenCalendar = onOpenCalendar
+    )
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -223,30 +266,66 @@ fun FinanceHomeScreen(
             }
         }
 
-        item(key = "contenido_${currentTab.name}") {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-            ) {
-                when (currentTab) {
-                    FinanceTab.MOVEMENTS -> HistoryScreen(
-                        onOpenTransaction = onOpenTransaction,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    FinanceTab.BUDGETS -> BudgetsScreen(
-                        onManageCategories = onManageCategories,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    FinanceTab.PAYMENTS -> PaymentsScreen(
-                        onAddPayment = onAddPayment,
-                        onEditPayment = onEditPayment,
-                        onOpenCalendar = onOpenCalendar,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
+        tabContent()
+    }
+}
+
+/**
+ * Resuelve el ViewModel y el estado solo de la pestaña activa y devuelve el
+ * bloque de ítems que Finanzas añadirá a su LazyColumn.
+ */
+@Composable
+private fun financeTabContent(
+    currentTab: FinanceTab,
+    paymentsView: PaymentsView,
+    onPaymentsViewChange: (PaymentsView) -> Unit,
+    onOpenTransaction: (Long, TransactionType) -> Unit,
+    onManageCategories: () -> Unit,
+    onAddPayment: () -> Unit,
+    onEditPayment: (Long) -> Unit,
+    onOpenCalendar: () -> Unit
+): LazyListScope.() -> Unit = when (currentTab) {
+    FinanceTab.MOVEMENTS -> {
+        val viewModel: HistoryViewModel = hiltViewModel()
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        val content: LazyListScope.() -> Unit = {
+            historyItems(
+                state = state,
+                viewModel = viewModel,
+                onOpenTransaction = onOpenTransaction
+            )
         }
+        content
+    }
+
+    FinanceTab.BUDGETS -> {
+        val viewModel: BudgetsViewModel = hiltViewModel()
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        val content: LazyListScope.() -> Unit = {
+            budgetItems(
+                state = state,
+                viewModel = viewModel,
+                onManageCategories = onManageCategories
+            )
+        }
+        content
+    }
+
+    FinanceTab.PAYMENTS -> {
+        val viewModel: PaymentsViewModel = hiltViewModel()
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        val content: LazyListScope.() -> Unit = {
+            paymentItems(
+                state = state,
+                viewModel = viewModel,
+                view = paymentsView,
+                onViewChange = onPaymentsViewChange,
+                onAddPayment = onAddPayment,
+                onEditPayment = onEditPayment,
+                onOpenCalendar = onOpenCalendar
+            )
+        }
+        content
     }
 }
 

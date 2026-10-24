@@ -555,4 +555,23 @@
     <string name="quick_add_payment_desc">Programar un pago</string>
     <string name="quick_add_task_desc">Añadir una tarea académica</string>
     <string name="quick_add_note_desc">Escribir una nota</string>
+
+    <!-- Empty states v5 -->
+    <string name="empty_tasks_title">Todo al día</string>
+    <string name="empty_tasks_message">No tienes tareas pendientes. Disfruta tu tiempo libre o planifica la semana.</string>
+    <string name="empty_movements_title">Sin movimientos</string>
+    <string name="empty_movements_message">Los movimientos que registres aparecerán aquí.</string>
+    <string name="empty_notes_title">Sin notas</string>
+    <string name="empty_notes_message">Crea tu primera nota para empezar.</string>
+    <string name="empty_payments_title">Sin pagos programados</string>
+    <string name="empty_payments_message">Aquí verás los pagos que programes.</string>
+    <string name="empty_courses_title">Sin materias</string>
+    <string name="empty_courses_message">Añade tu primera materia para organizar tu horario.</string>
+    <string name="course_new">Nueva materia</string>
+    <string name="note_new">Nueva nota</string>
+
+    <!-- History day grouping v5 -->
+    <string name="history_today">HOY</string>
+    <string name="history_yesterday">AYER</string>
+    <string name="history_load_previous">Cargar mes anterior</string>
 </resources>

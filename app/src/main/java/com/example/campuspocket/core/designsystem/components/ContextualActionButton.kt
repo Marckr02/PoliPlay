@@ -24,11 +24,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,9 +35,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.campuspocket.core.designsystem.LocalMotion
+import com.example.campuspocket.core.designsystem.MotionTokens
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.extended
-import android.provider.Settings
 
 /**
  * Acción contextual de la pestaña raíz visible. [labelRes] null pinta el botón
@@ -63,17 +62,10 @@ fun ContextualActionButton(
     modifier: Modifier = Modifier
 ) {
     val ext = MaterialTheme.extended
-    val context = LocalContext.current
     val fontScale = LocalDensity.current.fontScale
-    val reduceMotion = remember(context) {
-        Settings.Global.getFloat(
-            context.contentResolver,
-            Settings.Global.ANIMATOR_DURATION_SCALE,
-            1f
-        ) == 0f
-    }
+    val motion = LocalMotion.current
     val showLabel = expanded && action.labelRes != null && fontScale <= 1.5f
-    val duration = if (reduceMotion) 0 else 180
+    val duration = motion.ms(180)
     val collapsedDescription = stringResource(action.descriptionRes)
 
     Row(
@@ -81,7 +73,7 @@ fun ContextualActionButton(
             .height(56.dp)
             .clip(PillShape)
             .background(ext.accent)
-            .animateContentSize(tween(duration))
+            .animateContentSize(motion.tween(180))
             .combinedClickable(
                 onClick = action.onClick,
                 onLongClick = null,
@@ -99,8 +91,8 @@ fun ContextualActionButton(
         AnimatedContent(
             targetState = action.iconRes,
             transitionSpec = {
-                fadeIn(tween(if (reduceMotion) 0 else 160)) togetherWith
-                    fadeOut(tween(if (reduceMotion) 0 else 100))
+                fadeIn(motion.tween(160)) togetherWith
+                    fadeOut(motion.tween(100))
             },
             label = "contextualActionIcon"
         ) { iconRes ->
@@ -113,10 +105,10 @@ fun ContextualActionButton(
         }
         AnimatedVisibility(
             visible = showLabel,
-            enter = fadeIn(tween(if (reduceMotion) 0 else 160)) +
-                expandHorizontally(tween(if (reduceMotion) 0 else 160)),
-            exit = fadeOut(tween(if (reduceMotion) 0 else 100)) +
-                shrinkHorizontally(tween(if (reduceMotion) 0 else 100))
+            enter = fadeIn(motion.tween(160)) +
+                expandHorizontally(motion.tween(160)),
+            exit = fadeOut(motion.tween(100)) +
+                shrinkHorizontally(motion.tween(100))
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.width(10.dp))

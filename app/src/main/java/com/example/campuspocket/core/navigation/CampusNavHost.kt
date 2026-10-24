@@ -19,18 +19,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -131,6 +135,9 @@ fun CampusNavHost(
             restoreState = true
         }
     }
+
+    // SnackbarHost global para "Deshacer" y confirmaciones (v5 §3.1)
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Deep link desde una notificación: abre el detalle (formulario) de la tarea.
     val pendingTask by pendingTaskId.collectAsStateWithLifecycle()
@@ -256,70 +263,79 @@ fun CampusNavHost(
             }
         }
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollConnection)
-        ) {
-            NavHost(
-                navController = navController,
-                startDestination = TopLevelDestination.start.route,
+        CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
+            Box(
                 modifier = Modifier
-                    .padding(innerPadding)
-                    // En Finanzas el botón contextual flota sobre la pestaña; su
-                    // contenido reserva el espacio inferior dentro de cada lista.
-                    .padding(
-                        bottom = if (showDock && currentDestination?.route != FinanceDestinations.HOME) {
-                            68.dp
-                        } else {
-                            0.dp
-                        }
-                    ),
-                enterTransition = { fadeIn(tween(180)) },
-                exitTransition = { fadeOut(tween(120)) },
-                popEnterTransition = { fadeIn(tween(180)) },
-                popExitTransition = { fadeOut(tween(120)) }
+                    .fillMaxSize()
+                    .nestedScroll(scrollConnection)
             ) {
-                composable(TopLevelDestination.HOME.route) {
-                    HomeRoute(
-                        preferences = preferences,
-                        onOpenModule = { module ->
-                            val route = TopLevelDestination.entries
-                                .first { it.module == module }
-                                .route
-                            navigateToTopLevel(route)
-                        },
-                        onOpenSettings = { navigateToTopLevel(TopLevelDestination.SETTINGS.route) },
-                        onOpenCourse = { courseId ->
-                            if (preferences.academicEnabled) {
-                                navController.navigate(AcademicDestinations.courseDetail(courseId))
+                NavHost(
+                    navController = navController,
+                    startDestination = TopLevelDestination.start.route,
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .padding(
+                            bottom = if (showDock && currentDestination?.route != FinanceDestinations.HOME) {
+                                68.dp
+                            } else {
+                                0.dp
                             }
-                        },
-                        onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) }
-                    )
+                        ),
+                    enterTransition = { fadeIn(tween(180)) },
+                    exitTransition = { fadeOut(tween(120)) },
+                    popEnterTransition = { fadeIn(tween(180)) },
+                    popExitTransition = { fadeOut(tween(120)) }
+                ) {
+                    composable(TopLevelDestination.HOME.route) {
+                        HomeRoute(
+                            preferences = preferences,
+                            onOpenModule = { module ->
+                                val route = TopLevelDestination.entries
+                                    .first { it.module == module }
+                                    .route
+                                navigateToTopLevel(route)
+                            },
+                            onOpenSettings = { navigateToTopLevel(TopLevelDestination.SETTINGS.route) },
+                            onOpenCourse = { courseId ->
+                                if (preferences.academicEnabled) {
+                                    navController.navigate(AcademicDestinations.courseDetail(courseId))
+                                }
+                            },
+                            onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) }
+                        )
+                    }
+                    academicGraph(navController)
+                    financeGraph(navController)
+                    notesGraph(navController)
+                    settingsGraph(navController)
                 }
-                academicGraph(navController)
-                financeGraph(navController)
-                notesGraph(navController)
-                settingsGraph(navController)
-            }
 
-            val action = dockAction
-            AnimatedVisibility(
-                visible = showDock && action != null,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(end = 20.dp, bottom = 102.dp),
-                enter = fadeIn(tween(180)),
-                exit = fadeOut(tween(120))
-            ) {
-                if (action != null) {
-                    ContextualActionButton(
-                        action = action,
-                        expanded = actionExpanded
-                    )
+                val action = dockAction
+                AnimatedVisibility(
+                    visible = showDock && action != null,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(end = 20.dp, bottom = 102.dp),
+                    enter = fadeIn(tween(180)),
+                    exit = fadeOut(tween(120))
+                ) {
+                    if (action != null) {
+                        ContextualActionButton(
+                            action = action,
+                            expanded = actionExpanded
+                        )
+                    }
                 }
+
+                // CampusSnackbarHost (v5 §3.1): sobre el dock y el botón contextual
+                CampusSnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = if (showDock) 176.dp else 28.dp)
+                        .imePadding()
+                )
             }
         }
     }

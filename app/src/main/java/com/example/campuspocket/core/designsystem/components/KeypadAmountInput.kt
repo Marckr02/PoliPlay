@@ -19,8 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -33,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.designsystem.extended
+import com.example.campuspocket.core.util.Haptics
 
 /** Teclas del teclado de montos, en el orden visual de 4 filas × 3 columnas. */
 private val KEYPAD_ROWS = listOf(
@@ -77,7 +77,7 @@ fun KeypadAmountInput(
     label: String = ""
 ) {
     val ext = MaterialTheme.extended
-    val haptics = LocalHapticFeedback.current
+    val view = LocalView.current
     val digits = amount.filter(Char::isDigit)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -122,12 +122,12 @@ fun KeypadAmountInput(
                                 .semantics { contentDescription = keyDescription }
                                 .combinedClickable(
                                     onClick = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        Haptics.tick(view)
                                         onAmountChange(keypadNextDigits(digits, key))
                                     },
                                     onLongClick = if (isBackspace) {
                                         {
-                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            Haptics.reject(view)
                                             onAmountChange("")
                                         }
                                     } else {

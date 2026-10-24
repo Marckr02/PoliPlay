@@ -46,12 +46,20 @@ class HistoryViewModel @Inject constructor(
 
     private val filters = MutableStateFlow(HistoryFilters())
 
-    private val transactionsFlow = filters.flatMapLatest { f ->
-        if (f.startDate != null && f.endDate != null) {
-            financeRepository.observeTransactionsByDateRange(f.startDate, f.endDate)
-        } else {
-            financeRepository.observeTransactions()
-        }
+    /**
+     * Ventana de carga (v5): meses hacia atrás que se consultan además del mes
+     * actual. Evita traer todo el historial en cada emisión.
+     */
+    private val loadedMonths = MutableStateFlow(1)
+
+    private val transactionsFlow = combine(filters, loadedMonths) { f, months ->
+        val today = LocalDate.now()
+        val end = f.endDate ?: today.withDayOfMonth(today.lengthOfMonth())
+        val start = f.startDate
+            ?: today.withDayOfMonth(1).minusMonths((months - 1).toLong())
+        start to end
+    }.flatMapLatest { (start, end) ->
+        financeRepository.observeTransactionsByDateRange(start, end)
     }
 
     val uiState: StateFlow<HistoryUiState> = combine(
@@ -71,6 +79,11 @@ class HistoryViewModel @Inject constructor(
 
     fun setDateRange(start: LocalDate?, end: LocalDate?) {
         filters.value = filters.value.copy(startDate = start, endDate = end)
+    }
+
+    /** Amplía la ventana de consulta un mes hacia atrás (v5). */
+    fun loadPreviousMonth() {
+        loadedMonths.value += 1
     }
 
     fun setType(type: TransactionType?) {

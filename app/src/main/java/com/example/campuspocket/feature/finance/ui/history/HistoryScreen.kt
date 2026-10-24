@@ -7,13 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -38,7 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,18 +59,24 @@ import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Transaction
 import com.example.campuspocket.feature.finance.ui.accounts.transactionTypeLabelRes
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val DATE_FORMATTER: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("es"))
+private val SPANISH: Locale = Locale.forLanguageTag("es")
+private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", SPANISH)
+private val DAY_HEADER_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", SPANISH)
+private val DATE_WITH_YEAR: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", SPANISH)
 
 /**
  * Movimientos: buscador en píldora, filtros compactos sin campos con borde y
  * una lista de transacciones en tarjetas sin elevación.
+ *
+ * En v5 el contenido real se expone como [historyItems] para que Finanzas lo
+ * aporte a su único LazyColumn. Esta pantalla queda como envoltorio para
+ * previews y pruebas.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
     onOpenTransaction: (Long, TransactionType) -> Unit,
@@ -78,11 +84,97 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LazyColumn(modifier = modifier.fillMaxWidth()) {
+        historyItems(
+            state = state,
+            viewModel = viewModel,
+            onOpenTransaction = onOpenTransaction
+        )
+    }
+}
+
+/**
+ * Ítems de la pestaña Movimientos (Fase 2 v5): lista perezosa agrupada por día,
+ * con subtotal diario y carga del mes anterior al final.
+ */
+fun LazyListScope.historyItems(
+    state: HistoryUiState,
+    viewModel: HistoryViewModel,
+    onOpenTransaction: (Long, TransactionType) -> Unit
+) {
+    item(key = "history_controls", contentType = "controls") {
+        HistoryControls(state = state, viewModel = viewModel)
+    }
+
+    when {
+        state.isLoading -> item(key = "history_loading", contentType = "loading") {
+            Box(
+                modifier = Modifier.fillMaxWidth().height(160.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                LoadingShimmer()
+            }
+        }
+
+        state.transactions.isEmpty() -> item(key = "history_empty", contentType = "empty") {
+            HistoryEmptyCard()
+        }
+
+        else -> {
+            val days = state.transactions
+                .groupBy { it.date }
+                .entries
+                .sortedByDescending { it.key }
+
+            days.forEach { (day, transactions) ->
+                item(key = "day_header_$day", contentType = "day_header") {
+                    DayGroupHeader(day = day, transactions = transactions)
+                }
+                items(
+                    items = transactions,
+                    key = { transaction -> "transaction_${transaction.id ?: transaction.hashCode()}" },
+                    contentType = { "transaction" }
+                ) { transaction ->
+                    HistoryTransactionCard(
+                        tx = transaction,
+                        state = state,
+                        onOpenTransaction = onOpenTransaction
+                    )
+                }
+            }
+        }
+    }
+
+    // La ventana se puede ampliar aunque el mes visible esté vacío. Con un
+    // rango de fechas explícito no aplica: la consulta usa ese rango.
+    val canLoadPrevious = state.filters.startDate == null && state.filters.endDate == null
+    if (!state.isLoading && canLoadPrevious) {
+        item(key = "history_load_previous", contentType = "load_previous") {
+            TextButton(
+                onClick = viewModel::loadPreviousMonth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            ) {
+                Text(text = stringResource(R.string.history_load_previous))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HistoryControls(
+    state: HistoryUiState,
+    viewModel: HistoryViewModel
+) {
     var showDateRange by remember { mutableStateOf(false) }
-    val ext = MaterialTheme.extended
 
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         SearchPill(
@@ -161,64 +253,6 @@ fun HistoryScreen(
                 )
             }
         }
-
-        when {
-            state.isLoading -> {
-                Box(
-                    Modifier.fillMaxWidth().height(160.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LoadingShimmer()
-                }
-            }
-
-            state.transactions.isEmpty() -> {
-                BentoCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(ext.lavender),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_wallet),
-                                contentDescription = null,
-                                tint = ext.onLavender,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                text = stringResource(R.string.empty_transactions),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = stringResource(R.string.empty_transactions_message),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-
-            else -> state.transactions.forEach { tx ->
-                HistoryTransactionCard(
-                    tx = tx,
-                    state = state,
-                    onOpenTransaction = onOpenTransaction
-                )
-            }
-        }
     }
 
     if (showDateRange) {
@@ -253,6 +287,89 @@ fun HistoryScreen(
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             DateRangePicker(state = pickerState, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun DayGroupHeader(
+    day: LocalDate,
+    transactions: List<Transaction>
+) {
+    val ext = MaterialTheme.extended
+    val today = LocalDate.now()
+    val label = when (day) {
+        today -> stringResource(R.string.history_today)
+        today.minusDays(1) -> stringResource(R.string.history_yesterday)
+        else -> DAY_HEADER_FORMATTER.format(day).uppercase(SPANISH)
+    }
+    val netCents = transactions.sumOf { tx ->
+        when (tx.type) {
+            TransactionType.INCOME, TransactionType.REFUND -> tx.amountCents
+            else -> -tx.amountCents
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 20.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = Money.formatSigned(netCents),
+            style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
+            color = if (netCents >= 0) ext.success else MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+@Composable
+private fun HistoryEmptyCard() {
+    val ext = MaterialTheme.extended
+    BentoCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(ext.lavender),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_wallet),
+                    contentDescription = null,
+                    tint = ext.onLavender,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(R.string.empty_transactions),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(R.string.empty_transactions_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -293,7 +410,11 @@ private fun HistoryTransactionCard(
     val meta = DATE_WITH_YEAR.format(tx.date) +
         (if (accountsLabel.isNotBlank()) " · $accountsLabel" else "") +
         (if (category.isNotBlank()) " · $category" else "")
+
     BentoCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
         contentPadding = PaddingValues(0.dp),
         shape = MaterialTheme.shapes.large
     ) {
@@ -411,6 +532,3 @@ private fun FilterPillText(label: String, value: String) {
         )
     }
 }
-
-private val DATE_WITH_YEAR: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es"))
