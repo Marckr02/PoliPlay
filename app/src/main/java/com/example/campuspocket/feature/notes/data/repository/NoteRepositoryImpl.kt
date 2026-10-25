@@ -23,6 +23,7 @@ class NoteRepositoryImpl @Inject constructor(
     override fun observeAllNotes(): Flow<List<NoteEntity>> = noteDao.observeAll()
     override fun observeRootFolders(): Flow<List<FolderEntity>> = folderDao.observeRoot()
     override fun observeChildFolders(parentId: Long): Flow<List<FolderEntity>> = folderDao.observeByParent(parentId)
+    override fun observeAllFolders(): Flow<List<FolderEntity>> = folderDao.observeAll()
     override fun observeNotesByFolder(folderId: Long): Flow<List<NoteEntity>> = noteDao.observeByFolder(folderId)
     override fun observeNotesWithoutFolder(): Flow<List<NoteEntity>> = noteDao.observeWithoutFolder()
     override fun observeNotesByCourse(courseId: Long) = noteDao.observeByCourse(courseId)

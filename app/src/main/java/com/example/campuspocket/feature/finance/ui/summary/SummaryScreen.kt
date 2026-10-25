@@ -5,11 +5,13 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import com.example.campuspocket.core.designsystem.MotionEasing
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -290,7 +292,7 @@ internal fun BudgetPaceCard(
         if (motion.enabled) {
             animatedBar.animateTo(
                 targetValue = pace.barProgress,
-                animationSpec = motion.tween(600, MotionTokens.EmphasizedDecelerate)
+                animationSpec = tween(motion.ms(600), easing = MotionEasing.EmphasizedDecelerate)
             )
         } else {
             animatedBar.snapTo(pace.barProgress)
@@ -302,7 +304,7 @@ internal fun BudgetPaceCard(
         if (motion.enabled) {
             animatedPct.animateTo(
                 targetValue = target,
-                animationSpec = motion.tween(600, MotionTokens.EmphasizedDecelerate)
+                animationSpec = tween(motion.ms(600), easing = MotionEasing.EmphasizedDecelerate)
             )
         } else {
             animatedPct.snapTo(target)
@@ -316,7 +318,7 @@ internal fun BudgetPaceCard(
                 targetValue = pace.expectedFraction,
                 animationSpec = spring(
                     dampingRatio = 0.6f,
-                    stiffness = Spring.StiffnessMediumLow
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
                 )
             )
         } else {
@@ -327,17 +329,17 @@ internal fun BudgetPaceCard(
 
     val statusColor by animateColorAsState(
         targetValue = targetStatusColor,
-        animationSpec = motion.tween(250),
+        animationSpec = tween(motion.ms(250)),
         label = "paceBarColor"
     )
     val statusContainer by animateColorAsState(
         targetValue = targetStatusContainer,
-        animationSpec = motion.tween(250),
+        animationSpec = tween(motion.ms(250)),
         label = "paceStatusContainer"
     )
     val statusContent by animateColorAsState(
         targetValue = targetStatusContent,
-        animationSpec = motion.tween(250),
+        animationSpec = tween(motion.ms(250)),
         label = "paceStatusContent"
     )
     val accessibilityText = stringResource(
@@ -440,15 +442,15 @@ internal fun BudgetPaceCard(
                 AnimatedContent(
                     targetState = statusText,
                     transitionSpec = {
-                        (fadeIn(motion.tween(200)) +
+                        (fadeIn(tween(motion.ms(200))) +
                             scaleIn(
                                 initialScale = 0.85f,
-                                animationSpec = motion.tween(200)
+                                animationSpec = tween(motion.ms(200))
                             )) togetherWith
-                            (fadeOut(motion.tween(120)) +
+                            (fadeOut(tween(motion.ms(120))) +
                                 scaleOut(
                                     targetScale = 0.95f,
-                                    animationSpec = motion.tween(120)
+                                    animationSpec = tween(motion.ms(120))
                                 ))
                     },
                     label = "paceStatus"

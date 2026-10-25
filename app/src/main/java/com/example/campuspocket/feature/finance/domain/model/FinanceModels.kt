@@ -5,6 +5,7 @@ import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.data.CategoryEntity
 import com.example.campuspocket.feature.finance.data.CategoryKind
 import com.example.campuspocket.feature.finance.data.TransactionEntity
+import com.example.campuspocket.feature.finance.data.TransactionTemplateEntity
 import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
 import java.time.LocalDate
@@ -112,5 +113,40 @@ data class Transaction(
             refundOfId = entity.refundOfId,
             createdAt = entity.createdAt
         )
+    }
+}
+
+/** Plantilla de captura rápida: rellena monto, cuenta y categoría (v5 §4). */
+data class TransactionTemplate(
+    val id: Long? = null,
+    val name: String,
+    val amountCents: Long,
+    val type: TransactionType,
+    val accountId: Long? = null,
+    val categoryId: Long? = null,
+    val lastUsedAt: Long = 0L
+) {
+    fun toEntity(): TransactionTemplateEntity = TransactionTemplateEntity(
+        id = id ?: 0,
+        name = name,
+        amountCents = amountCents,
+        type = type.name,
+        accountId = accountId,
+        categoryId = categoryId,
+        lastUsedAt = lastUsedAt
+    )
+
+    companion object {
+        fun fromEntity(entity: TransactionTemplateEntity): TransactionTemplate =
+            TransactionTemplate(
+                id = entity.id,
+                name = entity.name,
+                amountCents = entity.amountCents,
+                type = runCatching { TransactionType.valueOf(entity.type) }
+                    .getOrDefault(TransactionType.EXPENSE),
+                accountId = entity.accountId,
+                categoryId = entity.categoryId,
+                lastUsedAt = entity.lastUsedAt
+            )
     }
 }

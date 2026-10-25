@@ -1,5 +1,7 @@
 package com.example.campuspocket.feature.academic
 
+import com.example.campuspocket.feature.academic.domain.model.RepeatRule
+import com.example.campuspocket.feature.academic.domain.model.Subtask
 import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.domain.model.TaskReminder
 import com.example.campuspocket.feature.academic.domain.repository.TaskRepository
@@ -7,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
+import java.time.ZoneId
 
 /** Fake en memoria para las pruebas de ViewModels de tareas. Registra cada operación recibida. */
 class FakeTaskRepository(initial: List<Task> = emptyList()) : TaskRepository {
@@ -61,6 +64,51 @@ class FakeTaskRepository(initial: List<Task> = emptyList()) : TaskRepository {
     override suspend fun getTasksByCourse(courseId: Long): List<Task> =
         tasksFlow.value.filter { it.courseId == courseId }
 
+    override suspend fun complete(task: Task, completedAt: Instant): Long? {
+        val id = task.id ?: return null
+        val current = tasksFlow.value.firstOrNull { it.id == id } ?: return null
+        if (current.completedAt != null) return null
+        tasksFlow.value = tasksFlow.value.map {
+            if (it.id == id) current.copy(completedAt = completedAt) else it
+        }
+        completed += id
+        if (current.repeatRule == RepeatRule.NONE) return null
+
+        val zone = ZoneId.systemDefault()
+        var nextDue = current.dueAt
+        do {
+            val zoned = nextDue.atZone(zone)
+            nextDue = when (current.repeatRule) {
+                RepeatRule.DAILY -> zoned.plusDays(1).toInstant()
+                RepeatRule.WEEKLY -> zoned.plusWeeks(1).toInstant()
+                RepeatRule.NONE -> return null
+            }
+        } while (!nextDue.isAfter(completedAt))
+        val until = current.repeatUntil?.atZone(zone)?.toLocalDate()
+        if (until != null && nextDue.atZone(zone).toLocalDate().isAfter(until)) return null
+
+        return insert(
+            current.copy(
+                id = null,
+                dueAt = nextDue,
+                completedAt = null,
+                createdAt = completedAt,
+                reminders = emptyList(),
+                subtasks = current.subtasks.mapIndexed { index, subtask ->
+                    subtask.copy(id = null, taskId = 0, done = false, position = index)
+                }
+            )
+        )
+    }
+
+    override suspend fun undoCompletion(task: Task, nextOccurrenceId: Long?) {
+        val id = task.id ?: return
+        tasksFlow.value = tasksFlow.value.map {
+            if (it.id == id) it.copy(completedAt = null) else it
+        }
+        nextOccurrenceId?.let { delete(it) }
+    }
+
     override suspend fun insertReminder(reminder: TaskReminder): Long {
         val list = remindersByTask.getOrPut(reminder.taskId) { mutableListOf() }
         val id = (list.mapNotNull { it.id }.maxOrNull() ?: 0L) + 1
@@ -94,5 +142,17 @@ fun testTask(
     courseId: Long? = null,
     title: String = "Deber",
     dueAt: Instant = Instant.ofEpochMilli(1_793_001_600_000), // 30/10/2026 08:00 UTC
-    completedAt: Instant? = null
-): Task = Task(id = id, courseId = courseId, title = title, dueAt = dueAt, completedAt = completedAt)
+    completedAt: Instant? = null,
+    subtasks: List<Subtask> = emptyList(),
+    repeatRule: RepeatRule = RepeatRule.NONE,
+    repeatUntil: Instant? = null
+): Task = Task(
+    id = id,
+    courseId = courseId,
+    title = title,
+    dueAt = dueAt,
+    completedAt = completedAt,
+    subtasks = subtasks,
+    repeatRule = repeatRule,
+    repeatUntil = repeatUntil
+)

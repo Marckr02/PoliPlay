@@ -35,6 +35,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -60,6 +61,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -74,6 +76,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -255,16 +258,20 @@ fun RoundIconButton(
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     role: Role = Role.Button,
-    stateDescription: String? = null
+    stateDescription: String? = null,
+    enabled: Boolean = true
 ) {
     Box(
         modifier = modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .alpha(if (enabled) 1f else 0.4f)
             .semantics {
                 this.contentDescription = contentDescription
                 if (stateDescription != null) this.stateDescription = stateDescription
+                if (!enabled) disabled()
             }
             .combinedClickable(
+                enabled = enabled,
                 onClick = onClick,
                 onLongClick = null,
                 role = role
@@ -299,16 +306,20 @@ fun RoundIconButton(
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     role: Role = Role.Button,
-    stateDescription: String? = null
+    stateDescription: String? = null,
+    enabled: Boolean = true
 ) {
     Box(
         modifier = modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .alpha(if (enabled) 1f else 0.4f)
             .semantics {
                 this.contentDescription = contentDescription
                 if (stateDescription != null) this.stateDescription = stateDescription
+                if (!enabled) disabled()
             }
             .combinedClickable(
+                enabled = enabled,
                 onClick = onClick,
                 onLongClick = null,
                 role = role
@@ -339,7 +350,9 @@ fun CampusChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    leading: (@Composable () -> Unit)? = null
+    leading: (@Composable () -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null
 ) {
     val ext = MaterialTheme.extended
     val container by animateColorAsState(
@@ -360,7 +373,8 @@ fun CampusChip(
             .semantics { this.selected = selected }
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = null,
+                onLongClick = onLongClick,
+                onLongClickLabel = onLongClickLabel,
                 role = Role.Tab
             )
             .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -975,6 +989,7 @@ fun CampusTextField(
     readOnly: Boolean = false,
     isError: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     trailingIcon: (@Composable () -> Unit)? = null,
     supportingText: (@Composable () -> Unit)? = null
 ) {
@@ -1014,6 +1029,7 @@ fun CampusTextField(
             minLines = if (singleLine) 1 else minLines.coerceAtLeast(2),
             readOnly = readOnly,
             keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             interactionSource = interaction,
             decorationBox = { innerTextField ->

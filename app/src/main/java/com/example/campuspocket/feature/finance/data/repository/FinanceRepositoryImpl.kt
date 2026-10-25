@@ -5,10 +5,12 @@ import com.example.campuspocket.feature.finance.data.AccountDao
 import com.example.campuspocket.feature.finance.data.CategoryDao
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentDao
 import com.example.campuspocket.feature.finance.data.TransactionDao
+import com.example.campuspocket.feature.finance.data.TransactionTemplateDao
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
 import com.example.campuspocket.feature.finance.domain.model.Account
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
+import com.example.campuspocket.feature.finance.domain.model.TransactionTemplate
 import androidx.room.withTransaction
 import com.example.campuspocket.feature.finance.data.BudgetDao
 import com.example.campuspocket.feature.finance.data.MonthlyBudgetDao
@@ -36,6 +38,7 @@ class FinanceRepositoryImpl @Inject constructor(
     private val accountDao: AccountDao,
     private val categoryDao: CategoryDao,
     private val transactionDao: TransactionDao,
+    private val templateDao: TransactionTemplateDao,
     private val budgetDao: BudgetDao,
     private val monthlyBudgetDao: MonthlyBudgetDao,
     private val scheduledPaymentDao: ScheduledPaymentDao,
@@ -170,6 +173,29 @@ class FinanceRepositoryImpl @Inject constructor(
         withContext(ioDispatcher) {
             transactionDao.getById(transactionId)?.let { transactionDao.delete(it) }
         }
+    }
+
+    override suspend fun getLatestTransaction(): Transaction? =
+        withContext(ioDispatcher) {
+            transactionDao.getLatest()?.let(Transaction::fromEntity)
+        }
+
+    // ---- Plantillas de captura rápida (v5 §4) -----------------------------
+
+    override fun observeRecentTransactionTemplates(limit: Int) =
+        templateDao.observeRecent(limit).map { list -> list.map(TransactionTemplate::fromEntity) }
+
+    override suspend fun insertTransactionTemplate(template: TransactionTemplate): Long =
+        withContext(ioDispatcher) { templateDao.insert(template.toEntity()) }
+
+    override suspend fun touchTransactionTemplate(templateId: Long) {
+        withContext(ioDispatcher) {
+            templateDao.touch(templateId, System.currentTimeMillis())
+        }
+    }
+
+    override suspend fun deleteTransactionTemplate(templateId: Long) {
+        withContext(ioDispatcher) { templateDao.deleteById(templateId) }
     }
 
     // ---- Presupuestos (Fase 5A) -------------------------------------------

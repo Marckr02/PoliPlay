@@ -19,6 +19,15 @@ interface TaskRepository {
     suspend fun getTasksByDateRange(start: Instant, end: Instant): List<Task>
     suspend fun getTasksByCourse(courseId: Long): List<Task>
 
+    /**
+     * Marca la tarea como completada y, si se repite, crea la siguiente
+     * ocurrencia. Devuelve el id de la ocurrencia creada (o null).
+     */
+    suspend fun complete(task: Task, completedAt: Instant = Instant.now()): Long?
+
+    /** Deshace una finalización y elimina la ocurrencia generada, si existe. */
+    suspend fun undoCompletion(task: Task, nextOccurrenceId: Long?)
+
     // Reminders
     suspend fun insertReminder(reminder: TaskReminder): Long
     suspend fun insertReminders(reminders: List<TaskReminder>)

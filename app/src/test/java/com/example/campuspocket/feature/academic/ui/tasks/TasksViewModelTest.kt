@@ -1,7 +1,9 @@
 package com.example.campuspocket.feature.academic.ui.tasks
 
+import com.example.campuspocket.core.di.AppScope
 import com.example.campuspocket.feature.academic.FakeCourseRepository
 import com.example.campuspocket.feature.academic.FakeTaskRepository
+import com.example.campuspocket.feature.academic.domain.model.RepeatRule
 import com.example.campuspocket.feature.academic.testCourse
 import com.example.campuspocket.feature.academic.testTask
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -39,7 +42,7 @@ class TasksViewModelTest {
         courses: List<com.example.campuspocket.feature.academic.domain.model.Course> = emptyList()
     ): Pair<TasksViewModel, FakeTaskRepository> {
         val repository = FakeTaskRepository(tasks)
-        return TasksViewModel(repository, FakeCourseRepository(courses)) to repository
+        return TasksViewModel(repository, FakeCourseRepository(courses), AppScope()) to repository
     }
 
     @Test
@@ -112,9 +115,44 @@ class TasksViewModelTest {
         assertEquals(listOf(5L), repository.completed)
         assertTrue(repository.getById(5)!!.completedAt != null)
 
-        viewModel.delete(5)
+        viewModel.delete(repository.getById(5)!!)
         advanceUntilIdle()
         assertEquals(listOf(5L), repository.deleted)
         assertTrue(viewModel.uiState.value.tasks.isEmpty())
+    }
+
+    @Test
+    fun `deshacer un borrado conserva la tarea`() = runTest(testDispatcher) {
+        val (viewModel, repository) = viewModel(tasks = listOf(testTask(id = 9, title = "Deber")))
+        advanceUntilIdle()
+
+        viewModel.delete(repository.getById(9)!!)
+        runCurrent()
+        assertTrue(viewModel.uiState.value.tasks.isEmpty())
+
+        viewModel.undoDelete()
+        advanceUntilIdle()
+        assertEquals(listOf("Deber"), viewModel.uiState.value.tasks.map { it.title })
+        assertTrue(repository.deleted.isEmpty())
+    }
+
+    @Test
+    fun `completar una tarea semanal crea la siguiente ocurrencia`() = runTest(testDispatcher) {
+        val due = Instant.now().minusSeconds(60)
+        val (viewModel, repository) = viewModel(
+            tasks = listOf(
+                testTask(id = 4, title = "Semanal", dueAt = due, repeatRule = RepeatRule.WEEKLY)
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.setCompleted(repository.getById(4)!!, completed = true)
+        advanceUntilIdle()
+
+        assertTrue(repository.getById(4)!!.completedAt != null)
+        val pending = repository.getPendingTasks()
+        assertEquals(1, pending.size)
+        assertEquals("Semanal", pending.single().title)
+        assertTrue(pending.single().dueAt.isAfter(Instant.now()))
     }
 }

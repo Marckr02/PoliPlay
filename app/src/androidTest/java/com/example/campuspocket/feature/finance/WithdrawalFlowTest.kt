@@ -49,6 +49,7 @@ class WithdrawalFlowTest {
             accountDao = db.accountDao(),
             categoryDao = db.categoryDao(),
             transactionDao = db.transactionDao(),
+            templateDao = db.transactionTemplateDao(),
             budgetDao = db.budgetDao(),
             monthlyBudgetDao = db.monthlyBudgetDao(),
             scheduledPaymentDao = db.scheduledPaymentDao(),

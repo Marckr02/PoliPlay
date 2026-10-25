@@ -16,11 +16,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -29,6 +35,8 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
@@ -43,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
+import com.example.campuspocket.core.designsystem.components.CampusCheckbox
 import com.example.campuspocket.core.designsystem.components.CampusChip
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusSelectField
@@ -65,11 +75,13 @@ import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.SegmentedControl
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.academic.domain.model.Priority
+import com.example.campuspocket.feature.academic.domain.model.RepeatRule
 import com.example.campuspocket.feature.academic.ui.TimePickerDialog
 import com.example.campuspocket.feature.academic.ui.TimeText
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import androidx.compose.ui.tooling.preview.Preview
 
 private val Priority.resourceString: Int
@@ -114,6 +126,13 @@ fun TaskFormScreen(
         onTimeChange = viewModel::onTimeChange,
         onPriorityChange = viewModel::onPriorityChange,
         onToggleReminder = viewModel::toggleReminder,
+        onSubtaskDraftChange = viewModel::onSubtaskDraftChange,
+        onAddSubtask = viewModel::addSubtask,
+        onRemoveSubtask = viewModel::removeSubtask,
+        onToggleSubtaskDone = viewModel::toggleSubtaskDone,
+        onRepeatRuleChange = viewModel::onRepeatRuleChange,
+        onRepeatUntilChange = viewModel::onRepeatUntilChange,
+        onUseSemesterEnd = viewModel::useSemesterEnd,
         onSave = viewModel::save,
         onToggleCompleted = viewModel::setCompleted,
         onDeleteRequest = { showDeleteDialog = true },
@@ -150,6 +169,13 @@ private fun TaskFormContent(
     onTimeChange: (java.time.LocalTime) -> Unit,
     onPriorityChange: (Priority) -> Unit,
     onToggleReminder: (Int) -> Unit,
+    onSubtaskDraftChange: (String) -> Unit,
+    onAddSubtask: () -> Unit,
+    onRemoveSubtask: (Int) -> Unit,
+    onToggleSubtaskDone: (Int) -> Unit,
+    onRepeatRuleChange: (RepeatRule) -> Unit,
+    onRepeatUntilChange: (LocalDate) -> Unit,
+    onUseSemesterEnd: () -> Unit,
     onSave: () -> Unit,
     onToggleCompleted: (Boolean) -> Unit,
     onDeleteRequest: () -> Unit,
@@ -158,6 +184,7 @@ private fun TaskFormContent(
     val context = LocalContext.current
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showRepeatEndPicker by remember { mutableStateOf(false) }
 
     // Estado de permisos, releído al volver de los ajustes o del diálogo del sistema.
     var notificationsGranted by remember { mutableStateOf(areNotificationsGranted(context)) }
@@ -288,6 +315,162 @@ private fun TaskFormContent(
                 )
             }
 
+            // Subtareas (v5 §3.3): título, check de 20 dp y filas de 48 dp.
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.task_subtasks_section,
+                            state.completedSubtasks,
+                            state.subtasks.size
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (state.subtasks.isNotEmpty()) {
+                        Text(
+                            text = "${state.completedSubtasks}/${state.subtasks.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                state.subtasks.forEachIndexed { index, subtask ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CampusCheckbox(
+                            checked = subtask.done,
+                            onCheckedChange = { onToggleSubtaskDone(index) },
+                            contentDescription = subtask.title,
+                            boxSize = 20.dp
+                        )
+                        Text(
+                            text = subtask.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (subtask.done) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = { onRemoveSubtask(index) },
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.task_subtask_remove),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+                CampusTextField(
+                    value = state.subtaskDraft,
+                    onValueChange = onSubtaskDraftChange,
+                    label = stringResource(R.string.task_subtask_add),
+                    placeholder = stringResource(R.string.task_subtask_add),
+                    isError = state.subtaskError,
+                    supportingText = if (state.subtaskError) {
+                        { Text(stringResource(R.string.task_subtask_empty_error)) }
+                    } else {
+                        null
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { onAddSubtask() }),
+                    trailingIcon = {
+                        IconButton(
+                            onClick = onAddSubtask,
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = stringResource(R.string.task_subtask_add_action),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (state.isEditing && state.allSubtasksDone && state.completedAt == null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.task_subtasks_all_done),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        CampusChip(
+                            label = stringResource(R.string.task_complete_now),
+                            selected = false,
+                            onClick = { onToggleCompleted(true) }
+                        )
+                    }
+                }
+            }
+
+            // Repetición (v5 §3.5), con fin opcional en el semestre activo.
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = stringResource(R.string.task_repeat_label),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    RepeatRule.entries.forEach { rule ->
+                        CampusChip(
+                            label = stringResource(
+                                when (rule) {
+                                    RepeatRule.NONE -> R.string.task_repeat_none
+                                    RepeatRule.DAILY -> R.string.task_repeat_daily
+                                    RepeatRule.WEEKLY -> R.string.task_repeat_weekly
+                                }
+                            ),
+                            selected = state.repeatRule == rule,
+                            onClick = { onRepeatRuleChange(rule) }
+                        )
+                    }
+                }
+                if (state.repeatRule != RepeatRule.NONE) {
+                    Text(
+                        text = stringResource(R.string.task_repeat_until),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    SecondaryPillButton(
+                        text = java.time.format.DateTimeFormatter.ofPattern(
+                            "d MMM yyyy",
+                            java.util.Locale.forLanguageTag("es")
+                        ).format(state.repeatUntil ?: state.semesterEnd ?: state.date),
+                        onClick = { showRepeatEndPicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (state.semesterEnd != null) {
+                        CampusChip(
+                            label = stringResource(R.string.task_repeat_semester_end),
+                            selected = state.repeatUntil == state.semesterEnd,
+                            onClick = onUseSemesterEnd
+                        )
+                    }
+                }
+            }
+
             Column {
                 Text(
                     text = stringResource(R.string.task_reminders),
@@ -395,7 +578,7 @@ private fun TaskFormContent(
     if (showDatePicker) {
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = state.date
-                .atStartOfDay(ZoneId.systemDefault())
+                .atStartOfDay(ZoneOffset.UTC)
                 .toInstant()
                 .toEpochMilli()
         )
@@ -407,11 +590,37 @@ private fun TaskFormContent(
                 pickerState.selectedDateMillis?.let { millis ->
                     onDateChange(
                         Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(ZoneOffset.UTC)
                             .toLocalDate()
                     )
                 }
                 showDatePicker = false
+            },
+            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
+        )
+    }
+
+    if (showRepeatEndPicker) {
+        val initialDate = state.repeatUntil ?: state.semesterEnd ?: state.date
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialDate
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant()
+                .toEpochMilli()
+        )
+        CampusDialog(
+            onDismissRequest = { showRepeatEndPicker = false },
+            title = stringResource(R.string.task_repeat_until),
+            confirmText = stringResource(R.string.ok),
+            onConfirm = {
+                pickerState.selectedDateMillis?.let { millis ->
+                    onRepeatUntilChange(
+                        Instant.ofEpochMilli(millis)
+                            .atZone(ZoneOffset.UTC)
+                            .toLocalDate()
+                    )
+                }
+                showRepeatEndPicker = false
             },
             content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
         )

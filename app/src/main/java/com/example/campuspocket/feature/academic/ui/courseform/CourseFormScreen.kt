@@ -284,7 +284,7 @@ private fun SessionEditor(
             }
 
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SchoolDays.withSaturday.forEach { day ->
+                SchoolDays.allDays.forEach { day ->
                     CampusChip(
                         label = stringResource(day.shortLabelRes()),
                         selected = session.day == day,

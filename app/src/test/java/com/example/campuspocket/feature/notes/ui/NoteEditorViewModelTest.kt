@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.notes.ui
 
 import androidx.lifecycle.SavedStateHandle
+import com.example.campuspocket.feature.academic.FakeCourseRepository
 import com.example.campuspocket.feature.notes.data.NoteEntity
 import com.example.campuspocket.feature.notes.domain.repository.NoteRepository
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +94,7 @@ class NoteEditorViewModelTest {
         val vm = NoteEditorViewModel(
             SavedStateHandle(mapOf("noteId" to -1L)),
             repo,
+            FakeCourseRepository(),
             testDispatcher
         )
 
@@ -132,11 +134,61 @@ class NoteEditorViewModelTest {
     fun `sobrevive a cargar una nota existente`() = runTest(testDispatcher) {
         val repo = FakeNoteRepo()
         val id = repo.seed(NoteEntity(id = 5, title = "Vieja", content = "cuerpo", folderId = null, pinned = true))
-        val vm = NoteEditorViewModel(SavedStateHandle(mapOf("noteId" to id)), repo, testDispatcher)
+        val vm = NoteEditorViewModel(
+            SavedStateHandle(mapOf("noteId" to id)),
+            repo,
+            FakeCourseRepository(),
+            testDispatcher
+        )
         advanceUntilIdle()
 
         assertEquals("Vieja", vm.uiState.value.title)
         assertEquals("cuerpo", vm.uiState.value.content)
         assertTrue(vm.uiState.value.pinned)
+    }
+
+    @Test
+    fun `deshacer y rehacer agrupan las ediciones en pausas`() = runTest(testDispatcher) {
+        val repo = FakeNoteRepo()
+        val vm = NoteEditorViewModel(
+            SavedStateHandle(mapOf("noteId" to -1L)),
+            repo,
+            FakeCourseRepository(),
+            testDispatcher
+        )
+        advanceUntilIdle()
+
+        vm.onContentChange("uno")
+        advanceTimeBy(500)
+        advanceUntilIdle()
+        vm.onContentChange("dos")
+        advanceTimeBy(500)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.canUndo)
+
+        vm.undo()
+        assertEquals("uno", vm.uiState.value.content)
+        assertTrue(vm.uiState.value.canRedo)
+
+        vm.redo()
+        assertEquals("dos", vm.uiState.value.content)
+    }
+
+    @Test
+    fun `una nota nueva con materia conserva el vinculo al guardar`() = runTest(testDispatcher) {
+        val repo = FakeNoteRepo()
+        val vm = NoteEditorViewModel(
+            SavedStateHandle(mapOf("noteId" to -1L, "courseId" to 7L)),
+            repo,
+            FakeCourseRepository(),
+            testDispatcher
+        )
+        advanceUntilIdle()
+
+        vm.onContentChange("Apunte de clase")
+        advanceTimeBy(500)
+        advanceUntilIdle()
+
+        assertEquals(7L, repo.inserted.single().courseId)
     }
 }

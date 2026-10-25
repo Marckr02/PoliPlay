@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.designsystem.LocalPrivacyMode
+import com.example.campuspocket.core.designsystem.MotionKeyHolder
 import com.example.campuspocket.core.navigation.CampusNavHost
 import com.example.campuspocket.core.notifications.ReminderReceiver
 import com.example.campuspocket.core.preferences.ThemeMode
@@ -41,6 +42,8 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
+    private val motionKeyHolder = MotionKeyHolder()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -59,7 +62,7 @@ class MainActivity : FragmentActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
             }
-            CampusTheme(darkTheme = darkTheme) {
+            CampusTheme(darkTheme = darkTheme, motionKeyHolder = motionKeyHolder) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -95,6 +98,11 @@ class MainActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         consumeTaskExtra(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        motionKeyHolder.refresh()
     }
 
     private fun consumeTaskExtra(intent: Intent?) {

@@ -1,5 +1,9 @@
 package com.example.campuspocket.core.designsystem.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,12 +28,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TimePickerColors
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.core.designsystem.extended
 
@@ -175,9 +188,26 @@ fun CampusCheckbox(
     onCheckedChange: (Boolean) -> Unit,
     contentDescription: String,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    boxSize: Dp = 26.dp
 ) {
     val ext = MaterialTheme.extended
+    val fill by animateColorAsState(
+        targetValue = if (checked) ext.selected else Color.Transparent,
+        animationSpec = tween(durationMillis = 180),
+        label = "checkboxFill"
+    )
+    val border by animateColorAsState(
+        targetValue = if (checked) ext.selected else MaterialTheme.colorScheme.outline,
+        animationSpec = tween(durationMillis = 180),
+        label = "checkboxBorder"
+    )
+    val checkProgress by animateFloatAsState(
+        targetValue = if (checked) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "checkboxCheck"
+    )
+
     Box(
         modifier = modifier
             .size(48.dp)
@@ -192,24 +222,32 @@ fun CampusCheckbox(
     ) {
         Box(
             modifier = Modifier
-                .size(26.dp)
+                .size(boxSize)
                 .clip(CircleShape)
-                .then(
-                    if (checked) {
-                        Modifier.background(ext.selected)
-                    } else {
-                        Modifier.border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                    }
-                ),
+                .background(fill)
+                .border(2.dp, border, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (checked) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = ext.onSelected,
-                    modifier = Modifier.size(16.dp)
-                )
+            if (checkProgress > 0f) {
+                Canvas(modifier = Modifier.size(boxSize * 0.64f)) {
+                    val path = Path().apply {
+                        moveTo(size.width * 0.1f, size.height * 0.52f)
+                        lineTo(size.width * 0.4f, size.height * 0.82f)
+                        lineTo(size.width * 0.92f, size.height * 0.18f)
+                    }
+                    val measure = PathMeasure().apply { setPath(path, false) }
+                    val drawn = Path()
+                    measure.getSegment(0f, measure.length * checkProgress, drawn, true)
+                    drawPath(
+                        path = drawn,
+                        color = ext.onSelected,
+                        style = Stroke(
+                            width = size.width * 0.14f,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round
+                        )
+                    )
+                }
             }
         }
     }

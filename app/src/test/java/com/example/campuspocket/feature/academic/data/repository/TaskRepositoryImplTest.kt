@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.academic.data.repository
 
 import com.example.campuspocket.core.notifications.ReminderScheduler
+import com.example.campuspocket.feature.academic.data.SubtaskEntity
 import com.example.campuspocket.feature.academic.data.TaskDao
 import com.example.campuspocket.feature.academic.data.TaskEntity
 import com.example.campuspocket.feature.academic.data.TaskReminderDao
@@ -169,7 +170,9 @@ class TaskRepositoryImplTest {
 
     private class FakeTaskDao(private val reminderDao: FakeTaskReminderDao) : TaskDao {
         private val tasks = MutableStateFlow<List<TaskEntity>>(emptyList())
+        private val subtasks = MutableStateFlow<List<SubtaskEntity>>(emptyList())
         private var nextId = 1L
+        private var nextSubtaskId = 1L
 
         override suspend fun insert(task: TaskEntity): Long {
             val entity = task.copy(id = nextId++)
@@ -179,6 +182,32 @@ class TaskRepositoryImplTest {
 
         override suspend fun insertReminderEntities(reminders: List<TaskReminderEntity>): List<Long> =
             reminderDao.insertAll(reminders)
+
+        override suspend fun insertSubtasks(subtasks: List<SubtaskEntity>): List<Long> {
+            val ids = subtasks.map { subtask ->
+                val entity = subtask.copy(id = nextSubtaskId++)
+                this.subtasks.value = this.subtasks.value + entity
+                entity.id
+            }
+            return ids
+        }
+
+        override fun observeAllSubtasks(): Flow<List<SubtaskEntity>> = subtasks
+
+        override suspend fun getSubtasks(taskId: Long): List<SubtaskEntity> =
+            subtasks.value.filter { it.taskId == taskId }.sortedBy { it.position }
+
+        override suspend fun deleteSubtasksByTask(taskId: Long) {
+            subtasks.value = subtasks.value.filterNot { it.taskId == taskId }
+        }
+
+        override suspend fun findPendingOccurrence(
+            title: String,
+            dueAt: Long,
+            courseId: Long?
+        ): TaskEntity? = tasks.value.firstOrNull {
+            it.completedAt == null && it.title == title && it.dueAt == dueAt && it.courseId == courseId
+        }
 
         override suspend fun update(task: TaskEntity) {
             tasks.value = tasks.value.map { if (it.id == task.id) task else it }
@@ -233,6 +262,14 @@ class TaskRepositoryImplTest {
 
         override suspend fun insertAll(reminders: List<TaskReminderEntity>): List<Long> =
             reminders.map { insert(it) }
+
+        override suspend fun update(reminder: TaskReminderEntity) {
+            val index = reminders.indexOfFirst { it.id == reminder.id }
+            if (index >= 0) reminders[index] = reminder
+        }
+
+        override suspend fun getById(id: Long): TaskReminderEntity? =
+            reminders.firstOrNull { it.id == id }
 
         override suspend fun delete(reminder: TaskReminderEntity) {
             reminders.removeIf { it.id == reminder.id }

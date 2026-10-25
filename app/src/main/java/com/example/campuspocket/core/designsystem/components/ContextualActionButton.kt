@@ -73,7 +73,7 @@ fun ContextualActionButton(
             .height(56.dp)
             .clip(PillShape)
             .background(ext.accent)
-            .animateContentSize(motion.tween(180))
+            .animateContentSize(tween(duration))
             .combinedClickable(
                 onClick = action.onClick,
                 onLongClick = null,
@@ -91,8 +91,8 @@ fun ContextualActionButton(
         AnimatedContent(
             targetState = action.iconRes,
             transitionSpec = {
-                fadeIn(motion.tween(160)) togetherWith
-                    fadeOut(motion.tween(100))
+                fadeIn(tween(motion.ms(160))) togetherWith
+                    fadeOut(tween(motion.ms(100)))
             },
             label = "contextualActionIcon"
         ) { iconRes ->
@@ -105,10 +105,10 @@ fun ContextualActionButton(
         }
         AnimatedVisibility(
             visible = showLabel,
-            enter = fadeIn(motion.tween(160)) +
-                expandHorizontally(motion.tween(160)),
-            exit = fadeOut(motion.tween(100)) +
-                shrinkHorizontally(motion.tween(100))
+            enter = fadeIn(tween(motion.ms(160))) +
+                expandHorizontally(tween(motion.ms(160))),
+            exit = fadeOut(tween(motion.ms(100))) +
+                shrinkHorizontally(tween(motion.ms(100)))
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.width(10.dp))

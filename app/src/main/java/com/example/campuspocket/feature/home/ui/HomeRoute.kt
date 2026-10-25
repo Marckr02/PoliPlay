@@ -2,6 +2,7 @@ package com.example.campuspocket.feature.home.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.core.preferences.CampusModule
@@ -18,8 +19,11 @@ fun HomeRoute(
     onOpenSettings: () -> Unit,
     onOpenCourse: (Long) -> Unit,
     onOpenNotes: () -> Unit,
-    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    modifier: Modifier = Modifier,
     onTogglePrivacy: () -> Unit = {},
+    onAddExpense: () -> Unit = {},
+    onAddTask: () -> Unit = {},
+    onAddNote: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -31,6 +35,10 @@ fun HomeRoute(
         state = state,
         onOpenCourse = onOpenCourse,
         onOpenNotes = onOpenNotes,
-        onTogglePrivacy = onTogglePrivacy
+        onTogglePrivacy = onTogglePrivacy,
+        onAddExpense = onAddExpense,
+        onAddTask = onAddTask,
+        onAddNote = onAddNote,
+        onToggleTaskCompleted = { task, done -> viewModel.setTaskCompleted(task, done) }
     )
 }

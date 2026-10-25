@@ -11,7 +11,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarData
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,6 +22,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.campuspocket.core.designsystem.PillShape
@@ -39,6 +42,30 @@ val LocalSnackbarHost = staticCompositionLocalOf<SnackbarHostState> {
 /** Acceso ergonómico al SnackbarHostState global. */
 @Composable
 fun snackbarHostState(): SnackbarHostState = LocalSnackbarHost.current
+
+/**
+ * Snackbar con acción y duración de 5 s (v5 §3.1). Devuelve true si el usuario
+ * pulsó la acción. Al vencer el tiempo se descarta y se devuelve false.
+ */
+suspend fun SnackbarHostState.showUndoSnackbar(
+    message: String,
+    actionLabel: String,
+    timeoutMillis: Long = 5_000L
+): Boolean {
+    val result = withTimeoutOrNull(timeoutMillis) {
+        showSnackbar(
+            message = message,
+            actionLabel = actionLabel,
+            withDismissAction = false,
+            duration = SnackbarDuration.Indefinite
+        )
+    }
+    if (result == null) {
+        currentSnackbarData?.dismiss()
+        return false
+    }
+    return result == SnackbarResult.ActionPerformed
+}
 
 /**
  * Snackbar personalizado del proyecto (diseño: radio 20 dp, fondo ink, acción lima).

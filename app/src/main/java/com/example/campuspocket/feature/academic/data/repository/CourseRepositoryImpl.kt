@@ -71,6 +71,10 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getActiveSemesterEnd(): LocalDate? {
+        return withContext(ioDispatcher) { semesterDao.getActive()?.endDate }
+    }
+
     private suspend fun ensureActiveSemester(): Long {
         semesterDao.getActive()?.let { return it.id }
         val term = SemesterTerm.forDate(LocalDate.now())

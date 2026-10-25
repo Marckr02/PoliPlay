@@ -1,5 +1,6 @@
 package com.example.campuspocket.feature.academic.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -25,7 +26,12 @@ data class TaskEntity(
     val dueAt: Long,
     val priority: String = "MEDIUM",
     val completedAt: Long? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    /** NONE, DAILY o WEEKLY (v5 §3.5). */
+    @ColumnInfo(defaultValue = "NONE")
+    val repeatRule: String = "NONE",
+    /** Fecha local de fin de la repetición, en milisegundos; null = sin fin. */
+    val repeatUntil: Long? = null
 ) {
     companion object {
         const val TABLE_NAME = "tasks"

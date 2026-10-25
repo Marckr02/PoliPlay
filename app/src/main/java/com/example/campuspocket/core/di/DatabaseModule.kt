@@ -19,6 +19,7 @@ import com.example.campuspocket.feature.finance.data.CategoryDao
 import com.example.campuspocket.feature.finance.data.MonthlyBudgetDao
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentDao
 import com.example.campuspocket.feature.finance.data.TransactionDao
+import com.example.campuspocket.feature.finance.data.TransactionTemplateDao
 import com.example.campuspocket.feature.notes.data.FolderDao
 import com.example.campuspocket.feature.notes.data.NoteDao
 import dagger.Module
@@ -56,6 +57,8 @@ object DatabaseModule {
     @Provides fun provideBudgetDao(db: AppDatabase): BudgetDao = db.budgetDao()
     @Provides fun provideMonthlyBudgetDao(db: AppDatabase): MonthlyBudgetDao = db.monthlyBudgetDao()
     @Provides fun provideTransactionDao(db: AppDatabase): TransactionDao = db.transactionDao()
+    @Provides fun provideTransactionTemplateDao(db: AppDatabase): TransactionTemplateDao =
+        db.transactionTemplateDao()
     @Provides fun provideScheduledPaymentDao(db: AppDatabase): ScheduledPaymentDao = db.scheduledPaymentDao()
     @Provides fun provideFolderDao(db: AppDatabase): FolderDao = db.folderDao()
     @Provides fun provideNoteDao(db: AppDatabase): NoteDao = db.noteDao()

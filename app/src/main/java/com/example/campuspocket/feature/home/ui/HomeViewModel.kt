@@ -3,12 +3,16 @@ package com.example.campuspocket.feature.home.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.feature.academic.domain.model.Course
+import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.domain.repository.CourseRepository
 import com.example.campuspocket.feature.academic.domain.repository.TaskRepository
 import com.example.campuspocket.feature.academic.ui.TimeText
+import com.example.campuspocket.feature.finance.data.BudgetEntity
 import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
 import com.example.campuspocket.feature.finance.domain.model.Category
+import com.example.campuspocket.feature.finance.domain.model.Transaction
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
 import com.example.campuspocket.feature.notes.data.NoteEntity
 import com.example.campuspocket.feature.notes.domain.repository.NoteRepository
@@ -21,6 +25,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
@@ -44,13 +49,14 @@ data class HomeClass(
     val endLabel: String
 )
 
-/** Estado de solo lectura que alimenta Inicio. No modifica ninguna fuente de datos. */
+/** Estado de solo lectura que alimenta Inicio. */
 data class HomeUiState(
     val today: LocalDate = LocalDate.now(),
     val nextClass: HomeClass? = null,
     val laterClass: HomeClass? = null,
     val pendingTasks: Int = 0,
     val tasksDueToday: Int = 0,
+    val urgentTasks: List<Task> = emptyList(),
     val monthlyBudgetCents: Long? = null,
     val monthlySpentCents: Long = 0,
     val monthlyRemainingCents: Long? = null,
@@ -60,12 +66,12 @@ data class HomeUiState(
 
 /**
  * Agrega las fuentes ya existentes (horario, tareas, finanzas y notas) en un
- * único estado de presentación para Inicio. Es estrictamente de lectura.
+ * único estado de presentación para Inicio.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     courseRepository: CourseRepository,
-    taskRepository: TaskRepository,
+    private val taskRepository: TaskRepository,
     financeRepository: FinanceRepository,
     noteRepository: NoteRepository,
     private val clock: Clock
@@ -86,11 +92,11 @@ class HomeViewModel @Inject constructor(
         todayFlow
     ) { values ->
         @Suppress("UNCHECKED_CAST")
-        val transactions = values[0] as List<com.example.campuspocket.feature.finance.domain.model.Transaction>
+        val transactions = values[0] as List<Transaction>
         @Suppress("UNCHECKED_CAST")
-        val budgets = values[1] as List<com.example.campuspocket.feature.finance.data.BudgetEntity>
+        val budgets = values[1] as List<BudgetEntity>
         @Suppress("UNCHECKED_CAST")
-        val monthlyBudgets = values[2] as List<com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity>
+        val monthlyBudgets = values[2] as List<MonthlyBudgetEntity>
         @Suppress("UNCHECKED_CAST")
         val categories = values[3] as List<Category>
         val today = values[4] as LocalDate
@@ -143,6 +149,7 @@ class HomeViewModel @Inject constructor(
             tasksDueToday = tasks.count {
                 it.dueAt.atZone(zone).toLocalDate() == today
             },
+            urgentTasks = tasks.sortedBy { it.dueAt }.take(2),
             monthlyBudgetCents = finance.monthlyBudgetCents,
             monthlySpentCents = finance.monthlySpentCents,
             monthlyRemainingCents = finance.monthlyRemainingCents,
@@ -156,6 +163,16 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeUiState()
     )
+
+    fun setTaskCompleted(task: Task, done: Boolean) {
+        viewModelScope.launch {
+            if (done) {
+                taskRepository.complete(task)
+            } else {
+                taskRepository.update(task.copy(completedAt = null))
+            }
+        }
+    }
 
     private fun classesFor(courses: List<Course>, today: LocalDate): List<HomeClass> =
         courses.flatMap { course ->

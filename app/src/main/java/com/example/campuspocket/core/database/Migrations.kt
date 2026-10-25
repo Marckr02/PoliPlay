@@ -56,5 +56,62 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /**
+     * v4 -> v5 (fases 4 y 5 del rediseño):
+     * - subtareas de tarea con borrado en cascada;
+     * - repetición de tareas (`repeatRule` / `repeatUntil`);
+     * - plantillas de movimientos con orden por uso reciente.
+     */
+    val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE `tasks` ADD COLUMN `repeatRule` TEXT NOT NULL DEFAULT 'NONE'"
+            )
+            db.execSQL("ALTER TABLE `tasks` ADD COLUMN `repeatUntil` INTEGER")
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `subtasks` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`taskId` INTEGER NOT NULL, " +
+                    "`title` TEXT NOT NULL, " +
+                    "`done` INTEGER NOT NULL, " +
+                    "`position` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`taskId`) REFERENCES `tasks`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_subtasks_taskId` ON `subtasks` (`taskId`)"
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `transaction_templates` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`amountCents` INTEGER NOT NULL, " +
+                    "`type` TEXT NOT NULL, " +
+                    "`accountId` INTEGER, " +
+                    "`categoryId` INTEGER, " +
+                    "`lastUsedAt` INTEGER NOT NULL DEFAULT 0, " +
+                    "FOREIGN KEY(`accountId`) REFERENCES `accounts`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE SET NULL , " +
+                    "FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE SET NULL )"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_transaction_templates_accountId` " +
+                    "ON `transaction_templates` (`accountId`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_transaction_templates_categoryId` " +
+                    "ON `transaction_templates` (`categoryId`)"
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_1_2,
+        MIGRATION_2_3,
+        MIGRATION_3_4,
+        MIGRATION_4_5
+    )
 }

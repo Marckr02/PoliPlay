@@ -2,6 +2,7 @@ package com.example.campuspocket.core.designsystem.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
@@ -41,17 +42,17 @@ fun CampusSwitch(
     val motion = LocalMotion.current
     val track by animateColorAsState(
         targetValue = if (checked) ext.selected else ext.track,
-        animationSpec = motion.tween(MotionTokens.Short),
+        animationSpec = tween(motion.ms(MotionTokens.Short)),
         label = "switchTrack"
     )
     val thumb by animateColorAsState(
         targetValue = if (checked) ext.onSelected else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = motion.tween(MotionTokens.Short),
+        animationSpec = tween(motion.ms(MotionTokens.Short)),
         label = "switchThumb"
     )
     val offset by animateDpAsState(
         targetValue = if (checked) 20.dp else 0.dp,
-        animationSpec = motion.tween(MotionTokens.Short),
+        animationSpec = tween(motion.ms(MotionTokens.Short)),
         label = "switchOffset"
     )
     Box(

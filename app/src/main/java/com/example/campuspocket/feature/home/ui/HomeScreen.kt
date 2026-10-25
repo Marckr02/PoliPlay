@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -16,12 +17,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,10 +49,13 @@ import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusSectionHeader
 import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.PriorityBadge
 import com.example.campuspocket.core.designsystem.components.PrivacyToggleButton
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
+import com.example.campuspocket.core.util.Money
+import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.finance.domain.BudgetPace
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -54,9 +63,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Inicio bento: saludo, próxima clase, presupuesto restante del mes, tareas y
- * notas recientes. Solo pinta datos reales que recibe en [state]; si no hay
- * datos, muestra estados vacíos honestos.
+ * Inicio bento: saludo, barra de acciones rápidas, próxima clase, presupuesto
+ * diario, tareas urgentes y notas recientes.
  */
 @Composable
 fun HomeScreen(
@@ -67,7 +75,11 @@ fun HomeScreen(
     state: HomeUiState = HomeUiState(),
     onOpenCourse: (Long) -> Unit = {},
     onOpenNotes: () -> Unit = {},
-    onTogglePrivacy: () -> Unit = {}
+    onTogglePrivacy: () -> Unit = {},
+    onAddExpense: () -> Unit = {},
+    onAddTask: () -> Unit = {},
+    onAddNote: () -> Unit = {},
+    onToggleTaskCompleted: (Task, Boolean) -> Unit = { _, _ -> }
 ) {
     val activeModules = CampusModule.entries.filter { preferences.isModuleEnabled(it) }
     val displayName = preferences.displayName.ifBlank { null }
@@ -120,6 +132,34 @@ fun HomeScreen(
             return@Column
         }
 
+        // Fila de Acciones Rápidas (+ Gasto, + Tarea, + Nota)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (preferences.isModuleEnabled(CampusModule.FINANCE)) {
+                QuickActionButton(
+                    label = "+ Gasto",
+                    onClick = onAddExpense,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            if (preferences.isModuleEnabled(CampusModule.ACADEMIC)) {
+                QuickActionButton(
+                    label = "+ Tarea",
+                    onClick = onAddTask,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            if (preferences.isModuleEnabled(CampusModule.NOTES)) {
+                QuickActionButton(
+                    label = "+ Nota",
+                    onClick = onAddNote,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
         if (preferences.isModuleEnabled(CampusModule.ACADEMIC)) {
             NextClassCard(
                 nextClass = state.nextClass,
@@ -135,7 +175,7 @@ fun HomeScreen(
         val showAcademic = preferences.isModuleEnabled(CampusModule.ACADEMIC)
         if (showFinance || showAcademic) {
             Row(
-                modifier = Modifier.fillMaxWidth().height(168.dp),
+                modifier = Modifier.fillMaxWidth().height(176.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (showFinance) {
@@ -159,6 +199,46 @@ fun HomeScreen(
             }
         }
 
+        // Tareas Urgentes
+        if (showAcademic && state.urgentTasks.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                CampusSectionHeader(
+                    title = "Tareas pendientes",
+                    actionText = stringResource(R.string.home_see_all),
+                    onAction = { onOpenModule(CampusModule.ACADEMIC) }
+                )
+                state.urgentTasks.forEach { task ->
+                    BentoCard(
+                        onClick = { onOpenModule(CampusModule.ACADEMIC) },
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentPadding = PaddingValues(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = task.completedAt != null,
+                                onCheckedChange = { done -> onToggleTaskCompleted(task, done) }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = task.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            PriorityBadge(priority = task.priority)
+                        }
+                    }
+                }
+            }
+        }
+
         if (preferences.isModuleEnabled(CampusModule.NOTES)) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 CampusSectionHeader(
@@ -169,7 +249,7 @@ fun HomeScreen(
                 BentoCard(
                     onClick = onOpenNotes,
                     containerColor = MaterialTheme.colorScheme.surface,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(18.dp)
+                    contentPadding = PaddingValues(18.dp)
                 ) {
                     if (state.recentNotes.isEmpty()) {
                         Text(
@@ -234,6 +314,25 @@ fun HomeScreen(
 }
 
 @Composable
+private fun QuickActionButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(44.dp),
+        shape = CircleShape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Text(text = label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
 private fun HomeAvatar(displayName: String?, onClick: () -> Unit) {
     val ext = MaterialTheme.extended
     val description = stringResource(R.string.home_open_settings_desc)
@@ -281,7 +380,7 @@ private fun NextClassCard(
         containerColor = ext.ink,
         contentColor = ext.onInk,
         shape = MaterialTheme.shapes.extraLarge,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(22.dp)
+        contentPadding = PaddingValues(22.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -306,7 +405,7 @@ private fun NextClassCard(
                     style = MaterialTheme.typography.labelMedium,
                     color = ext.onInk,
                     modifier = Modifier
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                        .clip(RoundedCornerShape(50))
                         .background(ext.lime)
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 )
@@ -401,7 +500,6 @@ private fun FinanceSummaryCard(
     modifier: Modifier = Modifier
 ) {
     val ext = MaterialTheme.extended
-    // La barra representa el avance del gasto, no el dinero disponible.
     val fraction = if (monthlyBudgetCents != null && monthlyBudgetCents > 0L) {
         (monthlySpentCents.toFloat() / monthlyBudgetCents).coerceIn(0f, 1f)
     } else {
@@ -414,18 +512,18 @@ private fun FinanceSummaryCard(
         containerColor = ext.accent,
         contentColor = ext.onAccent,
         shape = MaterialTheme.shapes.large,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+        contentPadding = PaddingValues(16.dp)
     ) {
         Text(
             text = stringResource(R.string.home_remaining_label),
             style = MaterialTheme.typography.labelSmall,
             color = ext.onAccent.copy(alpha = 0.82f)
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
         if (monthlyRemainingCents != null) {
             MoneyText(
                 amountCents = monthlyRemainingCents,
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
+                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp),
                 color = ext.onAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -433,7 +531,7 @@ private fun FinanceSummaryCard(
         } else {
             Text(
                 text = "—",
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp),
+                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp),
                 color = ext.onAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -441,14 +539,10 @@ private fun FinanceSummaryCard(
         }
         if (pace != null) {
             Text(
-                text = stringResource(
-                    R.string.home_budget_pace_line,
-                    pace.realPct.percentForUi(),
-                    pace.expectedPct.percentForUi()
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = ext.onAccent.copy(alpha = 0.82f),
-                maxLines = 2,
+                text = "${Money.format(pace.perDayCents)} / día hoy",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = ext.onAccent,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         } else {
@@ -479,9 +573,6 @@ private fun FinanceSummaryCard(
     }
 }
 
-private fun java.math.BigDecimal.percentForUi(): String =
-    setScale(0, RoundingMode.HALF_UP).toPlainString() + "%"
-
 @Composable
 private fun TasksSummaryCard(
     pendingTasks: Int,
@@ -496,7 +587,7 @@ private fun TasksSummaryCard(
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
         shape = MaterialTheme.shapes.large,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+        contentPadding = PaddingValues(16.dp)
     ) {
         Text(
             text = stringResource(R.string.home_tasks_label),
@@ -506,7 +597,7 @@ private fun TasksSummaryCard(
         Spacer(Modifier.height(6.dp))
         Text(
             text = pendingTasks.toString(),
-            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 34.sp),
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(

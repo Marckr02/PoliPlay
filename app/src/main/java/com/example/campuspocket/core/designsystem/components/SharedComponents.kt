@@ -1,6 +1,7 @@
 package com.example.campuspocket.core.designsystem.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -35,6 +36,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
@@ -44,28 +46,37 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -73,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.util.Haptics
 import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.extended
@@ -576,78 +588,240 @@ fun TaskItemCard(
 ) {
     val ext = MaterialTheme.extended
     val isCompleted = task.completedAt != null
+    val view = LocalView.current
     var menuExpanded by remember { mutableStateOf(false) }
-    Box(modifier = modifier) {
-        BentoCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = { menuExpanded = true },
-                    role = Role.Button
-                ),
-            containerColor = if (isCompleted) ext.successContainer else MaterialTheme.colorScheme.surface,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RoundCheckbox(
-                    checked = isCompleted,
-                    onCheckedChange = onToggleCompleted,
-                    contentDescription = task.title
+    var optimisticChecked by remember(task.id) { mutableStateOf(isCompleted) }
+    LaunchedEffect(isCompleted) { optimisticChecked = isCompleted }
+
+    val strikeProgress by animateFloatAsState(
+        targetValue = if (optimisticChecked) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "taskStrike"
+    )
+    var titleWidth by remember { mutableStateOf(0f) }
+    var titleLineY by remember { mutableStateOf(0f) }
+    val deleteLabel = stringResource(R.string.delete)
+    val strikeColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val progressColor = MaterialTheme.colorScheme.primary
+    val shape = MaterialTheme.shapes.large
+
+    val dismissState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { distance -> distance * 0.4f },
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+            }
+            false
+        }
+    )
+
+    var thresholdHapticSent by remember { mutableStateOf(false) }
+    LaunchedEffect(dismissState) {
+        snapshotFlow { dismissState.progress to dismissState.dismissDirection }
+            .collect { (progress, direction) ->
+                val crossed = direction == SwipeToDismissBoxValue.EndToStart && progress >= 0.4f
+                if (crossed && !thresholdHapticSent) {
+                    Haptics.reject(view)
+                    thresholdHapticSent = true
+                } else if (!crossed) {
+                    thresholdHapticSent = false
+                }
+            }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier.fillMaxWidth().clip(shape),
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.extended.danger)
+                    .padding(horizontal = 22.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = null, // decorativo: la acción ya está descrita en la tarjeta
+                    tint = Color.White
                 )
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = task.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textDecoration = if (isCompleted) TextDecoration.LineThrough else null
+            }
+        }
+    ) {
+        Box {
+            BentoCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = { menuExpanded = true },
+                        role = Role.Button
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = formatDueAt(task) + (courseName?.let { " · $it" } ?: ""),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                    .semantics {
+                        customActions = listOf(
+                            CustomAccessibilityAction(deleteLabel) {
+                                onDelete()
+                                true
+                            }
                         )
-                        PriorityBadge(priority = task.priority)
+                    },
+                containerColor = if (optimisticChecked) ext.successContainer else MaterialTheme.colorScheme.surface,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CampusCheckbox(
+                        checked = optimisticChecked,
+                        onCheckedChange = { checked ->
+                            if (checked == isCompleted) {
+                                optimisticChecked = checked
+                                if (checked) Haptics.confirm(view) else Haptics.selection(view)
+                                onToggleCompleted(checked)
+                            }
+                        },
+                        contentDescription = stringResource(R.string.task_toggle_complete, task.title)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = task.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = if (optimisticChecked) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            onTextLayout = { layout ->
+                                if (layout.lineCount > 0) {
+                                    titleWidth = layout.getLineRight(0)
+                                    titleLineY = layout.getLineBaseline(0) -
+                                        (layout.getLineBottom(0) - layout.getLineTop(0)) * 0.28f
+                                }
+                            },
+                            modifier = Modifier.drawWithContent {
+                                drawContent()
+                                if (strikeProgress > 0f && titleWidth > 0f) {
+                                    drawLine(
+                                        color = strikeColor,
+                                        start = Offset(0f, titleLineY),
+                                        end = Offset(titleWidth * strikeProgress, titleLineY),
+                                        strokeWidth = 1.5.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                }
+                            }
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = formatDueAt(task) + (courseName?.let { " · $it" } ?: ""),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            PriorityBadge(priority = task.priority)
+                        }
+
+                        if (task.subtasks.isNotEmpty()) {
+                            val done = task.subtasks.count { it.done }
+                            val total = task.subtasks.size
+                            val fraction by animateFloatAsState(
+                                targetValue = done.toFloat() / total.toFloat(),
+                                animationSpec = tween(durationMillis = 220),
+                                label = "subtaskProgress"
+                            )
+                            val subtaskDescription = stringResource(
+                                R.string.task_subtasks_progress_description,
+                                done,
+                                total
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 7.dp)
+                                    .semantics {
+                                        contentDescription = subtaskDescription
+                                    },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(5.dp)
+                                        .clip(CircleShape)
+                                        .background(ext.track)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                                            .fillMaxHeight()
+                                            .clip(CircleShape)
+                                            .background(progressColor)
+                                    )
+                                }
+                                Text(
+                                    text = "$done/$total",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        if (task.repeatRule != com.example.campuspocket.feature.academic.domain.model.RepeatRule.NONE) {
+                            Row(
+                                modifier = Modifier.padding(top = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_repeat),
+                                    contentDescription = null, // decorativo: el texto ya describe la repetición
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = stringResource(task.repeatRule.labelRes()),
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
-        }
-        DropdownMenu(
-            expanded = menuExpanded,
-            onDismissRequest = { menuExpanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.delete)) },
-                onClick = {
-                    menuExpanded = false
-                    onDelete()
-                }
-            )
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete)) },
+                    onClick = {
+                        menuExpanded = false
+                        onDelete()
+                    }
+                )
+            }
         }
     }
 }
 
-@Composable
-private fun RoundCheckbox(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    contentDescription: String
-) {
-    CampusCheckbox(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        contentDescription = contentDescription
-    )
-}
+private fun com.example.campuspocket.feature.academic.domain.model.RepeatRule.labelRes(): Int =
+    when (this) {
+        com.example.campuspocket.feature.academic.domain.model.RepeatRule.DAILY ->
+            R.string.task_repeat_daily
+        com.example.campuspocket.feature.academic.domain.model.RepeatRule.WEEKLY ->
+            R.string.task_repeat_weekly
+        com.example.campuspocket.feature.academic.domain.model.RepeatRule.NONE ->
+            R.string.task_repeat_none
+    }
 
 private fun formatDueAt(task: Task): String {
     val formatter = DateTimeFormatter.ofPattern("EEE d 'de' MMM · HH:mm", Locale.forLanguageTag("es"))
@@ -919,12 +1093,12 @@ fun StaggeredNotesGrid(
 @Composable
 fun MarkdownToolbar(
     modifier: Modifier = Modifier,
-    onAction: ((String, Int, Int) -> MarkdownActions.EditResult)? = null,
     currentContent: String,
     selectionStart: Int,
     selectionEnd: Int,
     onContentChange: (String) -> Unit,
-    onSelectionChange: (Int, Int) -> Unit
+    onSelectionChange: (Int, Int) -> Unit,
+    onActionApplied: () -> Unit = {}
 ) {
     val actions = listOf(
         "H" to { t: String, s: Int, e: Int -> MarkdownActions.prefixLines(t, s, e, "#") },
@@ -956,6 +1130,7 @@ fun MarkdownToolbar(
                         val result = action(currentContent, selectionStart, selectionEnd)
                         onContentChange(result.text)
                         onSelectionChange(result.selectionStart, result.selectionEnd)
+                        onActionApplied()
                     }
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 contentAlignment = Alignment.Center

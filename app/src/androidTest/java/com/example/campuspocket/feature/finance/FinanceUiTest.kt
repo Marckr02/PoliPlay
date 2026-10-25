@@ -14,8 +14,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.SavedStateHandle
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.navigation.LocalSnackbarHost
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.data.TransactionType
@@ -76,10 +79,12 @@ class FinanceUiTest {
 
         composeRule.setContent {
             CampusTheme {
-                TransactionFormScreen(
-                    onDone = { done = true },
-                    viewModel = vm
-                )
+                CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
+                    TransactionFormScreen(
+                        onDone = { done = true },
+                        viewModel = vm
+                    )
+                }
             }
         }
 

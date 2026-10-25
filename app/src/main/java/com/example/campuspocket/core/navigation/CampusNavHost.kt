@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -303,7 +302,22 @@ fun CampusNavHost(
                                 }
                             },
                             onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) },
-                            onTogglePrivacy = onToggleAmountsPrivacy
+                            onTogglePrivacy = onToggleAmountsPrivacy,
+                            onAddExpense = {
+                                if (preferences.financeEnabled) {
+                                    navController.navigate(FinanceDestinations.transactionForm(TransactionType.EXPENSE.name))
+                                }
+                            },
+                            onAddTask = {
+                                if (preferences.academicEnabled) {
+                                    navController.navigate(AcademicDestinations.taskForm())
+                                }
+                            },
+                            onAddNote = {
+                                if (preferences.notesEnabled) {
+                                    navController.navigate(NotesDestinations.editor(null))
+                                }
+                            }
                         )
                     }
                     academicGraph(navController)
@@ -607,7 +621,13 @@ private fun NavGraphBuilder.academicGraph(navController: NavHostController) {
                 onEditCourse = { courseId ->
                     navController.navigate(AcademicDestinations.materiaForm(courseId))
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onOpenNote = { noteId ->
+                    navController.navigate(NotesDestinations.editor(noteId))
+                },
+                onAddNote = { courseId ->
+                    navController.navigate(NotesDestinations.editor(null, courseId))
+                }
             )
         }
         composable(
@@ -763,7 +783,13 @@ private fun NavGraphBuilder.notesGraph(navController: NavHostController) {
         }
         composable(
             route = NotesDestinations.NOTE_EDITOR_ROUTE,
-            arguments = listOf(navArgument(NotesDestinations.NOTE_ID_ARG) { type = NavType.LongType })
+            arguments = listOf(
+                navArgument(NotesDestinations.NOTE_ID_ARG) { type = NavType.LongType },
+                navArgument(NotesDestinations.COURSE_ID_ARG) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
         ) {
             NoteEditorScreen(onDone = { navController.popBackStack() })
         }

@@ -67,6 +67,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
@@ -257,7 +258,7 @@ fun PaymentFormScreen(
 
     if (showDatePicker) {
         val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.nextDueDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            initialSelectedDateMillis = state.nextDueDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         )
         CampusDialog(
             onDismissRequest = { showDatePicker = false },
@@ -265,7 +266,7 @@ fun PaymentFormScreen(
             confirmText = stringResource(R.string.ok),
             onConfirm = {
                 pickerState.selectedDateMillis?.let { ms ->
-                    viewModel.onNextDueDateChange(Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalDate())
+                    viewModel.onNextDueDateChange(Instant.ofEpochMilli(ms).atZone(ZoneOffset.UTC).toLocalDate())
                 }
                 showDatePicker = false
             },

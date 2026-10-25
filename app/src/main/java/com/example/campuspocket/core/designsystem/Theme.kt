@@ -6,7 +6,6 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import com.example.campuspocket.core.designsystem.rememberMotionSpec
 
 /**
  * Esquemas Material 3 completos derivados de la paleta de la especificación.
@@ -110,12 +109,13 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun CampusTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    motionKeyHolder: MotionKeyHolder = MotionKeyHolder(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
     CompositionLocalProvider(LocalCampusExtendedColors provides extendedColors) {
-        CompositionLocalProvider(LocalMotion provides rememberMotionSpec()) {
+        ProvideMotion(motionKeyHolder.key) {
             MaterialTheme(
                 colorScheme = colorScheme,
                 typography = CampusTypography,

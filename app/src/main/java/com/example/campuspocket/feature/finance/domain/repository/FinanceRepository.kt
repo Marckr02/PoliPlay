@@ -5,6 +5,7 @@ import com.example.campuspocket.feature.finance.domain.WithdrawalResult
 import com.example.campuspocket.feature.finance.domain.model.Account
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
+import com.example.campuspocket.feature.finance.domain.model.TransactionTemplate
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
@@ -37,6 +38,17 @@ interface FinanceRepository {
     suspend fun insertTransaction(transaction: Transaction): Long
     suspend fun updateTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transactionId: Long)
+
+    /** Último movimiento guardado; sirve para precargar cuenta y categoría (v5 §4). */
+    suspend fun getLatestTransaction(): Transaction? = null
+
+    // Plantillas de captura rápida (v5 §4).
+    fun observeRecentTransactionTemplates(limit: Int = 8): Flow<List<TransactionTemplate>> =
+        kotlinx.coroutines.flow.flowOf(emptyList())
+
+    suspend fun insertTransactionTemplate(template: TransactionTemplate): Long = 0L
+    suspend fun touchTransactionTemplate(templateId: Long) = Unit
+    suspend fun deleteTransactionTemplate(templateId: Long) = Unit
 
     // Presupuestos (Fase 5A). Entidad a nivel DAO: la del mes es (yearMonth, categoryId).
     fun observeAllBudgets(): Flow<List<com.example.campuspocket.feature.finance.data.BudgetEntity>>

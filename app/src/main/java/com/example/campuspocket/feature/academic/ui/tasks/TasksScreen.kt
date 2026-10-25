@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,7 +29,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
-import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusSelectField
 import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
@@ -40,6 +39,8 @@ import com.example.campuspocket.core.designsystem.components.TaskFilter
 import com.example.campuspocket.core.designsystem.components.TaskFilterRow
 import com.example.campuspocket.core.designsystem.components.TaskItemCard
 import com.example.campuspocket.core.designsystem.extended
+import com.example.campuspocket.core.navigation.LocalSnackbarHost
+import com.example.campuspocket.core.navigation.showUndoSnackbar
 import com.example.campuspocket.feature.academic.domain.model.Task
 import java.time.LocalDate
 import java.time.ZoneId
@@ -53,11 +54,33 @@ fun TasksScreen(
     viewModel: TasksViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var pendingDelete by remember { mutableStateOf<Task?>(null) }
     var selectedFilter by rememberSaveable { mutableStateOf(TaskFilter.ALL) }
     var selectedCourseId by rememberSaveable { mutableStateOf<Long?>(null) }
     var courseMenuExpanded by remember { mutableStateOf(false) }
     val ext = MaterialTheme.extended
+    val context = LocalContext.current
+    val snackbarHost = LocalSnackbarHost.current
+    val undoLabel = context.getString(R.string.snackbar_undo)
+    val deletedMessage = context.getString(R.string.task_deleted_snackbar)
+    val completedMessage = context.getString(R.string.task_completed_snackbar)
+
+    LaunchedEffect(viewModel, snackbarHost) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is TasksEvent.Deleted -> {
+                    val undo = snackbarHost.showUndoSnackbar(deletedMessage, undoLabel)
+                    if (undo) viewModel.undoDelete() else viewModel.commitPendingDeletion()
+                }
+
+                is TasksEvent.Completed -> {
+                    val undo = snackbarHost.showUndoSnackbar(completedMessage, undoLabel)
+                    if (undo) {
+                        viewModel.undoCompletion(event.task, event.nextOccurrenceId)
+                    }
+                }
+            }
+        }
+    }
 
     LaunchedEffect(selectedFilter, state.courses) {
         if (selectedFilter == TaskFilter.BY_COURSE && selectedCourseId == null) {
@@ -170,11 +193,12 @@ fun TasksScreen(
                                 }
                                 items(tasks, key = { it.id ?: 0L }) { task ->
                                     TaskItemCard(
+                                        modifier = Modifier.animateItem(),
                                         task = task,
                                         courseName = state.courses.firstOrNull { it.id == task.courseId }?.name,
                                         onClick = { task.id?.let(onOpenTask) },
                                         onToggleCompleted = { done -> viewModel.setCompleted(task, done) },
-                                        onDelete = { pendingDelete = task }
+                                        onDelete = { viewModel.delete(task) }
                                     )
                                 }
                             }
@@ -183,21 +207,6 @@ fun TasksScreen(
                 }
             }
         }
-    }
-
-    pendingDelete?.let { task ->
-        CampusDialog(
-            onDismissRequest = { pendingDelete = null },
-            title = task.title,
-            message = stringResource(R.string.delete_task_confirm),
-            icon = Icons.Filled.Delete,
-            destructive = true,
-            confirmText = stringResource(R.string.delete),
-            onConfirm = {
-                task.id?.let { viewModel.delete(it) }
-                pendingDelete = null
-            }
-        )
     }
 }
 

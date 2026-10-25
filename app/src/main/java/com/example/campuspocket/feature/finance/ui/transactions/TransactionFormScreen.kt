@@ -1,8 +1,10 @@
 package com.example.campuspocket.feature.finance.ui.transactions
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -13,8 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
@@ -22,6 +24,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
@@ -38,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
+import com.example.campuspocket.core.designsystem.components.CampusChip
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
@@ -48,13 +54,16 @@ import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.TransactionTypeSelector
 import com.example.campuspocket.core.designsystem.components.campusDatePickerColors
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
+import com.example.campuspocket.core.navigation.LocalSnackbarHost
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.TransactionError
 import com.example.campuspocket.feature.finance.domain.model.Account
+import com.example.campuspocket.feature.finance.domain.model.TransactionTemplate
 import com.example.campuspocket.feature.finance.ui.accounts.transactionTypeLabelRes
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,11 +82,30 @@ fun TransactionFormScreen(
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val categories by viewModel.validCategories.collectAsStateWithLifecycle()
     val refundableExpenses by viewModel.refundableExpenses.collectAsStateWithLifecycle()
+    val templates by viewModel.templates.collectAsStateWithLifecycle()
+    val snackbarHost = LocalSnackbarHost.current
+    val haptics = LocalHapticFeedback.current
+    val savedTemplateMessage = stringResource(R.string.template_saved)
+    val deletedTemplateMessage = stringResource(R.string.template_deleted)
+    val defaultTemplateName = stringResource(R.string.template_default_name)
     var showDatePicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showTemplateDialog by remember { mutableStateOf(false) }
+    var templateName by remember { mutableStateOf("") }
+    val templateScroll = rememberScrollState()
 
     LaunchedEffect(state.saved, state.deleted) {
         if (state.saved || state.deleted) onDone()
+    }
+
+    LaunchedEffect(state.templateFeedbackId) {
+        val feedback = state.templateFeedback ?: return@LaunchedEffect
+        snackbarHost.showSnackbar(
+            when (feedback) {
+                TemplateFeedback.SAVED -> savedTemplateMessage
+                TemplateFeedback.DELETED -> deletedTemplateMessage
+            }
+        )
     }
 
     Column(modifier = modifier.fillMaxSize().imePadding()) {
@@ -100,6 +128,33 @@ fun TransactionFormScreen(
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (!state.isEditing && templates.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.templates_section),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(templateScroll),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        templates.forEach { template ->
+                            TemplateChip(
+                                template = template,
+                                onClick = { viewModel.applyTemplate(template) },
+                                onLongClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.deleteTemplate(template)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             KeypadAmountInput(
                 amount = state.amountDisplay,
                 onAmountChange = viewModel::onAmountChange,
@@ -127,6 +182,9 @@ fun TransactionFormScreen(
                 errorRes = R.string.transaction_error_missing_account,
                 onSelect = viewModel::onAccountChange
             )
+            if (state.usesLastAccount) {
+                LastUsedLabel()
+            }
 
             if (state.type == TransactionType.TRANSFER) {
                 AccountDropdown(
@@ -171,6 +229,9 @@ fun TransactionFormScreen(
                             }
                         )
                     }
+                }
+                if (state.usesLastCategory) {
+                    LastUsedLabel()
                 }
             }
 
@@ -236,6 +297,24 @@ fun TransactionFormScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         )
+        if (state.isEditing && state.type != TransactionType.TRANSFER) {
+            CampusButton(
+                text = stringResource(R.string.save_as_template),
+                onClick = {
+                    templateName = state.description.trim().ifBlank {
+                        categories.firstOrNull { it.id == state.categoryId }?.name
+                            ?: defaultTemplateName
+                    }
+                    showTemplateDialog = true
+                },
+                style = CampusButtonStyle.SECONDARY,
+                enabled = state.amountCents > 0,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 8.dp)
+            )
+        }
         if (state.isEditing) {
             CampusButton(
                 text = stringResource(R.string.delete),
@@ -251,7 +330,7 @@ fun TransactionFormScreen(
 
     if (showDatePicker) {
         val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            initialSelectedDateMillis = state.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         )
         CampusDialog(
             onDismissRequest = { showDatePicker = false },
@@ -260,7 +339,7 @@ fun TransactionFormScreen(
             onConfirm = {
                 pickerState.selectedDateMillis?.let { millis ->
                     viewModel.onDateChange(
-                        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
                     )
                 }
                 showDatePicker = false
@@ -283,6 +362,52 @@ fun TransactionFormScreen(
             }
         )
     }
+
+    if (showTemplateDialog) {
+        CampusDialog(
+            onDismissRequest = { showTemplateDialog = false },
+            title = stringResource(R.string.save_as_template),
+            confirmText = stringResource(R.string.save),
+            confirmEnabled = templateName.isNotBlank(),
+            onConfirm = {
+                viewModel.saveAsTemplate(templateName)
+                showTemplateDialog = false
+            },
+            content = {
+                CampusTextField(
+                    value = templateName,
+                    onValueChange = { templateName = it.take(40) },
+                    label = stringResource(R.string.template_name),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        )
+    }
+}
+
+@Composable
+private fun TemplateChip(
+    template: TransactionTemplate,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
+    CampusChip(
+        label = "${template.name} · ${formatMoneyOrHidden(template.amountCents)}",
+        selected = false,
+        onClick = onClick,
+        onLongClick = onLongClick,
+        onLongClickLabel = stringResource(R.string.template_delete_action)
+    )
+}
+
+@Composable
+private fun LastUsedLabel() {
+    Text(
+        text = stringResource(R.string.last_used),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp)
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -324,7 +449,9 @@ private fun AccountDropdown(
 fun PreviewTransactionFormScreen() {
     com.example.campuspocket.core.designsystem.CampusTheme {
         androidx.compose.material3.Surface {
-            TransactionFormScreen(onDone = {})
+            CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
+                TransactionFormScreen(onDone = {})
+            }
         }
     }
 }

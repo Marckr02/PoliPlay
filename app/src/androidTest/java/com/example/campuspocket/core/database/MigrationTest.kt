@@ -125,10 +125,46 @@ class MigrationTest {
         context.deleteDatabase(DB_3)
     }
 
+    /** v4 -> v5: subtareas, repetición de tareas y plantillas de movimientos. */
+    @Test
+    @Throws(IOException::class)
+    fun migracionRealDe4a5() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.deleteDatabase(DB_4)
+        helper.createDatabase(DB_4, 4).close()
+
+        val db = helper.runMigrationsAndValidate(DB_4, 5, true, Migrations.MIGRATION_4_5)
+
+        db.query("PRAGMA table_info(`tasks`)").use { cursor ->
+            val names = mutableListOf<String>()
+            while (cursor.moveToNext()) names += cursor.getString(1)
+            assertTrue("Falta `repeatRule`", names.contains("repeatRule"))
+            assertTrue("Falta `repeatUntil`", names.contains("repeatUntil"))
+        }
+        listOf("subtasks", "transaction_templates").forEach { table ->
+            db.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='$table'"
+            ).use { assertTrue("Falta `$table`", it.moveToFirst()) }
+        }
+        listOf(
+            "index_subtasks_taskId",
+            "index_transaction_templates_accountId",
+            "index_transaction_templates_categoryId"
+        ).forEach { index ->
+            db.query(
+                "SELECT name FROM sqlite_master WHERE type='index' AND name='$index'"
+            ).use { assertTrue("Falta `$index`", it.moveToFirst()) }
+        }
+
+        db.close()
+        context.deleteDatabase(DB_4)
+    }
+
     private companion object {
         const val DB_1 = "migration-test-1"
         const val DB_2 = "migration-test-2"
         const val DB_3 = "migration-test-3"
+        const val DB_4 = "migration-test-4"
 
         /** v2 vieja: DDL exacto del schemas/2.json (sin anchorDayOfMonth en scheduled_payments). */
         val V2_DDL = listOf(

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -14,8 +15,14 @@ interface TaskReminderDao {
     @Insert
     suspend fun insertAll(reminders: List<TaskReminderEntity>): List<Long>
 
+    @Update
+    suspend fun update(reminder: TaskReminderEntity)
+
     @Delete
     suspend fun delete(reminder: TaskReminderEntity)
+
+    @Query("SELECT * FROM task_reminders WHERE id = :id")
+    suspend fun getById(id: Long): TaskReminderEntity?
 
     @Query("DELETE FROM task_reminders WHERE taskId = :taskId")
     suspend fun deleteByTask(taskId: Long)

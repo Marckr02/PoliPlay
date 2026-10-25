@@ -8,6 +8,9 @@ interface NoteRepository {
     fun observeAllNotes(): Flow<List<NoteEntity>>
     fun observeRootFolders(): Flow<List<FolderEntity>>
     fun observeChildFolders(parentId: Long): Flow<List<FolderEntity>>
+
+    /** Todas las carpetas (el editor permite mover la nota a cualquiera). */
+    fun observeAllFolders(): Flow<List<FolderEntity>> = kotlinx.coroutines.flow.flowOf(emptyList())
     fun observeNotesByFolder(folderId: Long): Flow<List<NoteEntity>>
     fun observeNotesWithoutFolder(): Flow<List<NoteEntity>>
     fun observeNotesByCourse(courseId: Long): Flow<List<NoteEntity>>

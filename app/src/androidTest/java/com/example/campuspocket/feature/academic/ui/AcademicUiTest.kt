@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.lifecycle.SavedStateHandle
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.core.di.AppScope
 import com.example.campuspocket.feature.academic.domain.model.Course
 import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.domain.model.TaskReminder
@@ -148,7 +149,7 @@ class AcademicUiTest {
                     onAddTask = {},
                     onOpenTask = {},
                     onBack = {},
-                    viewModel = TasksViewModel(taskRepo, FakeCourseRepository(listOf(course)))
+                    viewModel = TasksViewModel(taskRepo, FakeCourseRepository(listOf(course)), AppScope())
                 )
             }
         }
@@ -180,7 +181,7 @@ class AcademicUiTest {
                     onAddTask = {},
                     onOpenTask = {},
                     onBack = {},
-                    viewModel = TasksViewModel(taskRepo, FakeCourseRepository())
+                    viewModel = TasksViewModel(taskRepo, FakeCourseRepository(), AppScope())
                 )
             }
         }
@@ -246,6 +247,17 @@ class AcademicUiTest {
         override suspend fun getCompletedTasks(): List<Task> = currentTasks().filter { it.completedAt != null }
         override suspend fun getTasksByDateRange(start: Instant, end: Instant) = emptyList<Task>()
         override suspend fun getTasksByCourse(courseId: Long) = emptyList<Task>()
+        override suspend fun complete(task: Task, completedAt: Instant): Long? {
+            tasksFlow.value = tasksFlow.value.map {
+                if (it.id == task.id) it.copy(completedAt = completedAt) else it
+            }
+            return null
+        }
+        override suspend fun undoCompletion(task: Task, nextOccurrenceId: Long?) {
+            tasksFlow.value = tasksFlow.value.map {
+                if (it.id == task.id) it.copy(completedAt = null) else it
+            }
+        }
         override suspend fun insertReminder(reminder: TaskReminder) = 0L
         override suspend fun insertReminders(reminders: List<TaskReminder>) = Unit
         override suspend fun deleteRemindersByTask(taskId: Long) = Unit

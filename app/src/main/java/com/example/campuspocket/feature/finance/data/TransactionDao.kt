@@ -22,6 +22,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: Long): TransactionEntity?
 
+    @Query("SELECT * FROM transactions ORDER BY date DESC, createdAt DESC LIMIT 1")
+    suspend fun getLatest(): TransactionEntity?
+
     @Query("SELECT * FROM transactions ORDER BY date DESC, createdAt DESC")
     fun observeAll(): kotlinx.coroutines.flow.Flow<List<TransactionEntity>>
 

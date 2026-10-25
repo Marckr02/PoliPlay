@@ -261,6 +261,14 @@
     <string name="transaction_error_wrong_kind">La categoría no corresponde al tipo de transacción</string>
     <string name="transaction_error_missing_account">Elige una cuenta</string>
     <string name="delete_transaction_confirm">¿Eliminar esta transacción?</string>
+    <string name="templates_section">PLANTILLAS</string>
+    <string name="last_used">Última usada</string>
+    <string name="save_as_template">Guardar como plantilla</string>
+    <string name="template_name">Nombre de la plantilla</string>
+    <string name="template_default_name">Plantilla</string>
+    <string name="template_saved">Plantilla guardada</string>
+    <string name="template_deleted">Plantilla eliminada</string>
+    <string name="template_delete_action">Eliminar plantilla</string>
     <string name="category_new">Nueva categoría</string>
     <string name="category_edit">Editar categoría</string>
     <string name="category_archive">Archivar</string>
@@ -414,6 +422,17 @@
     <string name="onboarding_title_modules">Elige tus módulos</string>
     <string name="onboarding_message_modules">Puedes cambiar esta selección más adelante.</string>
     <string name="onboarding_start">Empezar</string>
+    <string name="onboarding_title_schedule">Trae tu horario</string>
+    <string name="onboarding_message_schedule">Importa tu horario desde un PDF para ver tus clases en Inicio y recibir avisos.</string>
+    <string name="onboarding_import_schedule">Importar horario (PDF)</string>
+    <string name="onboarding_import_schedule_note">El archivo se queda en tu dispositivo; nada se sube a internet.</string>
+    <string name="onboarding_import_later">Lo haré después</string>
+    <string name="onboarding_section_notices">AVISOS ÚTILES (OPCIONAL)</string>
+    <string name="onboarding_notice_task_reminders">Recordatorios de tareas</string>
+    <string name="onboarding_notice_task_reminders_desc">Recibe avisos cuando una tarea esté próxima a vencer.</string>
+    <string name="onboarding_notice_exact_alarms">Alarmas exactas</string>
+    <string name="onboarding_notice_exact_alarms_desc">Permite alarmas precisas para recordatorios puntuales.</string>
+    <string name="onboarding_permission_denied">Permiso denegado; la opción se ha desactivado.</string>
 
     <!-- Ajustes: perfil local y módulos -->
     <string name="settings_profile">Mi perfil</string>
@@ -565,6 +584,23 @@
     <string name="notes_empty_heading">Sin notas</string>
     <string name="notes_new">Nueva nota</string>
     <string name="delete_note_confirm">¿Eliminar esta nota?</string>
+    <string name="note_undo">Deshacer</string>
+    <string name="note_redo">Rehacer</string>
+    <string name="note_share">Compartir nota</string>
+    <string name="note_share_text">Compartir como texto</string>
+    <string name="note_share_markdown">Compartir como Markdown (.md)</string>
+    <string name="note_copy">Copiar contenido</string>
+    <string name="note_copied">Contenido copiado</string>
+    <string name="note_share_error">No se pudo compartir la nota</string>
+    <string name="note_saved_status">Guardado · hace un momento</string>
+    <string name="note_saving_status">Guardando…</string>
+    <string name="note_course_picker">Materia de la nota</string>
+    <string name="note_folder_picker">Carpeta de la nota</string>
+    <string name="note_no_course">Sin materia</string>
+    <string name="note_no_folder">Sin carpeta</string>
+    <string name="course_notes_title">Notas de la materia</string>
+    <string name="course_notes_empty">Aún no hay notas de esta materia.</string>
+    <string name="course_notes_add">Añadir nota</string>
 
     <!-- Acción contextual del dock -->
     <string name="dock_add">Añadir</string>
@@ -604,4 +640,26 @@
     <string name="history_today">HOY</string>
     <string name="history_yesterday">AYER</string>
     <string name="history_load_previous">Cargar mes anterior</string>
+
+    <!-- Tareas v5 -->
+    <string name="snackbar_undo">DESHACER</string>
+    <string name="task_deleted_snackbar">Tarea eliminada</string>
+    <string name="task_completed_snackbar">Tarea completada</string>
+    <string name="task_toggle_complete">Completar «%1$s»</string>
+    <string name="task_subtasks_progress_description">%1$d de %2$d subtareas completadas</string>
+    <string name="task_subtasks_section">Subtareas · %1$d de %2$d</string>
+    <string name="task_subtask_add">Añadir subtarea</string>
+    <string name="task_subtask_add_action">Añadir</string>
+    <string name="task_subtask_remove">Quitar subtarea</string>
+    <string name="task_subtask_empty_error">Escribe un título para la subtarea</string>
+    <string name="task_subtasks_all_done">Todas las subtareas están hechas.</string>
+    <string name="task_complete_now">Completar tarea</string>
+    <string name="task_repeat_label">Repetir</string>
+    <string name="task_repeat_none">No se repite</string>
+    <string name="task_repeat_daily">Cada día</string>
+    <string name="task_repeat_weekly">Cada semana</string>
+    <string name="task_repeat_until">Repetir hasta</string>
+    <string name="task_repeat_semester_end">Hasta fin de semestre</string>
+    <string name="notification_complete_task">Completar</string>
+    <string name="notification_snooze_task">Posponer 1 h</string>
 </resources>

@@ -12,6 +12,7 @@ import com.example.campuspocket.feature.finance.domain.TransactionError
 import com.example.campuspocket.feature.finance.domain.model.Account
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
+import com.example.campuspocket.feature.finance.domain.model.TransactionTemplate
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
 import com.example.campuspocket.feature.finance.ui.FinanceDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,13 +43,21 @@ data class TransactionFormUiState(
     val isLoaded: Boolean = false,
     val saved: Boolean = false,
     val deleted: Boolean = false,
-    val notFound: Boolean = false
+    val notFound: Boolean = false,
+    /** La cuenta/categoría vienen del último movimiento (etiqueta «Última usada»). */
+    val usesLastAccount: Boolean = false,
+    val usesLastCategory: Boolean = false,
+    /** Feedback de plantillas; el id evita repetir el snackbar al recomponer. */
+    val templateFeedback: TemplateFeedback? = null,
+    val templateFeedbackId: Long = 0L
 ) {
     val isEditing: Boolean get() = transactionId != null
 
     /** Texto visible del monto: 0 -> "0,00"; el usuario nunca escribe separadores. */
     val amountDisplay: String get() = Money.toLocalDecimalString(amountCents)
 }
+
+enum class TemplateFeedback { SAVED, DELETED }
 
 @HiltViewModel
 class TransactionFormViewModel @Inject constructor(
@@ -92,6 +101,14 @@ class TransactionFormViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /** Plantillas recientes del mismo tipo; máximo 8 (v5 §4). */
+    val templates: StateFlow<List<TransactionTemplate>> = combine(
+        financeRepository.observeRecentTransactionTemplates(8), _uiState
+    ) { list, state ->
+        if (state.isEditing || state.type == TransactionType.TRANSFER) emptyList()
+        else list.filter { it.type == state.type }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     init {
         if (editingId != null) {
             viewModelScope.launch {
@@ -115,7 +132,33 @@ class TransactionFormViewModel @Inject constructor(
                 }
             }
         } else {
-            _uiState.value = _uiState.value.copy(isLoaded = true)
+            viewModelScope.launch {
+                // Captura rápida: precarga cuenta y categoría del último movimiento.
+                val latest = runCatching { financeRepository.getLatestTransaction() }.getOrNull()
+                val type = _uiState.value.type
+                val accountId = latest?.accountId?.let { id ->
+                    financeRepository.getAccount(id)?.takeIf { !it.archived }?.id
+                }
+                val category = latest?.categoryId?.let { id ->
+                    runCatching { financeRepository.getCategory(id) }.getOrNull()
+                }
+                val expectedKind = when (type) {
+                    TransactionType.INCOME -> CategoryKind.INCOME
+                    TransactionType.EXPENSE, TransactionType.REFUND -> CategoryKind.EXPENSE
+                    TransactionType.TRANSFER -> null
+                }
+                val categoryId = category
+                    ?.takeIf { expectedKind != null && it.kind == expectedKind }
+                    ?.id
+                val current = _uiState.value
+                _uiState.value = current.copy(
+                    accountId = current.accountId ?: accountId,
+                    categoryId = current.categoryId ?: categoryId,
+                    usesLastAccount = current.accountId == null && accountId != null,
+                    usesLastCategory = current.categoryId == null && categoryId != null,
+                    isLoaded = true
+                )
+            }
         }
     }
 
@@ -131,7 +174,12 @@ class TransactionFormViewModel @Inject constructor(
     }
 
     fun onAccountChange(accountId: Long) {
-        _uiState.value = _uiState.value.copy(accountId = accountId, refundOfId = null, error = null)
+        _uiState.value = _uiState.value.copy(
+            accountId = accountId,
+            refundOfId = null,
+            usesLastAccount = false,
+            error = null
+        )
     }
 
     fun onTargetAccountChange(accountId: Long) {
@@ -139,7 +187,72 @@ class TransactionFormViewModel @Inject constructor(
     }
 
     fun onCategoryChange(categoryId: Long) {
-        _uiState.value = _uiState.value.copy(categoryId = categoryId, error = null)
+        _uiState.value = _uiState.value.copy(
+            categoryId = categoryId,
+            usesLastCategory = false,
+            error = null
+        )
+    }
+
+    /** Aplica monto, cuenta y categoría de la plantilla; conserva el tipo actual. */
+    fun applyTemplate(template: TransactionTemplate) {
+        val state = _uiState.value
+        if (state.type == TransactionType.TRANSFER || template.type != state.type) return
+        val accountId = template.accountId
+            ?.takeIf { id -> accounts.value.any { it.id == id } }
+            ?: state.accountId
+        val categoryId = template.categoryId
+            ?.takeIf { id -> categories.value.any { it.id == id } }
+            ?: state.categoryId
+        _uiState.value = state.copy(
+            amountCents = template.amountCents,
+            accountId = accountId,
+            categoryId = categoryId,
+            refundOfId = null,
+            usesLastAccount = false,
+            usesLastCategory = false,
+            error = null
+        )
+        template.id?.let { id ->
+            viewModelScope.launch { financeRepository.touchTransactionTemplate(id) }
+        }
+    }
+
+    /**
+     * Guarda el movimiento editado como plantilla (v5 §4). No modifica ni
+     * guarda el movimiento; solo crea la plantilla reutilizable.
+     */
+    fun saveAsTemplate(name: String) {
+        val state = _uiState.value
+        if (state.type == TransactionType.TRANSFER) return
+        if (name.isBlank() || state.amountCents <= 0) return
+        viewModelScope.launch {
+            financeRepository.insertTransactionTemplate(
+                TransactionTemplate(
+                    name = name.trim().take(40),
+                    amountCents = state.amountCents,
+                    type = state.type,
+                    accountId = state.accountId,
+                    categoryId = state.categoryId,
+                    lastUsedAt = System.currentTimeMillis()
+                )
+            )
+            _uiState.value = _uiState.value.copy(
+                templateFeedback = TemplateFeedback.SAVED,
+                templateFeedbackId = _uiState.value.templateFeedbackId + 1
+            )
+        }
+    }
+
+    fun deleteTemplate(template: TransactionTemplate) {
+        val id = template.id ?: return
+        viewModelScope.launch {
+            financeRepository.deleteTransactionTemplate(id)
+            _uiState.value = _uiState.value.copy(
+                templateFeedback = TemplateFeedback.DELETED,
+                templateFeedbackId = _uiState.value.templateFeedbackId + 1
+            )
+        }
     }
 
     fun onRefundOfChange(transactionId: Long?) {

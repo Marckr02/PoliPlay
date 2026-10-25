@@ -9,6 +9,7 @@ import com.example.campuspocket.feature.academic.data.CourseDao
 import com.example.campuspocket.feature.academic.data.CourseEntity
 import com.example.campuspocket.feature.academic.data.SemesterDao
 import com.example.campuspocket.feature.academic.data.SemesterEntity
+import com.example.campuspocket.feature.academic.data.SubtaskEntity
 import com.example.campuspocket.feature.academic.data.TaskDao
 import com.example.campuspocket.feature.academic.data.TaskEntity
 import com.example.campuspocket.feature.academic.data.TaskReminderDao
@@ -25,6 +26,8 @@ import com.example.campuspocket.feature.finance.data.ScheduledPaymentDao
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.data.TransactionDao
 import com.example.campuspocket.feature.finance.data.TransactionEntity
+import com.example.campuspocket.feature.finance.data.TransactionTemplateDao
+import com.example.campuspocket.feature.finance.data.TransactionTemplateEntity
 import com.example.campuspocket.feature.notes.data.FolderDao
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteDao
@@ -33,7 +36,7 @@ import com.example.campuspocket.feature.notes.data.NoteEntity
 /**
  * Base de datos única de la app. Se construye en DatabaseModule (Hilt).
  *
- * Esquema actual v4. Cada cambio de esquema debe subir `version`, agregar su Migration
+ * Esquema actual v5. Cada cambio de esquema debe subir `version`, agregar su Migration
  * en `Migrations` y actualizar los snapshots de `app/schemas`; DatabaseModule no usa
  * borrado destructivo.
  */
@@ -44,17 +47,19 @@ import com.example.campuspocket.feature.notes.data.NoteEntity
         ClassSessionEntity::class,
         TaskEntity::class,
         TaskReminderEntity::class,
+        SubtaskEntity::class,
         AccountEntity::class,
         CategoryEntity::class,
         BudgetEntity::class,
         MonthlyBudgetEntity::class,
         TransactionEntity::class,
+        TransactionTemplateEntity::class,
         ScheduledPaymentEntity::class,
         FolderEntity::class,
         NoteEntity::class,
         ImportHintEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -69,6 +74,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun budgetDao(): BudgetDao
     abstract fun monthlyBudgetDao(): MonthlyBudgetDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun transactionTemplateDao(): TransactionTemplateDao
     abstract fun scheduledPaymentDao(): ScheduledPaymentDao
     abstract fun folderDao(): FolderDao
     abstract fun noteDao(): NoteDao

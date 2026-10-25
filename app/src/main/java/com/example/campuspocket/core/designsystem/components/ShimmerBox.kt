@@ -54,7 +54,7 @@ fun ShimmerBox(
             initialValue = -0.3f,
             targetValue = 1.1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = MotionTokens.ExtraLong * 2, easing = LinearEasing),
+                animation = tween(durationMillis = 1200, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             ),
             label = "shimmerX"

@@ -62,6 +62,7 @@ import com.example.campuspocket.feature.finance.ui.accounts.transactionTypeLabel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -259,9 +260,9 @@ private fun HistoryControls(
     if (showDateRange) {
         val pickerState = rememberDateRangePickerState(
             initialSelectedStartDateMillis = state.filters.startDate
-                ?.atStartOfDay(ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
+                ?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli(),
             initialSelectedEndDateMillis = state.filters.endDate
-                ?.atStartOfDay(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
+                ?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli()
         )
         DatePickerDialog(
             onDismissRequest = { showDateRange = false },
@@ -270,10 +271,10 @@ private fun HistoryControls(
                     onClick = {
                         viewModel.setDateRange(
                             pickerState.selectedStartDateMillis?.let {
-                                Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                                Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
                             },
                             pickerState.selectedEndDateMillis?.let {
-                                Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                                Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
                             }
                         )
                         showDateRange = false

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
@@ -47,6 +48,7 @@ import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.DangerPillButton
 import com.example.campuspocket.core.designsystem.components.PriorityBadge
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
+import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.academic.domain.model.ClassSession
 import com.example.campuspocket.feature.academic.domain.model.Course
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -57,6 +59,8 @@ fun CourseDetailScreen(
     onEditCourse: (Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenNote: (Long) -> Unit = {},
+    onAddNote: (Long) -> Unit = {},
     viewModel: CourseDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -73,6 +77,8 @@ fun CourseDetailScreen(
         state = state,
         onBack = onBack,
         onEditCourse = onEditCourse,
+        onOpenNote = onOpenNote,
+        onAddNote = onAddNote,
         onDeleteRequest = { showDeleteDialog = true },
         modifier = modifier
     )
@@ -98,6 +104,8 @@ private fun CourseDetailContent(
     state: CourseDetailUiState,
     onBack: () -> Unit,
     onEditCourse: (Long) -> Unit,
+    onOpenNote: (Long) -> Unit,
+    onAddNote: (Long) -> Unit,
     onDeleteRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -226,14 +234,36 @@ private fun CourseDetailContent(
                         }
                     }
 
-                    if (state.notes.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
-                            text = stringResource(R.string.notes_list),
+                            text = stringResource(R.string.course_notes_title),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        RoundIconButton(
+                            icon = Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.course_notes_add),
+                            onClick = { state.course.id?.let(onAddNote) },
+                            containerColor = MaterialTheme.extended.accent,
+                            contentColor = MaterialTheme.extended.onAccent
+                        )
+                    }
+                    if (state.notes.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.course_notes_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
                         state.notes.forEach { note ->
-                            BentoCard(contentPadding = PaddingValues(14.dp)) {
+                            BentoCard(
+                                contentPadding = PaddingValues(14.dp),
+                                onClick = { onOpenNote(note.id) }
+                            ) {
                                 Text(
                                     text = note.title.ifBlank { stringResource(R.string.notes_empty_title) },
                                     style = MaterialTheme.typography.titleSmall
