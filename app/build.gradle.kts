@@ -1,3 +1,4 @@
+import java.util.Date
 import java.util.Properties
 import java.io.File
 
@@ -9,12 +10,23 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// Leer versión desde gradle.properties (SemVer 0.x)
-val appVersionName: String = providers.gradleProperty("VERSION_NAME").orElse("0.0.0").get()
-val appVersionCode: Int = appVersionName.substringBefore('-').split('.').let { parts ->
-    require(parts.size == 3) { "VERSION_NAME must be MAJOR.MINOR.PATCH" }
-    parts[0].toInt() * 10_000 + parts[1].toInt() * 100 + parts[2].toInt()  // 0.8.0 -> 800
+// Leer versión desde version.properties (SemVer 0.x, versionado en Git)
+val versionProps = Properties().apply {
+    rootProject.file("version.properties").inputStream().use { load(it) }
 }
+val appVersionName: String = versionProps.getProperty("VERSION_NAME")
+    ?: error("Falta VERSION_NAME en version.properties")
+val appVersionCode: Int = appVersionName.substringBefore('-').split('.').let { parts ->
+    require(parts.size == 3) { "VERSION_NAME debe ser MAYOR.MENOR.PARCHE" }
+    (parts[0].toInt() * 10_000 + parts[1].toInt() * 100 + parts[2].toInt()).also {
+        require(it >= 1) { "versionCode debe ser >= 1" }
+    }
+}
+
+// Obtener GIT_SHA y BUILD_DATE para BuildConfig
+val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD"); isIgnoreExitValue = true }
+    .standardOutput.asText.map { it.trim().ifEmpty { "dev" } }.getOrElse("dev")
+val buildDate = Date().toString()
 
 android {
     namespace = "com.example.campuspocket"
@@ -28,6 +40,9 @@ android {
         versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
+        buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }
 
     // Los esquemas exportados de Room viajan con las pruebas instrumentadas (migraciones).
