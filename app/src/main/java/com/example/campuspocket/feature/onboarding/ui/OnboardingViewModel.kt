@@ -1,13 +1,6 @@
 package com.example.campuspocket.feature.onboarding.ui
 
-import android.app.Activity
-import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.core.preferences.CampusModule
@@ -30,7 +23,10 @@ data class OnboardingUiState(
     val taskRemindersEnabled: Boolean = false,
     val exactAlarmsEnabled: Boolean = false,
     val saving: Boolean = false,
-    val permissionErrorRes: Int = 0
+    val permissionErrorRes: Int = 0,
+    /** PDF elegido en el paso 3; se importa al terminar la bienvenida. */
+    val pdfUri: Uri? = null,
+    val finished: Boolean = false
 ) {
     fun isSelected(module: CampusModule): Boolean = when (module) {
         CampusModule.ACADEMIC -> academicSelected
@@ -74,56 +70,27 @@ class OnboardingViewModel @Inject constructor(
 
     fun setPermissionErrorRes(resId: Int) = _uiState.update { it.copy(permissionErrorRes = resId) }
 
-    /** Lanza el selector de PDF para importar horario. */
-    fun launchPdfImport(launcher: ActivityResultLauncher<Intent>) {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            type = "application/pdf"
-            addCategory(Intent.CATEGORY_OPENABLE)
-        }
-        launcher.launch(intent)
-    }
-
-    /** Maneja el resultado del selector de PDF. */
+    /** Guarda el PDF elegido para importarlo al terminar la bienvenida. */
     fun handlePdfResult(uri: Uri?) {
-        uri?.let { pdfUri ->
-            // TODO: Launch ImportScheduleScreen with the PDF URI
-            // For now, just acknowledge the selection
-        }
+        _uiState.update { it.copy(pdfUri = uri) }
     }
 
-    /** Solicita permiso de notificaciones (Android 13+). */
-    fun requestNotificationPermission(launcher: ActivityResultLauncher<String>) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
-
-    /** Solicita permiso de alarmas exactas. */
-    fun requestExactAlarmPermission(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-            if (!alarmManager.canScheduleExactAlarms()) {
-                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                context.startActivity(intent)
-            }
-        }
-    }
-
-    /** Guarda nombre (recortado), módulos y finalización en una sola escritura. */
+    /** Guarda nombre (recortado), módulos, avisos y finalización en una sola escritura. */
     fun finish() {
         val state = _uiState.value
-        if (state.saving) return
+        if (state.saving || state.finished) return
         _uiState.update { it.copy(saving = true) }
         viewModelScope.launch {
             userPreferencesRepository.completeOnboarding(
                 displayName = state.name,
                 academicEnabled = state.academicSelected,
                 financeEnabled = state.financeSelected,
-                notesEnabled = state.notesSelected
+                notesEnabled = state.notesSelected,
+                taskRemindersEnabled = state.taskRemindersEnabled,
+                exactAlarmsEnabled = state.exactAlarmsEnabled
             )
-            // TODO: Guardar preferencias de notificaciones y alarmas exactas
             // Si la escritura falló, la preferencia no cambia y el usuario puede reintentar.
-            _uiState.update { it.copy(saving = false) }
+            _uiState.update { it.copy(saving = false, finished = true) }
         }
     }
 }

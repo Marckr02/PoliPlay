@@ -27,6 +27,7 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val autoWhatsNew by viewModel.autoWhatsNew.collectAsStateWithLifecycle()
     HomeScreen(
         preferences = preferences,
         onOpenModule = onOpenModule,
@@ -40,6 +41,8 @@ fun HomeRoute(
         onAddTask = onAddTask,
         onAddNote = onAddNote,
         onToggleTaskCompleted = { task, done -> viewModel.setTaskCompleted(task, done) },
-        onSearchQueryChange = { query -> viewModel.onSearchQueryChange(query) }
+        onSearchQueryChange = { query -> viewModel.onSearchQueryChange(query) },
+        showWhatsNew = autoWhatsNew,
+        onWhatsNewDismiss = { viewModel.onWhatsNewSeen() }
     )
 }

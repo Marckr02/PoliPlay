@@ -40,6 +40,10 @@ object PreferenceKeys {
     val LOCK_ENABLED = booleanPreferencesKey("lock_enabled")
     val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
 
+    // Avisos elegidos en la bienvenida
+    val TASK_REMINDERS_ENABLED = booleanPreferencesKey("task_reminders_enabled")
+    val EXACT_ALARMS_ENABLED = booleanPreferencesKey("exact_alarms_enabled")
+
     // Novedades: última versión vista por el usuario (string "0.8.0")
     val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
 }
@@ -152,13 +156,17 @@ class UserPreferencesRepository @Inject constructor(
         displayName: String,
         academicEnabled: Boolean,
         financeEnabled: Boolean,
-        notesEnabled: Boolean
+        notesEnabled: Boolean,
+        taskRemindersEnabled: Boolean = false,
+        exactAlarmsEnabled: Boolean = false
     ) = editOrLog {
         val clean = UserPreferences.sanitizeDisplayName(displayName)
         if (clean.isEmpty()) remove(PreferenceKeys.DISPLAY_NAME) else set(PreferenceKeys.DISPLAY_NAME, clean)
         set(PreferenceKeys.ACADEMIC_ENABLED, academicEnabled)
         set(PreferenceKeys.FINANCE_ENABLED, financeEnabled)
         set(PreferenceKeys.NOTES_ENABLED, notesEnabled)
+        set(PreferenceKeys.TASK_REMINDERS_ENABLED, taskRemindersEnabled)
+        set(PreferenceKeys.EXACT_ALARMS_ENABLED, exactAlarmsEnabled)
         set(PreferenceKeys.ONBOARDING_COMPLETED, true)
     }
 

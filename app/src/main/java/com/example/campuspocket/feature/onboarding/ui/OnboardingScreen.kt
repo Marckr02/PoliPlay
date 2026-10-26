@@ -1,6 +1,11 @@
 package com.example.campuspocket.feature.onboarding.ui
 
-import android.app.Activity
+import android.Manifest
+import android.app.AlarmManager
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,13 +38,17 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -48,6 +57,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.extended
@@ -67,24 +79,51 @@ import com.example.campuspocket.core.designsystem.components.titleRes
 @Composable
 fun OnboardingScreen(
     modifier: Modifier = Modifier,
+    onFinished: (Uri?) -> Unit = {},
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val academicEnabled = state.academicSelected
     val totalSteps = state.totalSteps(academicEnabled)
 
-    // Launchers para permisos y selección de PDF
-    val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: androidx.activity.result.ActivityResult ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { viewModel.handlePdfResult(it) }
-        }
+    // Selector de PDF y permisos: la UI vive en la pantalla, no en el ViewModel.
+    val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) viewModel.handlePdfResult(uri)
     }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) {
+        if (granted) {
+            viewModel.setTaskReminders(true)
+        } else {
             viewModel.setTaskReminders(false)
             viewModel.setPermissionErrorRes(R.string.onboarding_permission_denied)
         }
+    }
+
+    // Al volver de los ajustes de alarmas exactas, reflejar el permiso real.
+    val exactAlarmsEnabled by rememberUpdatedState(state.exactAlarmsEnabled)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && exactAlarmsEnabled) {
+                val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+                } else {
+                    true
+                }
+                if (!granted) {
+                    viewModel.setExactAlarms(false)
+                    viewModel.setPermissionErrorRes(R.string.onboarding_permission_denied)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Al terminar, continuar a la importación del PDF elegido (si lo hay).
+    LaunchedEffect(state.finished) {
+        if (state.finished) onFinished(state.pdfUri)
     }
 
     BackHandler(enabled = state.step > 0) {
@@ -150,11 +189,26 @@ fun OnboardingScreen(
             )
             2 -> ScheduleStep(
                 state = state,
-                onImportClick = { viewModel.launchPdfImport(pdfLauncher) },
+                onImportClick = { pdfLauncher.launch(arrayOf("application/pdf")) },
                 onTaskRemindersChange = viewModel::setTaskReminders,
                 onExactAlarmsChange = viewModel::setExactAlarms,
-                onExactAlarmsClick = { viewModel.requestExactAlarmPermission(context) },
-                onNotificationPermissionClick = { viewModel.requestNotificationPermission(notificationPermissionLauncher) },
+                onExactAlarmsClick = {
+                    viewModel.setExactAlarms(true)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        context.startActivity(
+                            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                data = Uri.parse("package:${context.packageName}")
+                            }
+                        )
+                    }
+                },
+                onNotificationPermissionClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        viewModel.setTaskReminders(true)
+                    }
+                },
                 onBack = viewModel::goBackToModules,
                 onFinish = viewModel::finish
             )

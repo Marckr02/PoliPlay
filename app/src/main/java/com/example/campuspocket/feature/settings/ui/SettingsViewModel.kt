@@ -51,8 +51,7 @@ data class SettingsUiState(
     val pendingImport: Uri? = null,
     val importError: BackupImportIssue? = null,
     val exportDone: Boolean = false,
-    val importDone: Boolean = false,
-    val showWhatsNew: Boolean = false
+    val importDone: Boolean = false
 )
 
 @HiltViewModel
@@ -65,47 +64,31 @@ class SettingsViewModel @Inject constructor(
     @Named("io") private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
+    private val _uiState = MutableStateFlow(SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
     // ---- Novedades (What's new) ----
-    private val CURRENT_VERSION = BuildConfig.VERSION_NAME
+    // El aviso automático se muestra al arrancar la app (HomeViewModel).
+    // Aquí solo se abre a mano desde Acerca de.
+    private val _showWhatsNew = MutableStateFlow(false)
+    val showWhatsNew: StateFlow<Boolean> = _showWhatsNew.asStateFlow()
 
-    private val lastSeenVersion: StateFlow<String?> = dataStore.data
-        .map { it[PreferenceKeys.LAST_SEEN_VERSION] }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    fun openWhatsNew() {
+        _showWhatsNew.value = true
+    }
 
-    private val shouldShowWhatsNew: StateFlow<Boolean> = lastSeenVersion
-        .map { lastSeen ->
-            // Mostrar si es la primera vez (null) o si la versión cambió
-            lastSeen == null || lastSeen != CURRENT_VERSION
+    fun dismissWhatsNew() {
+        _showWhatsNew.value = false
+        viewModelScope.launch {
+            dataStore.edit { it[PreferenceKeys.LAST_SEEN_VERSION] = BuildConfig.VERSION_NAME }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    }
 
     // ---- Respaldo ----
 
     val lastBackupAt: StateFlow<Long?> = dataStore.data
         .map { it[PreferenceKeys.LAST_BACKUP] }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
-    private val _uiState = MutableStateFlow(SettingsUiState())
-    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
-
-    private val _showWhatsNew = MutableStateFlow(false)
-    val showWhatsNew: StateFlow<Boolean> = _showWhatsNew.asStateFlow()
-
-    // Observar shouldShowWhatsNew y actualizar _showWhatsNew
-    init {
-        viewModelScope.launch {
-            shouldShowWhatsNew.collect { show ->
-                if (show) _showWhatsNew.value = true
-            }
-        }
-    }
-
-    fun markWhatsNewSeen() {
-        _showWhatsNew.value = false
-        viewModelScope.launch {
-            dataStore.edit { it[PreferenceKeys.LAST_SEEN_VERSION] = CURRENT_VERSION }
-        }
-    }
 
     fun suggestedFileName(): String = "campuspocket-${LocalDate.now()}.json"
 

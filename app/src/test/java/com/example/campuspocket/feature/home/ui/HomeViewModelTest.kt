@@ -8,12 +8,18 @@ import com.example.campuspocket.feature.finance.testAccount
 import com.example.campuspocket.feature.finance.testCategory
 import com.example.campuspocket.feature.finance.testExpense
 import com.example.campuspocket.feature.notes.FakeNoteRepository
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import com.example.campuspocket.BuildConfig
+import com.example.campuspocket.core.preferences.PreferenceKeys
+import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -23,8 +29,11 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
@@ -34,6 +43,9 @@ class HomeViewModelTest {
         Instant.parse("2026-10-21T12:00:00Z"),
         ZoneOffset.UTC
     )
+
+    @get:Rule
+    val folder = TemporaryFolder()
 
     @Before
     fun setUp() {
@@ -68,6 +80,10 @@ class HomeViewModelTest {
                 taskRepository = FakeTaskRepository(),
                 financeRepository = repo,
                 noteRepository = FakeNoteRepository(),
+                dataStore = PreferenceDataStoreFactory.create(
+                    scope = backgroundScope,
+                    produceFile = { File(folder.root, "home.preferences_pb") }
+                ),
                 clock = fixedClock
             )
 
@@ -82,5 +98,59 @@ class HomeViewModelTest {
             assertEquals(5_000L, state.monthlySpentCents)
             assertEquals(11_000L, state.monthlyRemainingCents ?: 0L)
             job.cancel()
+        }
+
+    @Test
+    fun `novedades se muestran una vez tras actualizar y se marcan como vistas`() =
+        runTest(testDispatcher) {
+            val store = PreferenceDataStoreFactory.create(
+                scope = backgroundScope,
+                produceFile = { File(folder.root, "whatsnew.preferences_pb") }
+            )
+            store.edit { it[PreferenceKeys.LAST_SEEN_VERSION] = "0.8.0" }
+
+            val viewModel = HomeViewModel(
+                courseRepository = FakeCourseRepository(),
+                taskRepository = FakeTaskRepository(),
+                financeRepository = FakeFinanceRepository(),
+                noteRepository = FakeNoteRepository(),
+                dataStore = store,
+                clock = fixedClock
+            )
+            runCurrent()
+
+            assertTrue(viewModel.autoWhatsNew.value)
+            viewModel.onWhatsNewSeen()
+            runCurrent()
+            assertFalse(viewModel.autoWhatsNew.value)
+            assertEquals(
+                BuildConfig.VERSION_NAME,
+                store.data.first()[PreferenceKeys.LAST_SEEN_VERSION]
+            )
+        }
+
+    @Test
+    fun `instalacion nueva no muestra novedades y marca la version actual`() =
+        runTest(testDispatcher) {
+            val store = PreferenceDataStoreFactory.create(
+                scope = backgroundScope,
+                produceFile = { File(folder.root, "fresh.preferences_pb") }
+            )
+
+            val viewModel = HomeViewModel(
+                courseRepository = FakeCourseRepository(),
+                taskRepository = FakeTaskRepository(),
+                financeRepository = FakeFinanceRepository(),
+                noteRepository = FakeNoteRepository(),
+                dataStore = store,
+                clock = fixedClock
+            )
+            runCurrent()
+
+            assertFalse(viewModel.autoWhatsNew.value)
+            assertEquals(
+                BuildConfig.VERSION_NAME,
+                store.data.first()[PreferenceKeys.LAST_SEEN_VERSION]
+            )
         }
 }

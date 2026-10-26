@@ -3,31 +3,24 @@
 Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
 - `0.MENOR.PARCHE` — `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
 
-## [Sin publicar]
-### Añadido
-- Formulario de gasto v6: chips de categoría/cuenta, date chips, línea de impacto, teclado fijo
-- Chips de categoría (FlowRow, 5 + "Más"), chips de cuenta (2-3 con saldo)
-- Date chips (Hoy/Ayer/Elegir), línea de impacto presupuesto, extras (+ Nota / Seguir añadiendo)
-- Teclado fijo abajo con botón Guardar (ocupa 3 filas), haptics en teclas
-
-### Cambiado
-- Versión leída desde `gradle.properties` (`VERSION_NAME=0.9.0` → `versionCode=900`)
-
-### Eliminado
-- Lecturas duplicadas de `ANIMATOR_DURATION_SCALE` (unificado en `LocalMotion`)
-
----
-
-## [0.9.0] — 2026-10-26
-Commit: `b12781d` (base)
+## [0.8.1] — 2026-10-26
+Commit: ver etiqueta `v0.8.1`
 
 ### Añadido
-- Formulario de gasto v6: chips de categoría (FlowRow, 5 + "Más"), chips de cuenta (2-3 con saldo)
-- Date chips (Hoy/Ayer/Elegir), línea de impacto presupuesto, extras (+ Nota / Seguir añadiendo)
-- Teclado fijo abajo con botón Guardar (ocupa 3 filas), haptics en teclas
+- "Seguir añadiendo" en el formulario de gasto: tras guardar, el formulario sigue abierto, limpia el monto y conserva categoría, cuenta y fecha; permite deshacer el último guardado.
+- Aviso de novedades al arrancar la app, una sola vez tras actualizar; en una instalación nueva no se muestra.
+- Acerca de muestra la versión, el código, el commit y la fecha de compilación reales (`BuildConfig.GIT_SHA`/`BUILD_DATE`).
+- La bienvenida guarda las preferencias de recordatorios y alarmas exactas, y continúa a la importación del PDF elegido al terminar.
 
 ### Cambiado
-- Versión leída desde `gradle.properties` (`VERSION_NAME=0.9.0` → `versionCode=900`)
+- Versión en un único archivo versionado, `version.properties` (0.8.1 → versionCode 801), leído por `app/build.gradle.kts`.
+- Notas de versión en texto plano mediante `release_notes_current`; el historial completo queda en este archivo.
+- El aviso automático de novedades vive en Inicio, no en Ajustes; la fila "Novedades" solo abre el diálogo.
+- Se oculta la fila "Licencias de código abierto" hasta que exista la pantalla real.
+
+### Corregido
+- El domingo ya se puede elegir y guardar en tareas, movimientos y pagos con `CampusDatePickerDialog` (ancho fijo y conversión UTC segura).
+- Se eliminaron de este CHANGELOG las funciones del formulario v6 que no están implementadas.
 
 ---
 
@@ -35,14 +28,12 @@ Commit: `b12781d` (base)
 Commit: `221e2da`
 
 ### Añadido
-- Mejoras en Inicio: hero con próxima clase, corrección de zona horaria en selector de fechas
-- Animaciones unificadas bajo `LocalMotion`/`MotionTokens`
-- Transiciones por tipo de pantalla (raíz: fundido; formularios: slide; detalles: eje horizontal)
-- Dock con indicador deslizante, hojas de creación escalonadas, teclado de monto con escala 0.94
-- Vibración táctil (`Haptics.confirm`/`reject`/`tick`)
+- Mejoras en Inicio: hero con próxima clase.
+- Animaciones unificadas bajo `LocalMotion`/`MotionTokens`.
+- Vibración táctil (`Haptics.confirm`/`reject`/`tick`).
 
 ### Corregido
-- Zona horaria en `DatePicker` (conversión UTC consistente)
+- Zona horaria en `DatePicker` (conversión UTC consistente).
 
 ---
 

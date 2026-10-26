@@ -1,95 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Notas de versión para el diálogo "Novedades" -->
-    <!-- Formato: una cadena por versión, con viñetas HTML simples -->
+    <!-- Notas de la versión actual para el diálogo "Novedades" (v7 A5).
+         Texto plano, escrito para el usuario (sin etiquetas ni nombres de clases).
+         Se actualiza en cada lanzamiento; el historial completo está en CHANGELOG.md. -->
 
-    <string name="release_notes_0_9_0">
-        <![CDATA[
-        <b>v0.9.0</b> — 26 oct 2026<br/>
-        • Formulario de gasto v6: chips de categoría/cuenta, date chips, línea de impacto, teclado fijo<br/>
-        • Chips de categoría (FlowRow, 5 + "Más"), chips de cuenta (2-3 con saldo)<br/>
-        • Date chips (Hoy/Ayer/Elegir), línea de impacto presupuesto, extras (+ Nota / Seguir añadiendo)<br/>
-        • Teclado fijo abajo con botón Guardar (ocupa 3 filas), haptics en teclas
-        ]]>
-    </string>
-
-    <string name="release_notes_0_8_0">
-        <![CDATA[
-        <b>v0.8.0</b> — 25 oct 2026<br/>
-        • Arreglo del selector de fecha: el domingo ya es visible y seleccionable<br/>
-        • Nuevo <code>CampusDatePickerDialog</code> con ancho 360 dp<br/>
-        • Prueba instrumentada que valida domingo 25 oct 2026<br/>
-        • <code>TaskFormScreen</code>, <code>TransactionFormScreen</code>, <code>PaymentFormScreen</code> migran al nuevo diálogo<br/>
-        • Versión leída desde <code>gradle.properties</code> (v0.8.0 → versionCode 800)<br/>
-        • <code>CHANGELOG.md</code> añadido con historial completo
-        ]]>
-    </string>
-
-    <string name="release_notes_0_7_0">
-        <![CDATA[
-        <b>v0.7.0</b> — 24 oct 2026<br/>
-        • Insights del ritmo: «Puedes gastar por día» y «Cierre estimado» con tests<br/>
-        • Modo privado global: oculta montos, porcentajes y barra visibles<br/>
-        • Pantalla Resumen con gráfico Canvas (esperado, gastado, proyección, marca «Hoy»)<br/>
-        • Accesibilidad: <code>contentDescription</code> textual, <code>liveRegion</code> en ritmo<br/>
-        • Finanzas: <code>LazyColumn</code> único, pestañas fijas, grupos por día, scroll por pestaña
-        ]]>
-    </string>
-
-    <string name="release_notes_0_6_0">
-        <![CDATA[
-        <b>v0.6.0</b> — 24 oct 2026<br/>
-        • Infraestructura de movimiento: <code>LocalMotion</code>, tokens, <code>MotionEasing</code><br/>
-        • <code>SnackbarHost</code> global, <code>ShimmerBox</code>, <code>EmptyState</code>, vibración unificada<br/>
-        • Finanzas lazy: listas perezosas por pestaña, grupos por día, ventana de mes<br/>
-        • Pestañas fijas (<code>stickyHeader</code>), posición de scroll por pestaña
-        ]]>
-    </string>
-
-    <string name="release_notes_0_5_0">
-        <![CDATA[
-        <b>v0.5.0</b> — 21 oct 2026<br/>
-        • Dock flotante, <code>ContextualActionButton</code>, hero del ritmo<br/>
-        • <code>PillSegmentedControl</code>, <code>BentoCard</code>, sistema de diseño extendido<br/>
-        • Componentes base: <code>CampusButton</code>, <code>CampusChip</code>, <code>CampusDialog</code>, <code>CampusTextField</code>
-        ]]>
-    </string>
-
-    <string name="release_notes_0_4_1">
-        <![CDATA[
-        <b>v0.4.1</b> — 21 oct 2026<br/>
-        • Fix: presupuesto mensual en Inicio y ritmo en Finanzas (cálculo días restantes)
-        ]]>
-    </string>
-
-    <string name="release_notes_0_4_0">
-        <![CDATA[
-        <b>v0.4.0</b> — 21 oct 2026<br/>
-        • Rediseño UI v2: sistema de diseño, Finanzas y accesibilidad<br/>
-        • Componentes base y colores extendidos
-        ]]>
-    </string>
-
-    <string name="release_notes_0_3_0">
-        <![CDATA[
-        <b>v0.3.0</b> — 20 oct 2026<br/>
-        • Rediseño bento con dock flotante e ícono CampusPocket
-        ]]>
-    </string>
-
-    <string name="release_notes_0_2_0">
-        <![CDATA[
-        <b>v0.2.0</b> — 20 oct 2026<br/>
-        • Fases 7 y 8: rediseño, seguridad (biometría), retiro y presupuesto
-        ]]>
-    </string>
-
-    <string name="release_notes_0_1_0">
-        <![CDATA[
-        <b>v0.1.0</b> — 4 oct 2026<br/>
-        • Primera versión PoliPlay (Campus Pocket)<br/>
-        • Módulos: académico, finanzas y notas<br/>
-        • Room, DataStore, Hilt, Compose, Navigation, WorkManager
-        ]]>
-    </string>
+    <string-array name="release_notes_current">
+        <item>El selector de fecha ya muestra el domingo al editar tareas, movimientos y pagos.</item>
+        <item>El formulario de gasto incluye un interruptor "Seguir añadiendo": al guardar, limpia el monto pero conserva cuenta, categoría y fecha.</item>
+        <item>Ajustes muestra la versión y la compilación reales (commit y fecha).</item>
+        <item>Las novedades aparecen una sola vez tras actualizar, al arrancar la app.</item>
+        <item>Si eliges un PDF en la bienvenida, la importación del horario se abre al terminar.</item>
+    </string-array>
 </resources>

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -46,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.campuspocket.BuildConfig
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusDialog
@@ -85,7 +88,9 @@ fun HomeScreen(
     onAddTask: () -> Unit = {},
     onAddNote: () -> Unit = {},
     onToggleTaskCompleted: (Task, Boolean) -> Unit = { _, _ -> },
-    onSearchQueryChange: (String) -> Unit = {}
+    onSearchQueryChange: (String) -> Unit = {},
+    showWhatsNew: Boolean = false,
+    onWhatsNewDismiss: () -> Unit = {}
 ) {
     val activeModules = CampusModule.entries.filter { preferences.isModuleEnabled(it) }
     val displayName = preferences.displayName.ifBlank { null }
@@ -394,6 +399,33 @@ fun HomeScreen(
                         Text("Movimientos (${res.transactions.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         res.transactions.forEach { tx ->
                             Text(text = "• ${tx.description.orEmpty()} (${Money.format(tx.amountCents)})", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    // Aviso automático de novedades: una sola vez tras actualizar (v7 A5).
+    if (showWhatsNew) {
+        CampusDialog(
+            onDismissRequest = onWhatsNewDismiss,
+            title = stringResource(R.string.settings_whats_new_dialog_title, BuildConfig.VERSION_NAME),
+            confirmText = stringResource(R.string.ok),
+            onConfirm = onWhatsNewDismiss,
+            showDismiss = false,
+            content = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    stringArrayResource(R.array.release_notes_current).forEach { item ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("•", style = MaterialTheme.typography.bodyMedium)
+                            Text(item, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }

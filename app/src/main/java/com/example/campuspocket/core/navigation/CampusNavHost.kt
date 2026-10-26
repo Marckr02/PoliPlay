@@ -1,5 +1,6 @@
 package com.example.campuspocket.core.navigation
 
+import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -117,6 +118,8 @@ fun CampusNavHost(
     onPendingTaskHandled: () -> Unit = {},
     pendingRoute: StateFlow<String?> = remember { MutableStateFlow(null) },
     onPendingRouteHandled: () -> Unit = {},
+    pendingImportUri: StateFlow<Uri?> = remember { MutableStateFlow(null) },
+    onPendingImportHandled: () -> Unit = {},
     onToggleAmountsPrivacy: () -> Unit = {}
 ) {
     val navController = rememberNavController()
@@ -160,6 +163,16 @@ fun CampusNavHost(
             navController.navigate(target)
             onPendingRouteHandled()
         }
+    }
+
+    // PDF elegido en la bienvenida: abrir la importación con ese archivo.
+    val pendingImport by pendingImportUri.collectAsStateWithLifecycle()
+    var initialImportUri by remember { mutableStateOf<Uri?>(null) }
+    LaunchedEffect(pendingImport) {
+        val uri = pendingImport ?: return@LaunchedEffect
+        initialImportUri = uri
+        navController.navigate(AcademicDestinations.IMPORT)
+        onPendingImportHandled()
     }
 
     // Si el módulo abierto se desactiva en Ajustes, volver a Inicio de forma segura.
@@ -332,7 +345,11 @@ fun CampusNavHost(
                             }
                         )
                     }
-                    academicGraph(navController)
+                    academicGraph(
+                        navController = navController,
+                        initialImportUri = initialImportUri,
+                        onImportClosed = { initialImportUri = null }
+                    )
                     financeGraph(navController, onToggleAmountsPrivacy)
                     notesGraph(navController)
                     settingsGraph(navController)
@@ -580,7 +597,11 @@ private data class QuickAddOption(
     val onClick: () -> Unit
 )
 
-private fun NavGraphBuilder.academicGraph(navController: NavHostController) {
+private fun NavGraphBuilder.academicGraph(
+    navController: NavHostController,
+    initialImportUri: Uri?,
+    onImportClosed: () -> Unit
+) {
     navigation(startDestination = AcademicDestinations.HOY, route = TopLevelDestination.ACADEMIC.route) {
         composable(AcademicDestinations.HOY) {
             HoyRoute(
@@ -619,7 +640,13 @@ private fun NavGraphBuilder.academicGraph(navController: NavHostController) {
             )
         }
         composable(AcademicDestinations.IMPORT) {
-            ImportScheduleScreen(onDone = { navController.popBackStack() })
+            ImportScheduleScreen(
+                onDone = {
+                    onImportClosed()
+                    navController.popBackStack()
+                },
+                initialUri = initialImportUri
+            )
         }
         composable(
             route = AcademicDestinations.COURSE_DETAIL_ROUTE,

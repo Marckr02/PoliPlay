@@ -1,5 +1,7 @@
 package com.example.campuspocket.feature.academic.ui.importschedule
 
+import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +62,7 @@ import java.util.Locale
 fun ImportScheduleScreen(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    initialUri: Uri? = null,
     viewModel: ImportScheduleViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,6 +73,16 @@ fun ImportScheduleScreen(
         val stream = context.contentResolver.openInputStream(uri)
         if (stream == null) viewModel.onStreamError() else viewModel.onPdfPicked(stream)
     }
+
+    // PDF heredado de la bienvenida: se procesa una sola vez al abrir la pantalla.
+    LaunchedEffect(initialUri) {
+        val uri = initialUri ?: return@LaunchedEffect
+        val stream = context.contentResolver.openInputStream(uri)
+        if (stream == null) viewModel.onStreamError() else viewModel.onPdfPicked(stream)
+    }
+
+    // El botón atrás de la pantalla y el del sistema cierran la importación.
+    BackHandler { onDone() }
 
     LaunchedEffect((state as? ImportUiState.Review)?.saved) {
         if ((state as? ImportUiState.Review)?.saved == true) onDone()

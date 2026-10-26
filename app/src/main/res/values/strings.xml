@@ -401,6 +401,7 @@
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
     <string name="settings_version">Versión</string>
+    <string name="settings_version_format">Versión %1$s (%2$d)</string>
     <string name="settings_last_backup">Último respaldo</string>
     <string name="settings_backup_reminder">Han pasado más de 30 días desde tu último respaldo.</string>
     <string name="settings_active_semester">Semestre activo</string>

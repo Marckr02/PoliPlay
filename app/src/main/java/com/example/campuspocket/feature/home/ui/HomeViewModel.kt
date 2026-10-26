@@ -2,6 +2,11 @@ package com.example.campuspocket.feature.home.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import com.example.campuspocket.BuildConfig
+import com.example.campuspocket.core.preferences.PreferenceKeys
 import com.example.campuspocket.feature.academic.domain.model.Course
 import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.domain.repository.CourseRepository
@@ -22,8 +27,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -84,8 +91,33 @@ class HomeViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     financeRepository: FinanceRepository,
     noteRepository: NoteRepository,
+    private val dataStore: DataStore<Preferences>,
     private val clock: Clock
 ) : ViewModel() {
+
+    private val _autoWhatsNew = MutableStateFlow(false)
+    val autoWhatsNew: StateFlow<Boolean> = _autoWhatsNew.asStateFlow()
+
+    init {
+        // Aviso de novedades una sola vez tras actualizar, al arrancar la app.
+        // Instalación nueva: se marca la versión actual sin mostrar nada.
+        viewModelScope.launch {
+            val last = dataStore.data.first()[PreferenceKeys.LAST_SEEN_VERSION]
+            when {
+                last == null -> dataStore.edit {
+                    it[PreferenceKeys.LAST_SEEN_VERSION] = BuildConfig.VERSION_NAME
+                }
+                last != BuildConfig.VERSION_NAME -> _autoWhatsNew.value = true
+            }
+        }
+    }
+
+    fun onWhatsNewSeen() {
+        _autoWhatsNew.value = false
+        viewModelScope.launch {
+            dataStore.edit { it[PreferenceKeys.LAST_SEEN_VERSION] = BuildConfig.VERSION_NAME }
+        }
+    }
 
     private val searchQuery = MutableStateFlow("")
 

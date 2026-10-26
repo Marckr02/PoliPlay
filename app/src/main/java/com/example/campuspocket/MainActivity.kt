@@ -1,6 +1,7 @@
 package com.example.campuspocket
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -41,6 +42,9 @@ class MainActivity : FragmentActivity() {
     /** Ruta directa enviada desde un App Shortcut o desde un Intent ACTION_SEND. */
     private val pendingRoute = MutableStateFlow<String?>(null)
 
+    /** PDF elegido en la bienvenida: se importa al entrar en la app. */
+    private val pendingImportUri = MutableStateFlow<Uri?>(null)
+
     /** Único repositorio de preferencias: perfil local, módulos y tema. */
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
@@ -73,7 +77,9 @@ class MainActivity : FragmentActivity() {
                     val prefs = preferences
                     when {
                         prefs == null -> Box(Modifier.fillMaxSize())
-                        !prefs.onboardingCompleted -> OnboardingScreen()
+                        !prefs.onboardingCompleted -> OnboardingScreen(
+                            onFinished = { pendingImportUri.value = it }
+                        )
                         else -> CompositionLocalProvider(LocalPrivacyMode provides prefs.hideAmounts) {
                             CampusNavHost(
                                 preferences = prefs,
@@ -81,6 +87,8 @@ class MainActivity : FragmentActivity() {
                                 onPendingTaskHandled = { pendingTaskId.value = -1L },
                                 pendingRoute = pendingRoute,
                                 onPendingRouteHandled = { pendingRoute.value = null },
+                                pendingImportUri = pendingImportUri,
+                                onPendingImportHandled = { pendingImportUri.value = null },
                                 onToggleAmountsPrivacy = {
                                     lifecycleScope.launch {
                                         userPreferencesRepository.setHideAmounts(!prefs.hideAmounts)

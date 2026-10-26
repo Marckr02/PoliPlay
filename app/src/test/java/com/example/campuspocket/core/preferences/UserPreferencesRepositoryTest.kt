@@ -102,18 +102,24 @@ class UserPreferencesRepositoryTest {
 
     @Test
     fun `completar onboarding guarda todo en una sola escritura`() = runTest {
-        val repo = UserPreferencesRepository(newStore(backgroundScope, "onboarding"))
+        val store = newStore(backgroundScope, "onboarding")
+        val repo = UserPreferencesRepository(store)
         repo.completeOnboarding(
             displayName = "  Marco  ",
             academicEnabled = true,
             financeEnabled = false,
-            notesEnabled = true
+            notesEnabled = true,
+            taskRemindersEnabled = true,
+            exactAlarmsEnabled = false
         )
         val prefs = repo.preferences.first()
         assertTrue(prefs.onboardingCompleted)
         assertEquals("Marco", prefs.displayName)
         assertFalse(prefs.financeEnabled)
         assertTrue(prefs.notesEnabled)
+        val raw = store.data.first()
+        assertEquals(true, raw[PreferenceKeys.TASK_REMINDERS_ENABLED])
+        assertEquals(false, raw[PreferenceKeys.EXACT_ALARMS_ENABLED])
     }
 
     @Test
