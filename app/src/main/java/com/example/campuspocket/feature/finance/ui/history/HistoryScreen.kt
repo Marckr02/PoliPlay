@@ -145,7 +145,8 @@ fun LazyListScope.historyItems(
                     HistoryTransactionCard(
                         tx = transaction,
                         state = state,
-                        onOpenTransaction = onOpenTransaction
+                        onOpenTransaction = onOpenTransaction,
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
@@ -384,7 +385,8 @@ private fun HistoryEmptyCard() {
 private fun HistoryTransactionCard(
     tx: Transaction,
     state: HistoryUiState,
-    onOpenTransaction: (Long, TransactionType) -> Unit
+    onOpenTransaction: (Long, TransactionType) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val ext = MaterialTheme.extended
     val category = state.categories[tx.categoryId]?.name.orEmpty()
@@ -418,7 +420,7 @@ private fun HistoryTransactionCard(
         (if (category.isNotBlank()) " · $category" else "")
 
     BentoCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
         contentPadding = PaddingValues(0.dp),

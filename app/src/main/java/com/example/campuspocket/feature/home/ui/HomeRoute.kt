@@ -20,6 +20,7 @@ fun HomeRoute(
     onOpenCourse: (Long) -> Unit,
     onOpenNotes: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSearch: () -> Unit = {},
     onTogglePrivacy: () -> Unit = {},
     onAddExpense: () -> Unit = {},
     onAddTask: () -> Unit = {},
@@ -36,12 +37,12 @@ fun HomeRoute(
         state = state,
         onOpenCourse = onOpenCourse,
         onOpenNotes = onOpenNotes,
+        onOpenSearch = onOpenSearch,
         onTogglePrivacy = onTogglePrivacy,
         onAddExpense = onAddExpense,
         onAddTask = onAddTask,
         onAddNote = onAddNote,
         onToggleTaskCompleted = { task, done -> viewModel.setTaskCompleted(task, done) },
-        onSearchQueryChange = { query -> viewModel.onSearchQueryChange(query) },
         showWhatsNew = autoWhatsNew,
         onWhatsNewDismiss = { viewModel.onWhatsNewSeen() }
     )

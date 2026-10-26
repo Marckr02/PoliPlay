@@ -1084,7 +1084,8 @@ fun StaggeredNotesGrid(
                 onClick = { onNoteClick(note.id) },
                 onPinToggle = { pinned -> onPinToggle(note.id, pinned) },
                 onDelete = { onDelete(note) },
-                onMove = { onMove(note) }
+                onMove = { onMove(note) },
+                modifier = Modifier.animateItem()
             )
         }
     }

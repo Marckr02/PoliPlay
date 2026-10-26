@@ -151,7 +151,8 @@ fun AccountDetailScreen(
                             TransactionRow(
                                 tx,
                                 accountId = content.account.id ?: 0L,
-                                accountName = content.account.name
+                                accountName = content.account.name,
+                                modifier = Modifier.animateItem()
                             )
                         }
                     }

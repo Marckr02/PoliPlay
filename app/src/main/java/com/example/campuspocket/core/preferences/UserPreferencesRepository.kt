@@ -46,7 +46,19 @@ object PreferenceKeys {
 
     // Novedades: última versión vista por el usuario (string "0.8.0")
     val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
+
+    // Búsqueda global (v7 B4): consultas recientes, de la más nueva a la más vieja.
+    val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
 }
+
+private const val RECENT_SEARCH_SEPARATOR = "\u001F"
+private const val MAX_RECENT_SEARCHES = 5
+
+private fun String?.decodeRecentSearches(): List<String> =
+    this?.split(RECENT_SEARCH_SEPARATOR)
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        .orEmpty()
 
 /** Módulos funcionales de la app; activables por separado sin borrar datos. */
 enum class CampusModule {
@@ -122,6 +134,25 @@ class UserPreferencesRepository @Inject constructor(
     }
 
     val preferences: Flow<UserPreferences> = safeData.map { UserPreferences.from(it) }
+
+    /** Últimas búsquedas globales, ya ordenadas y sin duplicados. */
+    val recentSearches: Flow<List<String>> = safeData.map {
+        it[PreferenceKeys.RECENT_SEARCHES].decodeRecentSearches()
+    }
+
+    /** Guarda una consulta al frente del historial; ignora vacías y repetidas. */
+    suspend fun addRecentSearch(query: String) = editOrLog {
+        val clean = query.trim()
+        if (clean.isEmpty()) return@editOrLog
+        val current = this[PreferenceKeys.RECENT_SEARCHES].decodeRecentSearches()
+        val updated = (listOf(clean) + current.filterNot { it.equals(clean, ignoreCase = true) })
+            .take(MAX_RECENT_SEARCHES)
+        set(PreferenceKeys.RECENT_SEARCHES, updated.joinToString(RECENT_SEARCH_SEPARATOR))
+    }
+
+    suspend fun clearRecentSearches() = editOrLog {
+        remove(PreferenceKeys.RECENT_SEARCHES)
+    }
 
     /** Nombre opcional: se recorta y limita; vacío elimina la clave (nunca "null"). */
     suspend fun setDisplayName(name: String) = editOrLog {

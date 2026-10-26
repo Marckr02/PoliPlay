@@ -569,14 +569,29 @@
     <string name="home_see_all">Ver todo</string>
     <string name="home_quick_add_format">+ %1$s</string>
     <string name="home_pending_tasks_title">Tareas pendientes</string>
-    <string name="home_search_no_results">Sin resultados para «%1$s»</string>
-    <string name="home_search_tasks">Tareas (%1$d)</string>
-    <string name="home_search_notes">Notas (%1$d)</string>
-    <string name="home_search_courses">Materias (%1$d)</string>
-    <string name="home_search_transactions">Movimientos (%1$d)</string>
-    <string name="home_search_bullet">• %1$s</string>
     <string name="home_pace_per_day">%1$s / día hoy</string>
-    <plurals name="home_search_result_count">
+
+    <!-- Búsqueda global (v7 B4) -->
+    <string name="search_placeholder">Busca en toda la app</string>
+    <string name="search_filter_all">Todo</string>
+    <string name="search_filter_tasks">Tareas</string>
+    <string name="search_filter_notes">Notas</string>
+    <string name="search_filter_transactions">Movimientos</string>
+    <string name="search_filter_courses">Materias</string>
+    <string name="search_recent_title">Búsquedas recientes</string>
+    <string name="search_clear_recent">Borrar todo</string>
+    <string name="search_recent_hint">Toca una búsqueda reciente o escribe para empezar.</string>
+    <string name="search_empty_title">Busca en toda la app</string>
+    <string name="search_empty_message">Encuentra tareas, notas, materias y movimientos desde un solo lugar.</string>
+    <string name="search_no_results_title">Sin resultados</string>
+    <string name="search_no_results_message">No encontramos coincidencias para «%1$s».</string>
+    <string name="search_clear_query">Limpiar búsqueda</string>
+    <string name="search_task_completed">Completada</string>
+    <string name="search_section_tasks">Tareas (%1$d)</string>
+    <string name="search_section_notes">Notas (%1$d)</string>
+    <string name="search_section_transactions">Movimientos (%1$d)</string>
+    <string name="search_section_courses">Materias (%1$d)</string>
+    <plurals name="search_result_count">
         <item quantity="one">%1$d resultado</item>
         <item quantity="other">%1$d resultados</item>
     </plurals>

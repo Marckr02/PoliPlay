@@ -146,4 +146,23 @@ class UserPreferencesRepositoryTest {
         assertEquals(ThemeMode.DARK, ThemeMode.fromStorage("dark"))
         assertEquals(ThemeMode.SYSTEM, ThemeMode.fromStorage("system"))
     }
+
+    @Test
+    fun `busquedas recientes se ordenan, deduplican y limitan`() = runTest {
+        val repo = UserPreferencesRepository(newStore(backgroundScope, "searches"))
+
+        repo.addRecentSearch("  cálculo  ")
+        repo.addRecentSearch("física")
+        repo.addRecentSearch("CÁLCULO")
+
+        assertEquals(listOf("CÁLCULO", "física"), repo.recentSearches.first())
+
+        repeat(6) { repo.addRecentSearch("consulta $it") }
+        val recientes = repo.recentSearches.first()
+        assertEquals(5, recientes.size)
+        assertEquals("consulta 5", recientes.first())
+
+        repo.clearRecentSearches()
+        assertTrue(repo.recentSearches.first().isEmpty())
+    }
 }

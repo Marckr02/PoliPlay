@@ -4,10 +4,15 @@ import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -69,6 +75,10 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.LocalMotion
+import com.example.campuspocket.core.designsystem.MotionEasing
+import com.example.campuspocket.core.designsystem.MotionSpec
+import com.example.campuspocket.core.designsystem.MotionTokens
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.components.ContextualActionButton
 import com.example.campuspocket.core.designsystem.components.DockAction
@@ -99,6 +109,8 @@ import com.example.campuspocket.feature.home.ui.HomeRoute
 import com.example.campuspocket.feature.notes.ui.NoteEditorScreen
 import com.example.campuspocket.feature.notes.ui.NotesDestinations
 import com.example.campuspocket.feature.notes.ui.NotesScreen
+import com.example.campuspocket.feature.search.ui.SearchDestinations
+import com.example.campuspocket.feature.search.ui.SearchRoute
 import com.example.campuspocket.feature.settings.ui.SettingsScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -125,6 +137,7 @@ fun CampusNavHost(
     onToggleAmountsPrivacy: () -> Unit = {}
 ) {
     val navController = rememberNavController()
+    val motion = LocalMotion.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
@@ -308,10 +321,10 @@ fun CampusNavHost(
                                 0.dp
                             }
                         ),
-                    enterTransition = { fadeIn(tween(180)) },
-                    exitTransition = { fadeOut(tween(120)) },
-                    popEnterTransition = { fadeIn(tween(180)) },
-                    popExitTransition = { fadeOut(tween(120)) }
+                    enterTransition = { navEnterTransition(transitionFor(targetState.destination.route), motion) },
+                    exitTransition = { navExitTransition(transitionFor(initialState.destination.route), motion) },
+                    popEnterTransition = { navPopEnterTransition(transitionFor(targetState.destination.route), motion) },
+                    popExitTransition = { navPopExitTransition(transitionFor(initialState.destination.route), motion) }
                 ) {
                     composable(TopLevelDestination.HOME.route) {
                         HomeRoute(
@@ -329,6 +342,11 @@ fun CampusNavHost(
                                 }
                             },
                             onOpenNotes = { navigateToTopLevel(TopLevelDestination.NOTES.route) },
+                            onOpenSearch = {
+                                navController.navigate(SearchDestinations.ROUTE) {
+                                    launchSingleTop = true
+                                }
+                            },
                             onTogglePrivacy = onToggleAmountsPrivacy,
                             onAddExpense = {
                                 if (preferences.financeEnabled) {
@@ -355,6 +373,25 @@ fun CampusNavHost(
                     financeGraph(navController, onToggleAmountsPrivacy)
                     notesGraph(navController)
                     settingsGraph(navController)
+                    composable(SearchDestinations.ROUTE) {
+                        SearchRoute(
+                            onBack = { navController.popBackStack() },
+                            onOpenTask = { taskId ->
+                                navController.navigate(AcademicDestinations.taskForm(taskId))
+                            },
+                            onOpenNote = { noteId ->
+                                navController.navigate(NotesDestinations.editor(noteId))
+                            },
+                            onOpenCourse = { courseId ->
+                                navController.navigate(AcademicDestinations.courseDetail(courseId))
+                            },
+                            onOpenTransaction = { transactionId, type ->
+                                navController.navigate(
+                                    FinanceDestinations.transactionForm(type.name, transactionId)
+                                )
+                            }
+                        )
+                    }
                 }
 
                 val action = dockAction
@@ -409,6 +446,9 @@ private fun QuickAddSheet(
     onNavigate: (String) -> Unit
 ) {
     val ext = MaterialTheme.extended
+    val motion = LocalMotion.current
+    var rowsVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { rowsVisible = true }
     val options = when (target) {
         TopLevelDestination.HOME -> buildList {
             if (preferences.financeEnabled) {
@@ -543,11 +583,24 @@ private fun QuickAddSheet(
                     .padding(bottom = 12.dp)
                     .semantics { heading() }
             )
-            options.forEach { option ->
+            options.forEachIndexed { index, option ->
+                val rowProgress by animateFloatAsState(
+                    targetValue = if (rowsVisible) 1f else 0f,
+                    animationSpec = tween(
+                        durationMillis = motion.ms(220),
+                        delayMillis = if (motion.enabled) index * 40 else 0,
+                        easing = MotionEasing.EmphasizedDecelerate
+                    ),
+                    label = "quickAddRow"
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 64.dp)
+                        .graphicsLayer {
+                            alpha = rowProgress
+                            translationY = (1f - rowProgress) * 12.dp.toPx()
+                        }
                         .clip(RoundedCornerShape(18.dp))
                         .clickable(role = Role.Button) {
                             option.onClick()
@@ -599,6 +652,102 @@ private data class QuickAddOption(
     val contentColor: Color,
     val onClick: () -> Unit
 )
+
+/** Tipo de transición de navegación (v5 §9). */
+private enum class NavTransitionType { Fade, Modal, Detail }
+
+private fun transitionFor(route: String?): NavTransitionType = when (route) {
+    AcademicDestinations.IMPORT,
+    AcademicDestinations.MATERIA_FORM_ROUTE,
+    AcademicDestinations.TASK_FORM_ROUTE,
+    FinanceDestinations.WITHDRAWAL,
+    FinanceDestinations.ACCOUNT_FORM_ROUTE,
+    FinanceDestinations.CATEGORY_FORM_ROUTE,
+    FinanceDestinations.TRANSACTION_FORM_ROUTE,
+    FinanceDestinations.PAYMENT_FORM_ROUTE,
+    NotesDestinations.NOTE_EDITOR_ROUTE,
+    SearchDestinations.ROUTE -> NavTransitionType.Modal
+
+    AcademicDestinations.TASKS,
+    AcademicDestinations.COURSE_DETAIL_ROUTE,
+    FinanceDestinations.SUMMARY,
+    FinanceDestinations.CALENDAR,
+    FinanceDestinations.ACCOUNT_DETAIL_ROUTE,
+    FinanceDestinations.CATEGORIES -> NavTransitionType.Detail
+
+    else -> NavTransitionType.Fade
+}
+
+private fun navEnterTransition(
+    type: NavTransitionType,
+    motion: MotionSpec
+): EnterTransition = when (type) {
+    NavTransitionType.Fade -> fadeIn(tween(motion.ms(MotionTokens.Short + 60)))
+    NavTransitionType.Modal -> if (motion.enabled) {
+        slideInVertically(
+            animationSpec = tween(300, easing = MotionEasing.EmphasizedDecelerate),
+            initialOffsetY = { it }
+        ) + fadeIn(tween(300))
+    } else {
+        fadeIn(tween(0))
+    }
+    NavTransitionType.Detail -> if (motion.enabled) {
+        slideInHorizontally(
+            animationSpec = tween(300, easing = MotionEasing.EmphasizedDecelerate),
+            initialOffsetX = { it / 6 }
+        ) + fadeIn(tween(300))
+    } else {
+        fadeIn(tween(0))
+    }
+}
+
+private fun navExitTransition(
+    type: NavTransitionType,
+    motion: MotionSpec
+): ExitTransition = when (type) {
+    NavTransitionType.Fade -> fadeOut(tween(motion.ms(MotionTokens.Short)))
+    NavTransitionType.Modal,
+    NavTransitionType.Detail -> fadeOut(tween(motion.ms(200)))
+}
+
+private fun navPopEnterTransition(
+    type: NavTransitionType,
+    motion: MotionSpec
+): EnterTransition = when (type) {
+    NavTransitionType.Fade -> fadeIn(tween(motion.ms(MotionTokens.Short + 60)))
+    NavTransitionType.Modal -> fadeIn(tween(motion.ms(200)))
+    NavTransitionType.Detail -> if (motion.enabled) {
+        slideInHorizontally(
+            animationSpec = tween(300, easing = MotionEasing.EmphasizedDecelerate),
+            initialOffsetX = { -it / 6 }
+        ) + fadeIn(tween(300))
+    } else {
+        fadeIn(tween(0))
+    }
+}
+
+private fun navPopExitTransition(
+    type: NavTransitionType,
+    motion: MotionSpec
+): ExitTransition = when (type) {
+    NavTransitionType.Fade -> fadeOut(tween(motion.ms(MotionTokens.Short)))
+    NavTransitionType.Modal -> if (motion.enabled) {
+        slideOutVertically(
+            animationSpec = tween(200, easing = MotionEasing.EmphasizedAccelerate),
+            targetOffsetY = { it }
+        ) + fadeOut(tween(200))
+    } else {
+        fadeOut(tween(0))
+    }
+    NavTransitionType.Detail -> if (motion.enabled) {
+        slideOutHorizontally(
+            animationSpec = tween(200, easing = MotionEasing.EmphasizedAccelerate),
+            targetOffsetX = { it / 6 }
+        ) + fadeOut(tween(200))
+    } else {
+        fadeOut(tween(0))
+    }
+}
 
 private fun NavGraphBuilder.academicGraph(
     navController: NavHostController,

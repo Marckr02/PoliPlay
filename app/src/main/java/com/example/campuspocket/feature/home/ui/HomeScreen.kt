@@ -33,20 +33,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,7 +56,6 @@ import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.PriorityBadge
 import com.example.campuspocket.core.designsystem.components.PrivacyToggleButton
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
-import com.example.campuspocket.core.designsystem.components.SearchPill
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
@@ -87,12 +80,12 @@ fun HomeScreen(
     state: HomeUiState = HomeUiState(),
     onOpenCourse: (Long) -> Unit = {},
     onOpenNotes: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
     onTogglePrivacy: () -> Unit = {},
     onAddExpense: () -> Unit = {},
     onAddTask: () -> Unit = {},
     onAddNote: () -> Unit = {},
     onToggleTaskCompleted: (Task, Boolean) -> Unit = { _, _ -> },
-    onSearchQueryChange: (String) -> Unit = {},
     showWhatsNew: Boolean = false,
     onWhatsNewDismiss: () -> Unit = {}
 ) {
@@ -104,8 +97,6 @@ fun HomeScreen(
             DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale.forLanguageTag("es"))
         ).replaceFirstChar { it.titlecase(Locale.forLanguageTag("es")) }
     }
-
-    var showSearchDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -135,7 +126,7 @@ fun HomeScreen(
             RoundIconButton(
                 icon = Icons.Filled.Search,
                 contentDescription = stringResource(R.string.search),
-                onClick = { showSearchDialog = true },
+                onClick = onOpenSearch,
                 size = 40.dp,
                 containerColor = ext.track,
                 contentColor = MaterialTheme.colorScheme.onSurface
@@ -337,109 +328,6 @@ fun HomeScreen(
                 }
             }
         }
-    }
-
-    // Diálogo de Búsqueda Global (Parte 4 #3)
-    if (showSearchDialog) {
-        CampusDialog(
-            onDismissRequest = {
-                showSearchDialog = false
-                onSearchQueryChange("")
-            },
-            title = stringResource(R.string.search),
-            confirmText = stringResource(R.string.ok),
-            onConfirm = {
-                showSearchDialog = false
-                onSearchQueryChange("")
-            },
-            showDismiss = false,
-            content = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SearchPill(
-                        value = state.searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        placeholder = stringResource(R.string.search)
-                    )
-
-                    val res = state.searchResults
-                    val hasResults = res.tasks.isNotEmpty() || res.notes.isNotEmpty() ||
-                        res.courses.isNotEmpty() || res.transactions.isNotEmpty()
-                    val totalResults = res.tasks.size + res.notes.size +
-                        res.courses.size + res.transactions.size
-
-                    if (state.searchQuery.isNotBlank() && !hasResults) {
-                        Text(
-                            text = stringResource(R.string.home_search_no_results, state.searchQuery),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-
-                    if (state.searchQuery.isNotBlank() && hasResults) {
-                        Text(
-                            text = pluralStringResource(
-                                R.plurals.home_search_result_count,
-                                totalResults,
-                                totalResults
-                            ),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.semantics {
-                                liveRegion = LiveRegionMode.Polite
-                            }
-                        )
-                    }
-
-                    if (res.tasks.isNotEmpty()) {
-                        Text(stringResource(R.string.home_search_tasks, res.tasks.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        res.tasks.forEach { task ->
-                            Text(text = stringResource(R.string.home_search_bullet, task.title), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                        }
-                    }
-
-                    if (res.notes.isNotEmpty()) {
-                        Text(stringResource(R.string.home_search_notes, res.notes.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        res.notes.forEach { note ->
-                            Text(
-                                text = stringResource(
-                                    R.string.home_search_bullet,
-                                    note.title.ifBlank { stringResource(R.string.notes_empty_title) }
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    if (res.courses.isNotEmpty()) {
-                        Text(stringResource(R.string.home_search_courses, res.courses.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        res.courses.forEach { course ->
-                            Text(text = stringResource(R.string.home_search_bullet, course.name), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                        }
-                    }
-
-                    if (res.transactions.isNotEmpty()) {
-                        Text(stringResource(R.string.home_search_transactions, res.transactions.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        res.transactions.forEach { tx ->
-                            Text(
-                                text = stringResource(
-                                    R.string.home_search_bullet,
-                                    "${tx.description.orEmpty()} (${Money.format(tx.amountCents)})"
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
-        )
     }
 
     // Aviso automático de novedades: una sola vez tras actualizar (v7 A5).
