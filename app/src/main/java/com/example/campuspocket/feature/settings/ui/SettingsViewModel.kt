@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.campuspocket.BuildConfig
 import com.example.campuspocket.core.backup.BackupImportException
 import com.example.campuspocket.core.backup.BackupImportIssue
 import com.example.campuspocket.core.backup.BackupManager
@@ -50,7 +51,8 @@ data class SettingsUiState(
     val pendingImport: Uri? = null,
     val importError: BackupImportIssue? = null,
     val exportDone: Boolean = false,
-    val importDone: Boolean = false
+    val importDone: Boolean = false,
+    val showWhatsNew: Boolean = false
 )
 
 @HiltViewModel
@@ -63,6 +65,20 @@ class SettingsViewModel @Inject constructor(
     @Named("io") private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
+    // ---- Novedades (What's new) ----
+    private val CURRENT_VERSION = BuildConfig.VERSION_NAME
+
+    private val lastSeenVersion: StateFlow<String?> = dataStore.data
+        .map { it[PreferenceKeys.LAST_SEEN_VERSION] }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val shouldShowWhatsNew: StateFlow<Boolean> = lastSeenVersion
+        .map { lastSeen ->
+            // Mostrar si es la primera vez (null) o si la versión cambió
+            lastSeen == null || lastSeen != CURRENT_VERSION
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     // ---- Respaldo ----
 
     val lastBackupAt: StateFlow<Long?> = dataStore.data
@@ -71,6 +87,25 @@ class SettingsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    private val _showWhatsNew = MutableStateFlow(false)
+    val showWhatsNew: StateFlow<Boolean> = _showWhatsNew.asStateFlow()
+
+    // Observar shouldShowWhatsNew y actualizar _showWhatsNew
+    init {
+        viewModelScope.launch {
+            shouldShowWhatsNew.collect { show ->
+                if (show) _showWhatsNew.value = true
+            }
+        }
+    }
+
+    fun markWhatsNewSeen() {
+        _showWhatsNew.value = false
+        viewModelScope.launch {
+            dataStore.edit { it[PreferenceKeys.LAST_SEEN_VERSION] = CURRENT_VERSION }
+        }
+    }
 
     fun suggestedFileName(): String = "campuspocket-${LocalDate.now()}.json"
 

@@ -38,6 +38,9 @@ class MainActivity : FragmentActivity() {
     /** Tarea a abrir cuando se entra desde una notificación (-1 = ninguna pendiente). */
     private val pendingTaskId = MutableStateFlow(-1L)
 
+    /** Ruta directa enviada desde un App Shortcut o desde un Intent ACTION_SEND. */
+    private val pendingRoute = MutableStateFlow<String?>(null)
+
     /** Único repositorio de preferencias: perfil local, módulos y tema. */
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
@@ -50,7 +53,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         // Revisión diaria de pagos programados a las 8:00.
         DailyPaymentReviewWorker.enqueueOnce(applicationContext)
-        consumeTaskExtra(intent)
+        consumeIntents(intent)
 
         setContent {
             // null = aún no llegó la primera lectura de DataStore (evita parpadeos).
@@ -76,6 +79,8 @@ class MainActivity : FragmentActivity() {
                                 preferences = prefs,
                                 pendingTaskId = pendingTaskId,
                                 onPendingTaskHandled = { pendingTaskId.value = -1L },
+                                pendingRoute = pendingRoute,
+                                onPendingRouteHandled = { pendingRoute.value = null },
                                 onToggleAmountsPrivacy = {
                                     lifecycleScope.launch {
                                         userPreferencesRepository.setHideAmounts(!prefs.hideAmounts)
@@ -97,7 +102,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        consumeTaskExtra(intent)
+        consumeIntents(intent)
     }
 
     override fun onResume() {
@@ -105,11 +110,24 @@ class MainActivity : FragmentActivity() {
         motionKeyHolder.refresh()
     }
 
-    private fun consumeTaskExtra(intent: Intent?) {
-        val taskId = intent?.getLongExtra(ReminderReceiver.EXTRA_TASK_ID, -1L) ?: -1L
+    private fun consumeIntents(intent: Intent?) {
+        if (intent == null) return
+        val taskId = intent.getLongExtra(ReminderReceiver.EXTRA_TASK_ID, -1L)
         if (taskId != -1L) {
             pendingTaskId.value = taskId
-            intent?.removeExtra(ReminderReceiver.EXTRA_TASK_ID)
+            intent.removeExtra(ReminderReceiver.EXTRA_TASK_ID)
+        }
+
+        val routeExtra = intent.getStringExtra("route")
+        if (!routeExtra.isNullOrBlank()) {
+            pendingRoute.value = routeExtra
+            intent.removeExtra("route")
+        } else if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            if (!sharedText.isNullOrBlank()) {
+                pendingRoute.value = "notes/editor"
+                intent.action = null
+            }
         }
     }
 }

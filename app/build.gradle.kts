@@ -9,6 +9,13 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Leer versión desde gradle.properties (SemVer 0.x)
+val appVersionName: String = providers.gradleProperty("VERSION_NAME").orElse("0.0.0").get()
+val appVersionCode: Int = appVersionName.substringBefore('-').split('.').let { parts ->
+    require(parts.size == 3) { "VERSION_NAME must be MAJOR.MINOR.PATCH" }
+    parts[0].toInt() * 10_000 + parts[1].toInt() * 100 + parts[2].toInt()  // 0.8.0 -> 800
+}
+
 android {
     namespace = "com.example.campuspocket"
     compileSdk = 37
@@ -17,8 +24,8 @@ android {
         applicationId = "com.example.campuspocket"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -39,7 +38,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +62,7 @@ import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusCheckbox
 import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusDatePickerDialog
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusSelectField
 import com.example.campuspocket.core.designsystem.components.CampusSelectItem
@@ -78,10 +77,7 @@ import com.example.campuspocket.feature.academic.domain.model.Priority
 import com.example.campuspocket.feature.academic.domain.model.RepeatRule
 import com.example.campuspocket.feature.academic.ui.TimePickerDialog
 import com.example.campuspocket.feature.academic.ui.TimeText
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
-import java.time.ZoneOffset
 import androidx.compose.ui.tooling.preview.Preview
 
 private val Priority.resourceString: Int
@@ -576,53 +572,21 @@ private fun TaskFormContent(
     }
 
     if (showDatePicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.date
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant()
-                .toEpochMilli()
-        )
-        CampusDialog(
-            onDismissRequest = { showDatePicker = false },
+        CampusDatePickerDialog(
             title = stringResource(R.string.task_due_date),
-            confirmText = stringResource(R.string.ok),
-            onConfirm = {
-                pickerState.selectedDateMillis?.let { millis ->
-                    onDateChange(
-                        Instant.ofEpochMilli(millis)
-                            .atZone(ZoneOffset.UTC)
-                            .toLocalDate()
-                    )
-                }
-                showDatePicker = false
-            },
-            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
+            initialDate = state.date,
+            onDismiss = { showDatePicker = false },
+            onConfirm = { onDateChange(it); showDatePicker = false }
         )
     }
 
     if (showRepeatEndPicker) {
         val initialDate = state.repeatUntil ?: state.semesterEnd ?: state.date
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = initialDate
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant()
-                .toEpochMilli()
-        )
-        CampusDialog(
-            onDismissRequest = { showRepeatEndPicker = false },
+        CampusDatePickerDialog(
             title = stringResource(R.string.task_repeat_until),
-            confirmText = stringResource(R.string.ok),
-            onConfirm = {
-                pickerState.selectedDateMillis?.let { millis ->
-                    onRepeatUntilChange(
-                        Instant.ofEpochMilli(millis)
-                            .atZone(ZoneOffset.UTC)
-                            .toLocalDate()
-                    )
-                }
-                showRepeatEndPicker = false
-            },
-            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
+            initialDate = initialDate,
+            onDismiss = { showRepeatEndPicker = false },
+            onConfirm = { onRepeatUntilChange(it); showRepeatEndPicker = false }
         )
     }
 

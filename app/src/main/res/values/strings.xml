@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">CampusPocket</string>
 
+    <!-- App Shortcuts -->
+    <string name="shortcut_add_expense">Nuevo gasto</string>
+    <string name="shortcut_add_task">Nueva tarea</string>
+    <string name="shortcut_add_note">Nueva nota</string>
+
     <!-- Navigation -->
     <string name="nav_academic">Académico</string>
     <string name="nav_finance">Finanzas</string>
@@ -152,7 +157,7 @@
     <string name="day_sun_short">Dom</string>
     <string name="day_letter_monday">L</string>
     <string name="day_letter_tuesday">M</string>
-    <string name="day_letter_wednesday">X</string>
+    <string name="day_letter_wednesday">M</string>
     <string name="day_letter_thursday">J</string>
     <string name="day_letter_friday">V</string>
     <string name="day_letter_saturday">S</string>
@@ -282,6 +287,30 @@
     <string name="withdrawal_other">Otro</string>
     <string name="withdrawal_other_amount">Otro monto</string>
     <string name="withdrawal_confirm">Confirmar retiro</string>
+
+    <!-- Finance v6: Formulario de gasto -->
+    <string name="transaction_type_expense">Gasto</string>
+    <string name="transaction_type_income">Ingreso</string>
+    <string name="transaction_type_transfer">Transferencia</string>
+    <string name="transaction_refund_access">Reembolso</string>
+    <string name="transaction_type_guardar">Guardar</string>
+    <string name="transaction_keep_adding">Seguir añadiendo</string>
+    <string name="transaction_date_today">Hoy</string>
+    <string name="transaction_date_yesterday">Ayer</string>
+    <string name="transaction_date_choose">Elegir fecha</string>
+    <string name="transaction_add_note">+ Nota</string>
+    <string name="transaction_impact_below">Tras este gasto: %1$s gastado · esperado %2$s</string>
+    <string name="transaction_impact_transfer">Efectivo quedará en %1$s</string>
+    <string name="transaction_category_more">Más</string>
+    <string name="transaction_category_create">Crear categoría «%1$s»</string>
+    <string name="transaction_category_suggested">sugerida</string>
+    <string name="transaction_account_balance">%1$s · %2$s</string>
+    <string name="transaction_more_accounts">Más cuentas</string>
+    <string name="keypad_save">Guardar</string>
+    <string name="keypad_backspace_desc">Borrar dígito</string>
+    <string name="keypad_clear_all_desc">Mantén pulsado para borrar todo</string>
+    <string name="keypad_digit_desc">%1$d</string>
+    <string name="keypad_add_desc">Sumar %1$s</string>
     <string name="withdrawal_after_title">DESPUÉS DEL RETIRO</string>
     <string name="withdrawal_savings_label">Ahorros</string>
     <string name="withdrawal_cash_label">Efectivo</string>
@@ -374,6 +403,11 @@
     <string name="settings_backup_reminder">Han pasado más de 30 días desde tu último respaldo.</string>
     <string name="settings_active_semester">Semestre activo</string>
     <string name="settings_about">Acerca de</string>
+    <string name="settings_version_code">Código %1$d</string>
+    <string name="settings_build_info">Compilación %1$s · %2$s</string>
+    <string name="settings_whats_new">Novedades de esta versión</string>
+    <string name="settings_open_source_licenses">Licencias de código abierto</string>
+    <string name="settings_whats_new_dialog_title">Novedades de la versión %1$s</string>
 
     <!-- Notifications -->
     <string name="notification_task_reminder">Recordatorio de tarea</string>

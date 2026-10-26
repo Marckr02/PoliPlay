@@ -60,11 +60,7 @@ fun CalendarScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val locale = Locale.forLanguageTag("es")
-    val weekdayLabels = DayOfWeek.entries.map { day ->
-        day.getDisplayName(TextStyle.SHORT, locale)
-            .take(2)
-            .replaceFirstChar { it.uppercase(locale) }
-    }
+    val weekdayLabels = listOf("L", "M", "M", "J", "V", "S", "D")
     val monthLabel = state.month.month.getDisplayName(TextStyle.FULL, locale)
         .replaceFirstChar { it.uppercase(locale) } + " " + state.month.year
 

@@ -115,6 +115,8 @@ fun CampusNavHost(
     modifier: Modifier = Modifier,
     pendingTaskId: StateFlow<Long> = remember { MutableStateFlow(-1L) },
     onPendingTaskHandled: () -> Unit = {},
+    pendingRoute: StateFlow<String?> = remember { MutableStateFlow(null) },
+    onPendingRouteHandled: () -> Unit = {},
     onToggleAmountsPrivacy: () -> Unit = {}
 ) {
     val navController = rememberNavController()
@@ -147,6 +149,16 @@ fun CampusNavHost(
                 navController.navigate(AcademicDestinations.taskForm(pendingTask))
             }
             onPendingTaskHandled()
+        }
+    }
+
+    // Deep link desde un acceso directo (App Shortcut) o Intent ACTION_SEND
+    val pendingRouteValue by pendingRoute.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingRouteValue) {
+        val target = pendingRouteValue
+        if (!target.isNullOrBlank()) {
+            navController.navigate(target)
+            onPendingRouteHandled()
         }
     }
 

@@ -23,11 +23,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,6 +79,8 @@ fun SettingsScreen(
     val userPreferences by viewModel.userPreferences.collectAsStateWithLifecycle()
     val activeSemester by viewModel.activeSemesterName.collectAsStateWithLifecycle()
     val semesters by viewModel.semesters.collectAsStateWithLifecycle()
+
+    val showWhatsNew by viewModel.showWhatsNew.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     var showExportWarning by remember { mutableStateOf(false) }
@@ -402,16 +407,95 @@ fun SettingsScreen(
         // ---- Acerca de ----
         SettingsSectionCard(title = stringResource(R.string.settings_about)) {
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
+
+            // Versión con código: "Versión 0.8.0 (800)"
             Text(
-                text = stringResource(R.string.settings_version) + ": " + BuildConfig.VERSION_NAME,
+                text = stringResource(R.string.settings_version) + ": ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // Info de compilación: "Compilación dev · 25 oct 2026"
+            Text(
+                text = stringResource(R.string.settings_build_info, "dev", "—"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Último respaldo
             Text(
                 text = stringResource(R.string.settings_last_backup) + ": " +
                     (lastBackupAt?.let { DATE_FMT.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())) } ?: stringResource(R.string.never)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            // Novedades de esta versión
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.markWhatsNewSeen() }
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.settings_whats_new), style = MaterialTheme.typography.bodyMedium)
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Licencias de código abierto (placeholder para futura implementación con oss-licenses)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { /* TODO: abrir licencias */ }
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.settings_open_source_licenses), style = MaterialTheme.typography.bodyMedium)
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        // Diálogo "Novedades de esta versión"
+        if (showWhatsNew) {
+            CampusDialog(
+                onDismissRequest = { viewModel.markWhatsNewSeen() },
+                title = stringResource(R.string.settings_whats_new_dialog_title, BuildConfig.VERSION_NAME),
+                message = "",
+                confirmText = stringResource(R.string.ok),
+                onConfirm = { viewModel.markWhatsNewSeen() },
+                content = {
+                    Box(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            getReleaseNotes(BuildConfig.VERSION_NAME)?.let { annotated ->
+                                androidx.compose.foundation.text.BasicText(
+                                    text = annotated,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
             )
         }
     }
@@ -445,5 +529,25 @@ private fun ToggleRow(
             )
         }
         detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+    }
+}
+
+/**
+ * Obtiene las notas de versión como [AnnotatedString] desde `release_notes.xml`.
+ * La clave sigue el patrón `release_notes_0_8_0` (versión con guiones bajos).
+ */
+@Composable
+private fun getReleaseNotes(version: String): AnnotatedString? {
+    return when (version) {
+        "0.8.0" -> AnnotatedString(stringResource(R.string.release_notes_0_8_0))
+        "0.7.0" -> AnnotatedString(stringResource(R.string.release_notes_0_7_0))
+        "0.6.0" -> AnnotatedString(stringResource(R.string.release_notes_0_6_0))
+        "0.5.0" -> AnnotatedString(stringResource(R.string.release_notes_0_5_0))
+        "0.4.1" -> AnnotatedString(stringResource(R.string.release_notes_0_4_1))
+        "0.4.0" -> AnnotatedString(stringResource(R.string.release_notes_0_4_0))
+        "0.3.0" -> AnnotatedString(stringResource(R.string.release_notes_0_3_0))
+        "0.2.0" -> AnnotatedString(stringResource(R.string.release_notes_0_2_0))
+        "0.1.0" -> AnnotatedString(stringResource(R.string.release_notes_0_1_0))
+        else -> null
     }
 }

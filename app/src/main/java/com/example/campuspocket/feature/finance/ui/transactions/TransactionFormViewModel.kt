@@ -49,7 +49,11 @@ data class TransactionFormUiState(
     val usesLastCategory: Boolean = false,
     /** Feedback de plantillas; el id evita repetir el snackbar al recomponer. */
     val templateFeedback: TemplateFeedback? = null,
-    val templateFeedbackId: Long = 0L
+    val templateFeedbackId: Long = 0L,
+    /** v6: muestra el campo de descripción (expandible con chip + Nota). */
+    val showDescription: Boolean = false,
+    /** v6: modo "Seguir añadiendo" - limpia monto pero conserva cuenta/categoría/fecha. */
+    val keepAdding: Boolean = false
 ) {
     val isEditing: Boolean get() = transactionId != null
 
@@ -267,6 +271,14 @@ class TransactionFormViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(date = date)
     }
 
+    fun onToggleDescription() {
+        _uiState.value = _uiState.value.copy(showDescription = !_uiState.value.showDescription)
+    }
+
+    fun onToggleKeepAdding(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(keepAdding = enabled)
+    }
+
     fun save() {
         val state = _uiState.value
         if (state.amountCents <= 0) {
@@ -293,7 +305,17 @@ class TransactionFormViewModel @Inject constructor(
             }
             if (state.isEditing) financeRepository.updateTransaction(candidate)
             else financeRepository.insertTransaction(candidate)
-            _uiState.value = _uiState.value.copy(saved = true)
+            
+            // v6: modo "Seguir añadiendo" - limpia monto pero conserva cuenta/categoría/fecha
+            if (state.keepAdding && !state.isEditing) {
+                _uiState.value = state.copy(
+                    amountCents = 0,
+                    saved = true,
+                    error = null
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(saved = true)
+            }
         }
     }
 

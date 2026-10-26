@@ -39,6 +39,7 @@ fun HomeRoute(
         onAddExpense = onAddExpense,
         onAddTask = onAddTask,
         onAddNote = onAddNote,
-        onToggleTaskCompleted = { task, done -> viewModel.setTaskCompleted(task, done) }
+        onToggleTaskCompleted = { task, done -> viewModel.setTaskCompleted(task, done) },
+        onSearchQueryChange = { query -> viewModel.onSearchQueryChange(query) }
     )
 }

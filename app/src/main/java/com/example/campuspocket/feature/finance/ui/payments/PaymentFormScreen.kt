@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -22,7 +21,6 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.CampusButton
+import com.example.campuspocket.core.designsystem.components.CampusDatePickerDialog
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusSelectField
 import com.example.campuspocket.core.designsystem.components.CampusSelectItem
@@ -64,10 +63,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
@@ -257,20 +253,11 @@ fun PaymentFormScreen(
     }
 
     if (showDatePicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.nextDueDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        )
-        CampusDialog(
-            onDismissRequest = { showDatePicker = false },
+        CampusDatePickerDialog(
             title = stringResource(R.string.scheduled_payment_next_due),
-            confirmText = stringResource(R.string.ok),
-            onConfirm = {
-                pickerState.selectedDateMillis?.let { ms ->
-                    viewModel.onNextDueDateChange(Instant.ofEpochMilli(ms).atZone(ZoneOffset.UTC).toLocalDate())
-                }
-                showDatePicker = false
-            },
-            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
+            initialDate = state.nextDueDate,
+            onDismiss = { showDatePicker = false },
+            onConfirm = { viewModel.onNextDueDateChange(it); showDatePicker = false }
         )
     }
 }

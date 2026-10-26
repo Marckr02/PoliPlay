@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,26 +32,30 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusSectionHeader
 import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.PriorityBadge
 import com.example.campuspocket.core.designsystem.components.PrivacyToggleButton
+import com.example.campuspocket.core.designsystem.components.RoundIconButton
+import com.example.campuspocket.core.designsystem.components.SearchPill
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
@@ -63,8 +68,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Inicio bento: saludo, barra de acciones rápidas, próxima clase, presupuesto
- * diario, tareas urgentes y notas recientes.
+ * Inicio bento: saludo, búsqueda global, barra de acciones rápidas, próxima clase,
+ * presupuesto diario, tareas urgentes y notas recientes.
  */
 @Composable
 fun HomeScreen(
@@ -79,7 +84,8 @@ fun HomeScreen(
     onAddExpense: () -> Unit = {},
     onAddTask: () -> Unit = {},
     onAddNote: () -> Unit = {},
-    onToggleTaskCompleted: (Task, Boolean) -> Unit = { _, _ -> }
+    onToggleTaskCompleted: (Task, Boolean) -> Unit = { _, _ -> },
+    onSearchQueryChange: (String) -> Unit = {}
 ) {
     val activeModules = CampusModule.entries.filter { preferences.isModuleEnabled(it) }
     val displayName = preferences.displayName.ifBlank { null }
@@ -89,6 +95,8 @@ fun HomeScreen(
             DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale.forLanguageTag("es"))
         ).replaceFirstChar { it.titlecase(Locale.forLanguageTag("es")) }
     }
+
+    var showSearchDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -114,6 +122,15 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+            RoundIconButton(
+                icon = Icons.Filled.Search,
+                contentDescription = stringResource(R.string.search),
+                onClick = { showSearchDialog = true },
+                size = 40.dp,
+                containerColor = ext.track,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.width(4.dp))
             PrivacyToggleButton(onToggle = onTogglePrivacy)
             Spacer(Modifier.width(4.dp))
             HomeAvatar(
@@ -310,6 +327,78 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    // Diálogo de Búsqueda Global (Parte 4 #3)
+    if (showSearchDialog) {
+        CampusDialog(
+            onDismissRequest = {
+                showSearchDialog = false
+                onSearchQueryChange("")
+            },
+            title = stringResource(R.string.search),
+            confirmText = stringResource(R.string.ok),
+            onConfirm = {
+                showSearchDialog = false
+                onSearchQueryChange("")
+            },
+            showDismiss = false,
+            content = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SearchPill(
+                        value = state.searchQuery,
+                        onValueChange = onSearchQueryChange,
+                        placeholder = stringResource(R.string.search)
+                    )
+
+                    val res = state.searchResults
+                    val hasResults = res.tasks.isNotEmpty() || res.notes.isNotEmpty() ||
+                        res.courses.isNotEmpty() || res.transactions.isNotEmpty()
+
+                    if (state.searchQuery.isNotBlank() && !hasResults) {
+                        Text(
+                            text = "Sin resultados para «${state.searchQuery}»",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+
+                    if (res.tasks.isNotEmpty()) {
+                        Text("Tareas (${res.tasks.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        res.tasks.forEach { task ->
+                            Text(text = "• ${task.title}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+
+                    if (res.notes.isNotEmpty()) {
+                        Text("Notas (${res.notes.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        res.notes.forEach { note ->
+                            Text(text = "• ${note.title.ifBlank { "Sin título" }}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+
+                    if (res.courses.isNotEmpty()) {
+                        Text("Materias (${res.courses.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        res.courses.forEach { course ->
+                            Text(text = "• ${course.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+
+                    if (res.transactions.isNotEmpty()) {
+                        Text("Movimientos (${res.transactions.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        res.transactions.forEach { tx ->
+                            Text(text = "• ${tx.description.orEmpty()} (${Money.format(tx.amountCents)})", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 

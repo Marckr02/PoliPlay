@@ -19,6 +19,7 @@ import com.example.campuspocket.feature.notes.domain.repository.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -49,6 +50,13 @@ data class HomeClass(
     val endLabel: String
 )
 
+data class GlobalSearchResults(
+    val tasks: List<Task> = emptyList(),
+    val notes: List<NoteEntity> = emptyList(),
+    val courses: List<Course> = emptyList(),
+    val transactions: List<Transaction> = emptyList()
+)
+
 /** Estado de solo lectura que alimenta Inicio. */
 data class HomeUiState(
     val today: LocalDate = LocalDate.now(),
@@ -61,6 +69,8 @@ data class HomeUiState(
     val monthlySpentCents: Long = 0,
     val monthlyRemainingCents: Long? = null,
     val recentNotes: List<NoteEntity> = emptyList(),
+    val searchQuery: String = "",
+    val searchResults: GlobalSearchResults = GlobalSearchResults(),
     val isLoading: Boolean = true
 )
 
@@ -76,6 +86,8 @@ class HomeViewModel @Inject constructor(
     noteRepository: NoteRepository,
     private val clock: Clock
 ) : ViewModel() {
+
+    private val searchQuery = MutableStateFlow("")
 
     private val todayFlow: Flow<LocalDate> = flow {
         while (true) {
@@ -124,7 +136,8 @@ class HomeViewModel @Inject constructor(
         HomeFinance(
             monthlyBudgetCents = monthlyBudgetCents,
             monthlySpentCents = monthlySpentCents,
-            monthlyRemainingCents = monthlyBudgetCents?.minus(monthlySpentCents)
+            monthlyRemainingCents = monthlyBudgetCents?.minus(monthlySpentCents),
+            transactions = transactions
         )
     }
 
@@ -133,14 +146,38 @@ class HomeViewModel @Inject constructor(
         taskRepository.observePending(),
         noteRepository.observeAllNotes(),
         financeFlow,
-        todayFlow
-    ) { courses, tasks, notes, finance, today ->
+        todayFlow,
+        searchQuery
+    ) { array ->
+        @Suppress("UNCHECKED_CAST")
+        val courses = array[0] as List<Course>
+        @Suppress("UNCHECKED_CAST")
+        val tasks = array[1] as List<Task>
+        @Suppress("UNCHECKED_CAST")
+        val notes = array[2] as List<NoteEntity>
+        val finance = array[3] as HomeFinance
+        val today = array[4] as LocalDate
+        val query = array[5] as String
+
         val classes = classesFor(courses, today)
         val now = LocalTime.now(clock)
         val nextIndex = classes.indexOfFirst { it.end.isAfter(now) }
         val next = classes.getOrNull(nextIndex)?.resolve(now)
         val later = if (nextIndex >= 0) classes.getOrNull(nextIndex + 1)?.resolve(now) else null
         val zone = ZoneId.systemDefault()
+
+        val q = query.trim()
+        val searchResults = if (q.isBlank()) {
+            GlobalSearchResults()
+        } else {
+            GlobalSearchResults(
+                tasks = tasks.filter { it.title.contains(q, ignoreCase = true) },
+                notes = notes.filter { it.title.contains(q, ignoreCase = true) || it.content.contains(q, ignoreCase = true) },
+                courses = courses.filter { it.name.contains(q, ignoreCase = true) || it.code.contains(q, ignoreCase = true) },
+                transactions = finance.transactions.filter { it.description?.contains(q, ignoreCase = true) == true }
+            )
+        }
+
         HomeUiState(
             today = today,
             nextClass = next,
@@ -156,6 +193,8 @@ class HomeViewModel @Inject constructor(
             recentNotes = notes
                 .sortedWith(compareByDescending<NoteEntity> { it.pinned }.thenByDescending { it.updatedAt })
                 .take(2),
+            searchQuery = query,
+            searchResults = searchResults,
             isLoading = false
         )
     }.stateIn(
@@ -163,6 +202,10 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeUiState()
     )
+
+    fun onSearchQueryChange(query: String) {
+        searchQuery.value = query
+    }
 
     fun setTaskCompleted(task: Task, done: Boolean) {
         viewModelScope.launch {
@@ -214,6 +257,7 @@ class HomeViewModel @Inject constructor(
     private data class HomeFinance(
         val monthlyBudgetCents: Long?,
         val monthlySpentCents: Long,
-        val monthlyRemainingCents: Long?
+        val monthlyRemainingCents: Long?,
+        val transactions: List<Transaction>
     )
 }

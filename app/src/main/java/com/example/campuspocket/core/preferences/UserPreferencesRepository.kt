@@ -39,6 +39,9 @@ object PreferenceKeys {
     val CHANNEL_BUDGETS = booleanPreferencesKey("channel_budgets")
     val LOCK_ENABLED = booleanPreferencesKey("lock_enabled")
     val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
+
+    // Novedades: última versión vista por el usuario (string "0.8.0")
+    val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
 }
 
 /** Módulos funcionales de la app; activables por separado sin borrar datos. */
