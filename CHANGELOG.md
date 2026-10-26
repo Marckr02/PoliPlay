@@ -3,6 +3,27 @@
 Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
 - `0.MENOR.PARCHE` — `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
 
+## [0.9.0] — 2026-10-26
+Commit: ver etiqueta `v0.9.0`
+
+### Añadido
+- Formulario de movimiento rediseñado en una sola pantalla: monto grande, teclado fijo con "Guardar" integrado y sin desplazamiento para guardar.
+- Chips de categoría (5 visibles + "Más") con búsqueda y creación de categorías sin salir del formulario.
+- Chips de cuenta con saldo y hoja de selección; chips de fecha Hoy / Ayer / Elegir fecha.
+- Línea de impacto para gastos: compara el gasto del mes, incluido el monto en curso, con el presupuesto. En movimientos nuevos, el resto de tipos muestra cómo quedará el saldo de la cuenta.
+- Categoría sugerida según la franja horaria y el historial de los últimos 60 días.
+- Campo de nota opcional ("+ Nota") con sugerencias de descripciones recientes.
+
+### Cambiado
+- Las plantillas de movimientos recientes, "Guardar como plantilla" y "Eliminar" siguen disponibles en el nuevo diseño; el reembolso conserva el desplegable del gasto original.
+- "Seguir añadiendo" ahora vive en el propio formulario y permite deshacer el último guardado.
+- Versión 0.9.0 (versionCode 900).
+
+### Corregido
+- La línea de impacto no duplica el movimiento al editar ni cuenta gastos de otros meses; solo se muestra para gastos del mes en curso.
+
+---
+
 ## [0.8.1] — 2026-10-26
 Commit: ver etiqueta `v0.8.1`
 

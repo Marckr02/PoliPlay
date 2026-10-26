@@ -312,7 +312,37 @@
     <string name="keypad_digit_desc">%1$d</string>
     <string name="keypad_add_desc">Sumar %1$s</string>
     <string name="transaction_saved_undo">Gasto guardado</string>
+    <string name="transaction_saved_undo_other">Movimiento guardado</string>
     <string name="undo">Deshacer</string>
+    <string name="transaction_title_new_expense">Nuevo gasto</string>
+    <string name="transaction_title_edit_expense">Editar gasto</string>
+    <string name="transaction_title_new_income">Nuevo ingreso</string>
+    <string name="transaction_title_edit_income">Editar ingreso</string>
+    <string name="transaction_title_new_transfer">Nueva transferencia</string>
+    <string name="transaction_title_edit_transfer">Editar transferencia</string>
+    <string name="transaction_title_new_refund">Nuevo reembolso</string>
+    <string name="transaction_title_edit_refund">Editar reembolso</string>
+    <string name="transaction_account_after">%1$s quedará en %2$s</string>
+    <string name="transaction_category_title">Categoría</string>
+    <string name="transaction_category_search">Buscar categoría</string>
+    <string name="transaction_categories_empty">No hay categorías que coincidan.</string>
+    <string name="transaction_account_title">Cuenta</string>
+    <string name="transaction_accounts_empty">No hay cuentas disponibles.</string>
+    <string name="transaction_description_suggestions">Usadas antes</string>
+    <string name="keypad_double_zero_desc">Doble cero</string>
+    <string name="keypad_triple_zero_desc">Triple cero</string>
+    <string-array name="keypad_digit_words">
+        <item>cero</item>
+        <item>uno</item>
+        <item>dos</item>
+        <item>tres</item>
+        <item>cuatro</item>
+        <item>cinco</item>
+        <item>seis</item>
+        <item>siete</item>
+        <item>ocho</item>
+        <item>nueve</item>
+    </string-array>
     <string name="withdrawal_after_title">DESPUÉS DEL RETIRO</string>
     <string name="withdrawal_savings_label">Ahorros</string>
     <string name="withdrawal_cash_label">Efectivo</string>

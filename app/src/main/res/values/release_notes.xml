@@ -5,10 +5,10 @@
          Se actualiza en cada lanzamiento; el historial completo está en CHANGELOG.md. -->
 
     <string-array name="release_notes_current">
-        <item>El selector de fecha ya muestra el domingo al editar tareas, movimientos y pagos.</item>
-        <item>El formulario de gasto incluye un interruptor "Seguir añadiendo": al guardar, limpia el monto pero conserva cuenta, categoría y fecha.</item>
-        <item>Ajustes muestra la versión y la compilación reales (commit y fecha).</item>
-        <item>Las novedades aparecen una sola vez tras actualizar, al arrancar la app.</item>
-        <item>Si eliges un PDF en la bienvenida, la importación del horario se abre al terminar.</item>
+        <item>El formulario de movimiento se ha rediseñado: todo cabe en una pantalla y el teclado queda siempre a la vista para guardar más rápido.</item>
+        <item>Elige la categoría con un toque; si no existe, créala desde el mismo formulario.</item>
+        <item>Las cuentas muestran su saldo y puedes elegir Hoy, Ayer u otra fecha con un toque.</item>
+        <item>Al escribir un gasto verás cómo queda el mes frente a tu presupuesto; en los demás movimientos, cómo quedará la cuenta.</item>
+        <item>La categoría se sugiere según la hora y tus últimos movimientos, y la nota es opcional.</item>
     </string-array>
 </resources>

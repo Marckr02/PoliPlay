@@ -352,7 +352,9 @@ fun CampusChip(
     modifier: Modifier = Modifier,
     leading: (@Composable () -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    onLongClickLabel: String? = null
+    onLongClickLabel: String? = null,
+    role: Role = Role.Tab,
+    semanticLabel: String? = null
 ) {
     val ext = MaterialTheme.extended
     val container by animateColorAsState(
@@ -370,12 +372,15 @@ fun CampusChip(
             .heightIn(min = 48.dp)
             .clip(PillShape)
             .background(container)
-            .semantics { this.selected = selected }
+            .semantics {
+                this.selected = selected
+                if (semanticLabel != null) contentDescription = semanticLabel
+            }
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
                 onLongClickLabel = onLongClickLabel,
-                role = Role.Tab
+                role = role
             )
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

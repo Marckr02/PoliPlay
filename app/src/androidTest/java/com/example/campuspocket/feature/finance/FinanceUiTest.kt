@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -45,6 +46,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -64,43 +66,116 @@ class FinanceUiTest {
     fun crearGastoGuardaEnElRepositorio() {
         val repo = FakeFinanceRepository(listOf(account), listOf(category))
         var done = false
-        val vm = TransactionFormViewModel(
-            SavedStateHandle(
-                mapOf(
-                    FinanceDestinations.TRANSACTION_TYPE_ARG to TransactionType.EXPENSE.name,
-                    FinanceDestinations.TRANSACTION_ID_ARG to -1L
-                )
-            ),
-            repo
-        )
+        val vm = formViewModel(repo)
         // Cuenta y categoría ya elegidas: este test se centra en el teclado y el guardado.
         vm.onAccountChange(1L)
         vm.onCategoryChange(1L)
 
-        composeRule.setContent {
-            CampusTheme {
-                CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
-                    TransactionFormScreen(
-                        onDone = { done = true },
-                        viewModel = vm
-                    )
-                }
-            }
-        }
+        setFormContent(vm) { done = true }
 
         // Monto con el teclado en pantalla: 4,50 (450 centavos).
         // El teclado es de cajero: cada dígito entra por la derecha.
-        listOf("4", "5", "0").forEach { key ->
-            composeRule.onNodeWithText(key).performClick()
+        listOf("cuatro", "cinco", "cero").forEach { key ->
+            composeRule.onNodeWithContentDescription(key).performClick()
         }
         // Guardar
-        composeRule.onNodeWithText("Guardar").performClick()
+        composeRule.onNodeWithContentDescription("Guardar").performClick()
 
         composeRule.waitUntil(5_000) { done }
         val saved = repo.insertedTransactions.single()
         assertEquals(450L, saved.amountCents)
         assertEquals(1L, saved.accountId)
         assertEquals(TransactionType.EXPENSE, saved.type)
+    }
+
+    @Test
+    fun elegirCategoriaConUnToqueLaSelecciona() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+        val vm = formViewModel(repo)
+        setFormContent(vm)
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Comida")).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Comida").performClick()
+
+        assertEquals(1L, vm.uiState.value.categoryId)
+    }
+
+    @Test
+    fun elegirAyerActualizaLaFecha() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+        val vm = formViewModel(repo)
+        setFormContent(vm)
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(hasText("Ayer")).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Ayer").performClick()
+
+        assertEquals(LocalDate.now().minusDays(1), vm.uiState.value.date)
+    }
+
+    @Test
+    fun laLineaDeImpactoApareceConPresupuesto() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+        repo.monthlyBudgetsFlow.value = listOf(
+            com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity(
+                yearMonth = YearMonth.now().toString(),
+                amountCents = 100_000
+            )
+        )
+        val vm = formViewModel(repo)
+        setFormContent(vm)
+
+        listOf("uno", "cero").forEach { key ->
+            composeRule.onNodeWithContentDescription(key).performClick()
+        }
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(
+                hasText("Tras este gasto", substring = true)
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun sinPresupuestoNoHayLineaDeImpacto() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+        val vm = formViewModel(repo)
+        setFormContent(vm)
+
+        listOf("uno", "cero").forEach { key ->
+            composeRule.onNodeWithContentDescription(key).performClick()
+        }
+
+        assertTrue(
+            composeRule.onAllNodes(
+                hasText("Tras este gasto", substring = true)
+            ).fetchSemanticsNodes().isEmpty()
+        )
+    }
+
+    @Test
+    fun seguirAnadiendoConservaCategoriaYCuenta() {
+        val repo = FakeFinanceRepository(listOf(account), listOf(category))
+        val vm = formViewModel(repo)
+        vm.onAccountChange(1L)
+        vm.onCategoryChange(1L)
+        setFormContent(vm)
+
+        composeRule.onNodeWithText("Seguir añadiendo").performClick()
+        listOf("dos", "cero", "cero").forEach { key ->
+            composeRule.onNodeWithContentDescription(key).performClick()
+        }
+        composeRule.onNodeWithContentDescription("Guardar").performClick()
+
+        composeRule.waitUntil(5_000) { repo.insertedTransactions.size == 1 }
+        composeRule.waitUntil(5_000) { vm.uiState.value.savedCount == 1 }
+        assertEquals(200L, repo.insertedTransactions.single().amountCents)
+        assertEquals(0L, vm.uiState.value.amountCents)
+        assertEquals(1L, vm.uiState.value.categoryId)
+        assertEquals(1L, vm.uiState.value.accountId)
     }
 
     @Test
@@ -295,6 +370,37 @@ class FinanceUiTest {
             composeRule.onAllNodes(
                 hasText("Por encima del ritmo")
             ).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun formViewModel(
+        repo: FakeFinanceRepository,
+        type: TransactionType = TransactionType.EXPENSE
+    ): TransactionFormViewModel = TransactionFormViewModel(
+        SavedStateHandle(
+            mapOf(
+                FinanceDestinations.TRANSACTION_TYPE_ARG to type.name,
+                FinanceDestinations.TRANSACTION_ID_ARG to -1L
+            )
+        ),
+        repo,
+        ComputeAccountBalances(repo),
+        Clock.systemDefaultZone()
+    )
+
+    private fun setFormContent(
+        viewModel: TransactionFormViewModel,
+        onDone: () -> Unit = {}
+    ) {
+        composeRule.setContent {
+            CampusTheme {
+                CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
+                    TransactionFormScreen(
+                        onDone = onDone,
+                        viewModel = viewModel
+                    )
+                }
+            }
         }
     }
 

@@ -3,7 +3,9 @@ package com.example.campuspocket.feature.finance.ui.transactions
 import androidx.lifecycle.SavedStateHandle
 import com.example.campuspocket.feature.finance.FakeFinanceRepository
 import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
 import com.example.campuspocket.feature.finance.data.TransactionType
+import com.example.campuspocket.feature.finance.domain.ComputeAccountBalances
 import com.example.campuspocket.feature.finance.domain.TransactionError
 import com.example.campuspocket.feature.finance.testAccount
 import com.example.campuspocket.feature.finance.testCategory
@@ -16,6 +18,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,7 +26,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TransactionFormViewModelTest {
@@ -49,7 +55,8 @@ class TransactionFormViewModelTest {
     private fun viewModel(
         type: TransactionType,
         id: Long? = null,
-        repository: FakeFinanceRepository = FakeFinanceRepository(accounts, categories)
+        repository: FakeFinanceRepository = FakeFinanceRepository(accounts, categories),
+        clock: Clock = FIXED_CLOCK
     ) = TransactionFormViewModel(
         SavedStateHandle(
             mapOf(
@@ -57,7 +64,9 @@ class TransactionFormViewModelTest {
                 FinanceDestinations.TRANSACTION_ID_ARG to (id ?: -1L)
             )
         ),
-        repository
+        repository,
+        ComputeAccountBalances(repository),
+        clock
     )
 
     @Test
@@ -170,5 +179,105 @@ class TransactionFormViewModelTest {
         assertEquals(9L, updated.id)
         assertEquals(3_000L, updated.amountCents)
         assertEquals("nuevo", updated.description)
+    }
+
+    @Test
+    fun `sugiere la categoria habitual de la franja y no la ultima usada`() =
+        runTest(testDispatcher) {
+            val morning = Instant.parse("2026-10-20T09:00:00Z").toEpochMilli()
+            val later = Instant.parse("2026-10-25T15:00:00Z").toEpochMilli()
+            val expenseCategories = listOf(
+                testCategory(id = 1, name = "Comida", kind = CategoryKind.EXPENSE),
+                testCategory(id = 3, name = "Transporte", kind = CategoryKind.EXPENSE)
+            )
+            val history = listOf(
+                testExpense(id = 1, categoryId = 1, date = LocalDate.of(2026, 10, 20))
+                    .copy(createdAt = morning),
+                testExpense(id = 2, categoryId = 1, date = LocalDate.of(2026, 10, 21))
+                    .copy(createdAt = morning),
+                testExpense(id = 3, categoryId = 3, date = LocalDate.of(2026, 10, 25))
+                    .copy(createdAt = later)
+            )
+            val repo = FakeFinanceRepository(accounts, expenseCategories, history)
+
+            val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+            advanceUntilIdle()
+
+            assertEquals(1L, vm.uiState.value.categoryId)
+            assertFalse(vm.uiState.value.usesLastCategory)
+        }
+
+    @Test
+    fun `crear categoria desde el formulario la selecciona`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(accounts, categories)
+        val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+        advanceUntilIdle()
+
+        vm.createCategory("Café")
+        advanceUntilIdle()
+
+        val created = repo.observeActiveCategories().first().single { it.id == 3L }
+        assertEquals("Café", created.name)
+        assertEquals(CategoryKind.EXPENSE, created.kind)
+        assertEquals(3L, vm.uiState.value.categoryId)
+    }
+
+    @Test
+    fun `seguir anadiendo limpia el monto y deshacer borra el ultimo`() =
+        runTest(testDispatcher) {
+            val repo = FakeFinanceRepository(accounts, categories)
+            val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+            advanceUntilIdle()
+
+            vm.onToggleKeepAdding(true)
+            vm.onAmountChange("1234")
+            vm.onAccountChange(1)
+            vm.onCategoryChange(1)
+            vm.save()
+            advanceUntilIdle()
+
+            assertEquals(0L, vm.uiState.value.amountCents)
+            assertFalse(vm.uiState.value.saved)
+            assertEquals(1, vm.uiState.value.savedCount)
+            val insertedId = vm.uiState.value.lastInsertedTransactionId
+            assertEquals(1L, insertedId)
+            assertEquals(1, repo.insertedTransactions.size)
+
+            vm.deleteLastTransaction()
+            advanceUntilIdle()
+
+            assertEquals(listOf(insertedId), repo.deletedTransactions)
+            assertEquals(1, vm.uiState.value.savedCount)
+            assertNull(vm.uiState.value.lastInsertedTransactionId)
+        }
+
+    @Test
+    fun `la linea de impacto suma el monto al gasto del mes`() = runTest(testDispatcher) {
+        val existing = testExpense(
+            id = 1,
+            accountId = 1,
+            categoryId = 1,
+            amountCents = 25_000,
+            date = LocalDate.of(2026, 10, 5)
+        )
+        val repo = FakeFinanceRepository(accounts, categories, listOf(existing))
+        repo.upsertMonthlyBudget("2026-10", 100_000)
+        val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+        advanceUntilIdle()
+
+        vm.onAccountChange(1)
+        vm.onAmountChange("10000") // $100,00
+        advanceUntilIdle()
+
+        val pace = vm.monthlyImpact.value.pace
+        assertEquals(100_000L, pace?.budgetCents)
+        assertEquals(35_000L, pace?.spentCents)
+        assertEquals("Efectivo", vm.monthlyImpact.value.accountName)
+        assertEquals(-35_000L, vm.monthlyImpact.value.accountAfterCents)
+    }
+
+    private companion object {
+        val FIXED_CLOCK: Clock =
+            Clock.fixed(Instant.parse("2026-10-26T10:00:00Z"), ZoneOffset.UTC)
     }
 }

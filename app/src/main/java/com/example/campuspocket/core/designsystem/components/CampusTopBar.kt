@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +37,7 @@ fun CampusTopBar(
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     backContentDescription: String = stringResource(R.string.back),
+    backIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val ext = MaterialTheme.extended
@@ -55,7 +57,7 @@ fun CampusTopBar(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = backIcon,
                     contentDescription = backContentDescription,
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
