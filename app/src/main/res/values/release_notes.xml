@@ -3,6 +3,16 @@
     <!-- Notas de versión para el diálogo "Novedades" -->
     <!-- Formato: una cadena por versión, con viñetas HTML simples -->
 
+    <string name="release_notes_0_9_0">
+        <![CDATA[
+        <b>v0.9.0</b> — 26 oct 2026<br/>
+        • Formulario de gasto v6: chips de categoría/cuenta, date chips, línea de impacto, teclado fijo<br/>
+        • Chips de categoría (FlowRow, 5 + "Más"), chips de cuenta (2-3 con saldo)<br/>
+        • Date chips (Hoy/Ayer/Elegir), línea de impacto presupuesto, extras (+ Nota / Seguir añadiendo)<br/>
+        • Teclado fijo abajo con botón Guardar (ocupa 3 filas), haptics en teclas
+        ]]>
+    </string>
+
     <string name="release_notes_0_8_0">
         <![CDATA[
         <b>v0.8.0</b> — 25 oct 2026<br/>

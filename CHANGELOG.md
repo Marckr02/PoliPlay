@@ -5,17 +5,29 @@ Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
 
 ## [Sin publicar]
 ### Añadido
-- Arreglo del selector de fecha: domingo visible y seleccionable (`CampusDatePickerDialog`)
-- Prueba instrumentada `CampusDatePickerDialogTest` para validar domingo 25 oct 2026
-- Formulario de gasto v6 (en desarrollo)
-- Pantalla "Acerca de" en Ajustes con versión, commit y novedades
+- Formulario de gasto v6: chips de categoría/cuenta, date chips, línea de impacto, teclado fijo
+- Chips de categoría (FlowRow, 5 + "Más"), chips de cuenta (2-3 con saldo)
+- Date chips (Hoy/Ayer/Elegir), línea de impacto presupuesto, extras (+ Nota / Seguir añadiendo)
+- Teclado fijo abajo con botón Guardar (ocupa 3 filas), haptics en teclas
 
 ### Cambiado
-- `TaskFormScreen`, `TransactionFormScreen`, `PaymentFormScreen` usan `CampusDatePickerDialog`
-- Versión leída desde `gradle.properties` (`VERSION_NAME=0.8.0` → `versionCode=800`)
+- Versión leída desde `gradle.properties` (`VERSION_NAME=0.9.0` → `versionCode=900`)
 
 ### Eliminado
 - Lecturas duplicadas de `ANIMATOR_DURATION_SCALE` (unificado en `LocalMotion`)
+
+---
+
+## [0.9.0] — 2026-10-26
+Commit: `b12781d` (base)
+
+### Añadido
+- Formulario de gasto v6: chips de categoría (FlowRow, 5 + "Más"), chips de cuenta (2-3 con saldo)
+- Date chips (Hoy/Ayer/Elegir), línea de impacto presupuesto, extras (+ Nota / Seguir añadiendo)
+- Teclado fijo abajo con botón Guardar (ocupa 3 filas), haptics en teclas
+
+### Cambiado
+- Versión leída desde `gradle.properties` (`VERSION_NAME=0.9.0` → `versionCode=900`)
 
 ---
 
