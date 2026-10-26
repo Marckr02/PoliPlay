@@ -311,6 +311,8 @@
     <string name="keypad_clear_all_desc">Mantén pulsado para borrar todo</string>
     <string name="keypad_digit_desc">%1$d</string>
     <string name="keypad_add_desc">Sumar %1$s</string>
+    <string name="transaction_saved_undo">Gasto guardado</string>
+    <string name="undo">Deshacer</string>
     <string name="withdrawal_after_title">DESPUÉS DEL RETIRO</string>
     <string name="withdrawal_savings_label">Ahorros</string>
     <string name="withdrawal_cash_label">Efectivo</string>

@@ -14,7 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
+
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -22,7 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +44,7 @@ import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusDatePickerDialog
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
@@ -52,7 +53,6 @@ import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.KeypadAmountInput
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.TransactionTypeSelector
-import com.example.campuspocket.core.designsystem.components.campusDatePickerColors
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.navigation.LocalSnackbarHost
 import com.example.campuspocket.feature.finance.data.TransactionType
@@ -60,10 +60,10 @@ import com.example.campuspocket.feature.finance.domain.TransactionError
 import com.example.campuspocket.feature.finance.domain.model.Account
 import com.example.campuspocket.feature.finance.domain.model.TransactionTemplate
 import com.example.campuspocket.feature.finance.ui.accounts.transactionTypeLabelRes
-import java.time.Instant
+
 import java.time.LocalDate
-import java.time.ZoneId
-import java.time.ZoneOffset
+
+
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.tooling.preview.Preview
@@ -329,22 +329,11 @@ fun TransactionFormScreen(
     }
 
     if (showDatePicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        )
-        CampusDialog(
-            onDismissRequest = { showDatePicker = false },
+        CampusDatePickerDialog(
             title = stringResource(R.string.transaction_date),
-            confirmText = stringResource(R.string.ok),
-            onConfirm = {
-                pickerState.selectedDateMillis?.let { millis ->
-                    viewModel.onDateChange(
-                        Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                    )
-                }
-                showDatePicker = false
-            },
-            content = { DatePicker(state = pickerState, colors = campusDatePickerColors()) }
+            initialDate = state.date,
+            onDismiss = { showDatePicker = false },
+            onConfirm = { viewModel.onDateChange(it); showDatePicker = false }
         )
     }
 

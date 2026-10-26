@@ -53,7 +53,11 @@ data class TransactionFormUiState(
     /** v6: muestra el campo de descripción (expandible con chip + Nota). */
     val showDescription: Boolean = false,
     /** v6: modo "Seguir añadiendo" - limpia monto pero conserva cuenta/categoría/fecha. */
-    val keepAdding: Boolean = false
+    val keepAdding: Boolean = false,
+    /** Contador de guardados en modo "Seguir añadiendo" para disparar snackbar. */
+    val savedCount: Int = 0,
+    /** ID de la última transacción insertada (para deshacer en modo "Seguir añadiendo"). */
+    val lastInsertedTransactionId: Long? = null
 ) {
     val isEditing: Boolean get() = transactionId != null
 
@@ -198,7 +202,9 @@ class TransactionFormViewModel @Inject constructor(
         )
     }
 
-    /** Aplica monto, cuenta y categoría de la plantilla; conserva el tipo actual. */
+    /**
+     * Aplica monto, cuenta y categoría de la plantilla; conserva el tipo actual.
+     */
     fun applyTemplate(template: TransactionTemplate) {
         val state = _uiState.value
         if (state.type == TransactionType.TRANSFER || template.type != state.type) return
@@ -303,18 +309,26 @@ class TransactionFormViewModel @Inject constructor(
                 _uiState.value = state.copy(error = error)
                 return@launch
             }
-            if (state.isEditing) financeRepository.updateTransaction(candidate)
-            else financeRepository.insertTransaction(candidate)
-            
+            val insertedId = if (state.isEditing) {
+                financeRepository.updateTransaction(candidate)
+                state.transactionId
+            } else {
+                financeRepository.insertTransaction(candidate)
+            }
+
             // v6: modo "Seguir añadiendo" - limpia monto pero conserva cuenta/categoría/fecha
             if (state.keepAdding && !state.isEditing) {
                 _uiState.value = state.copy(
                     amountCents = 0,
-                    saved = true,
-                    error = null
+                    error = null,
+                    savedCount = state.savedCount + 1,
+                    lastInsertedTransactionId = insertedId
                 )
             } else {
-                _uiState.value = _uiState.value.copy(saved = true)
+                _uiState.value = _uiState.value.copy(
+                    saved = true,
+                    lastInsertedTransactionId = insertedId
+                )
             }
         }
     }
@@ -325,5 +339,20 @@ class TransactionFormViewModel @Inject constructor(
             financeRepository.deleteTransaction(id)
             _uiState.value = _uiState.value.copy(deleted = true)
         }
+    }
+
+    fun deleteLastTransaction() {
+        val id = _uiState.value.lastInsertedTransactionId ?: return
+        viewModelScope.launch {
+            financeRepository.deleteTransaction(id)
+            _uiState.value = _uiState.value.copy(
+                lastInsertedTransactionId = null,
+                savedCount = max(0, _uiState.value.savedCount - 1)
+            )
+        }
+    }
+
+    companion object {
+        fun max(a: Int, b: Int): Int = if (a > b) a else b
     }
 }
