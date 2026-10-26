@@ -40,16 +40,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.campuspocket.BuildConfig
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.CampusNumeral
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusSectionHeader
@@ -124,7 +128,8 @@ fun HomeScreen(
                     text = displayName?.let { stringResource(R.string.home_greeting_name, it) }
                         ?: stringResource(R.string.home_greeting_generic),
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.semantics { heading() }
                 )
             }
             RoundIconButton(
@@ -161,21 +166,21 @@ fun HomeScreen(
         ) {
             if (preferences.isModuleEnabled(CampusModule.FINANCE)) {
                 QuickActionButton(
-                    label = "+ Gasto",
+                    label = stringResource(R.string.home_quick_add_format, stringResource(R.string.home_quick_expense)),
                     onClick = onAddExpense,
                     modifier = Modifier.weight(1f)
                 )
             }
             if (preferences.isModuleEnabled(CampusModule.ACADEMIC)) {
                 QuickActionButton(
-                    label = "+ Tarea",
+                    label = stringResource(R.string.home_quick_add_format, stringResource(R.string.home_quick_task)),
                     onClick = onAddTask,
                     modifier = Modifier.weight(1f)
                 )
             }
             if (preferences.isModuleEnabled(CampusModule.NOTES)) {
                 QuickActionButton(
-                    label = "+ Nota",
+                    label = stringResource(R.string.home_quick_add_format, stringResource(R.string.home_quick_note)),
                     onClick = onAddNote,
                     modifier = Modifier.weight(1f)
                 )
@@ -197,7 +202,7 @@ fun HomeScreen(
         val showAcademic = preferences.isModuleEnabled(CampusModule.ACADEMIC)
         if (showFinance || showAcademic) {
             Row(
-                modifier = Modifier.fillMaxWidth().height(176.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 176.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (showFinance) {
@@ -225,7 +230,7 @@ fun HomeScreen(
         if (showAcademic && state.urgentTasks.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 CampusSectionHeader(
-                    title = "Tareas pendientes",
+                    title = stringResource(R.string.home_pending_tasks_title),
                     actionText = stringResource(R.string.home_see_all),
                     onAction = { onOpenModule(CampusModule.ACADEMIC) }
                 )
@@ -322,7 +327,7 @@ fun HomeScreen(
                                 }
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
+                                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -364,41 +369,72 @@ fun HomeScreen(
                     val res = state.searchResults
                     val hasResults = res.tasks.isNotEmpty() || res.notes.isNotEmpty() ||
                         res.courses.isNotEmpty() || res.transactions.isNotEmpty()
+                    val totalResults = res.tasks.size + res.notes.size +
+                        res.courses.size + res.transactions.size
 
                     if (state.searchQuery.isNotBlank() && !hasResults) {
                         Text(
-                            text = "Sin resultados para «${state.searchQuery}»",
+                            text = stringResource(R.string.home_search_no_results, state.searchQuery),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
 
+                    if (state.searchQuery.isNotBlank() && hasResults) {
+                        Text(
+                            text = pluralStringResource(
+                                R.plurals.home_search_result_count,
+                                totalResults,
+                                totalResults
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.semantics {
+                                liveRegion = LiveRegionMode.Polite
+                            }
+                        )
+                    }
+
                     if (res.tasks.isNotEmpty()) {
-                        Text("Tareas (${res.tasks.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.home_search_tasks, res.tasks.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         res.tasks.forEach { task ->
-                            Text(text = "• ${task.title}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = stringResource(R.string.home_search_bullet, task.title), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
 
                     if (res.notes.isNotEmpty()) {
-                        Text("Notas (${res.notes.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.home_search_notes, res.notes.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         res.notes.forEach { note ->
-                            Text(text = "• ${note.title.ifBlank { "Sin título" }}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                text = stringResource(
+                                    R.string.home_search_bullet,
+                                    note.title.ifBlank { stringResource(R.string.notes_empty_title) }
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
 
                     if (res.courses.isNotEmpty()) {
-                        Text("Materias (${res.courses.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.home_search_courses, res.courses.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         res.courses.forEach { course ->
-                            Text(text = "• ${course.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = stringResource(R.string.home_search_bullet, course.name), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
 
                     if (res.transactions.isNotEmpty()) {
-                        Text("Movimientos (${res.transactions.size})", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.home_search_transactions, res.transactions.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         res.transactions.forEach { tx ->
-                            Text(text = "• ${tx.description.orEmpty()} (${Money.format(tx.amountCents)})", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                text = stringResource(
+                                    R.string.home_search_bullet,
+                                    "${tx.description.orEmpty()} (${Money.format(tx.amountCents)})"
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                 }
@@ -442,7 +478,7 @@ private fun QuickActionButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(44.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.onSurface,
@@ -474,7 +510,7 @@ private fun HomeAvatar(displayName: String?, onClick: () -> Unit) {
             if (displayName.isNullOrBlank()) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = ext.onLavender,
                     modifier = Modifier.size(20.dp)
                 )
@@ -560,7 +596,7 @@ private fun NextClassCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.DateRange,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = ext.onInkMuted,
                         modifier = Modifier.size(15.dp)
                     )
@@ -575,7 +611,7 @@ private fun NextClassCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Filled.LocationOn,
-                            contentDescription = null,
+                            contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                             tint = ext.onInkMuted,
                             modifier = Modifier.size(15.dp)
                         )
@@ -644,7 +680,7 @@ private fun FinanceSummaryCard(
         if (monthlyRemainingCents != null) {
             MoneyText(
                 amountCents = monthlyRemainingCents,
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp),
+                style = MaterialTheme.typography.headlineMedium,
                 color = ext.onAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -652,7 +688,7 @@ private fun FinanceSummaryCard(
         } else {
             Text(
                 text = "—",
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp),
+                style = MaterialTheme.typography.headlineMedium,
                 color = ext.onAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -660,7 +696,7 @@ private fun FinanceSummaryCard(
         }
         if (pace != null) {
             Text(
-                text = "${Money.format(pace.perDayCents)} / día hoy",
+                text = stringResource(R.string.home_pace_per_day, Money.format(pace.perDayCents)),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = ext.onAccent,
                 maxLines = 1,
@@ -718,7 +754,7 @@ private fun TasksSummaryCard(
         Spacer(Modifier.height(6.dp))
         Text(
             text = pendingTasks.toString(),
-            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
+            style = CampusNumeral,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(

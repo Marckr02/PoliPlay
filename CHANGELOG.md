@@ -3,6 +3,25 @@
 Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
 - `0.MENOR.PARCHE` — `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
 
+## [0.9.1] — 2026-10-26
+Commit: ver etiqueta `v0.9.1`
+
+### Cambiado
+- Accesibilidad: los títulos de pantalla y de sección se anuncian como encabezados; las listas, pestañas, filas y enlaces exponen su rol y etiqueta de acción.
+- Los selectores de color de materias, cuentas y categorías se anuncian con el nombre del color, su estado de selección y rol de opción.
+- El editor de notas y los formularios anuncian sus cambios de estado y errores; la búsqueda de Inicio anuncia el número de resultados y los iconos decorativos quedan documentados.
+- El sistema de diseño incorpora tokens de tipografía para cifras, sobrelíneas y teclado, y un token de fondo atenuado compartido.
+- Las tarjetas de bienvenida y de módulos usan `BentoCard`; los enlaces usan `CampusTextButton`.
+- Los textos con altura fija pasan a altura mínima para que crezcan con el tamaño de fuente del sistema.
+- Los textos literales de Inicio se mueven a `strings.xml`, incluidos los plurales de resultados de búsqueda.
+- Versión 0.9.1 (versionCode 901).
+
+### Corregido
+- Los botones, chips y teclados conservan su área táctil mínima aunque el texto crezca.
+- Los nombres de color y los contadores de búsqueda respetan el idioma y el ajuste de fuente del sistema.
+
+---
+
 ## [0.9.0] — 2026-10-26
 Commit: ver etiqueta `v0.9.0`
 

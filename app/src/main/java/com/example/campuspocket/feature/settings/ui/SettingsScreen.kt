@@ -180,8 +180,7 @@ fun SettingsScreen(
                         )
                         SecondaryPillButton(
                             text = stringResource(R.string.done),
-                            onClick = { viewModel.dismissBackupBanner() },
-                            modifier = Modifier.height(48.dp)
+                            onClick = { viewModel.dismissBackupBanner() }
                         )
                     }
                 }
@@ -244,7 +243,7 @@ fun SettingsScreen(
                 ) {
                     Icon(
                         painter = painterResource(module.iconRes()),
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )

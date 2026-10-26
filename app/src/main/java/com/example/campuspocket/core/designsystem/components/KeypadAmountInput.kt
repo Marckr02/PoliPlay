@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,9 +35,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.CampusKeypadLabel
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.util.Haptics
@@ -198,7 +199,7 @@ fun TransactionKeypadPanel(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Check,
-                                contentDescription = null,
+                                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                                 tint = ext.onAccent,
                                 modifier = Modifier.height(24.dp)
                             )
@@ -230,7 +231,7 @@ private fun KeypadKey(
     val ext = MaterialTheme.extended
     Box(
         modifier = modifier
-            .height(48.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(ext.track)
             .semantics { contentDescription = description }
@@ -244,17 +245,14 @@ private fun KeypadKey(
         if (isBackspace) {
             Icon(
                 painter = painterResource(R.drawable.ic_backspace),
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = ext.onTrack,
                 modifier = Modifier.height(24.dp)
             )
         } else {
             Text(
                 text = label,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontSize = 20.sp,
-                    lineHeight = 22.sp
-                ),
+                style = CampusKeypadLabel,
                 color = ext.onTrack,
                 maxLines = 1
             )

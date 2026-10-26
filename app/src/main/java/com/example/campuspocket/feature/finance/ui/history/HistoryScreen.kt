@@ -40,6 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -49,6 +52,7 @@ import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusChip
+import com.example.campuspocket.core.designsystem.components.CampusTextButton
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.components.SearchPill
 import com.example.campuspocket.core.designsystem.components.TransactionRow
@@ -153,14 +157,13 @@ fun LazyListScope.historyItems(
     val canLoadPrevious = state.filters.startDate == null && state.filters.endDate == null
     if (!state.isLoading && canLoadPrevious) {
         item(key = "history_load_previous", contentType = "load_previous") {
-            TextButton(
+            CampusTextButton(
+                text = stringResource(R.string.history_load_previous),
                 onClick = viewModel::loadPreviousMonth,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-            ) {
-                Text(text = stringResource(R.string.history_load_previous))
-            }
+            )
         }
     }
 }
@@ -323,7 +326,8 @@ private fun DayGroupHeader(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.semantics { heading() }
         )
         Text(
             text = formatMoneyOrHiddenSigned(netCents),
@@ -355,7 +359,7 @@ private fun HistoryEmptyCard() {
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_wallet),
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = ext.onLavender,
                     modifier = Modifier.size(24.dp)
                 )
@@ -456,14 +460,14 @@ private fun DateFilterPill(
             .heightIn(min = 48.dp)
             .clip(PillShape)
             .background(ext.track)
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Icon(
             imageVector = Icons.Filled.DateRange,
-            contentDescription = null,
+            contentDescription = null, // decorativo: la píldora muestra la fecha seleccionada
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp)
         )
@@ -487,7 +491,7 @@ private fun <T> FilterPill(
                 .heightIn(min = 48.dp)
                 .clip(PillShape)
                 .background(ext.track)
-                .clickable { expanded = true }
+                .clickable(role = Role.Button) { expanded = true }
                 .padding(start = 12.dp, end = 8.dp, top = 7.dp, bottom = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -495,7 +499,7 @@ private fun <T> FilterPill(
             FilterPillText(label = label, value = selected)
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
+                contentDescription = null, // decorativo: el texto de la píldora ya describe el filtro
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp)
             )

@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.extended
 
@@ -85,7 +84,7 @@ fun CampusSnackbar(data: SnackbarData) {
     ) {
         Text(
             text = data.visuals.message,
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+            style = MaterialTheme.typography.bodyMedium,
             color = ext.onInk,
             modifier = Modifier.weight(1f)
         )
@@ -95,7 +94,6 @@ fun CampusSnackbar(data: SnackbarData) {
                     text = label,
                     color = ext.lime,
                     style = MaterialTheme.typography.labelLarge.copy(
-                        fontSize = 14.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                 )

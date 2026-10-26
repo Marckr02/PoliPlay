@@ -73,6 +73,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -81,7 +82,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.util.Haptics
@@ -159,7 +159,7 @@ fun HeroCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.DateRange,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = ext.onInkMuted,
                         modifier = Modifier.size(16.dp)
                     )
@@ -174,7 +174,7 @@ fun HeroCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Filled.LocationOn,
-                            contentDescription = null,
+                            contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                             tint = ext.onInkMuted,
                             modifier = Modifier.size(16.dp)
                         )
@@ -329,19 +329,19 @@ fun EmptyStateCard(
                 when (icon) {
                     is Int -> Icon(
                         painter = painterResource(id = icon),
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         modifier = Modifier.size(28.dp),
                         tint = ext.onLavender
                     )
                     is Painter -> Icon(
                         painter = icon,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         modifier = Modifier.size(28.dp),
                         tint = ext.onLavender
                     )
                     is ImageVector -> Icon(
                         imageVector = icon,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         modifier = Modifier.size(28.dp),
                         tint = ext.onLavender
                     )
@@ -529,7 +529,7 @@ fun ClassBlock(entry: WeekEntry, onClick: () -> Unit, modifier: Modifier = Modif
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Filled.LocationOn,
-                            contentDescription = null,
+                            contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(12.dp)
                         )
@@ -789,7 +789,7 @@ fun TaskItemCard(
                                 )
                                 Text(
                                     text = stringResource(task.repeatRule.labelRes()),
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -1113,6 +1113,16 @@ fun MarkdownToolbar(
             MarkdownActions.wrap(r.text, r.selectionStart, r.selectionEnd, "\n```")
         }
     )
+    val descriptions = listOf(
+        R.string.markdown_heading,
+        R.string.markdown_bold,
+        R.string.markdown_italic,
+        R.string.markdown_list,
+        R.string.markdown_numbered_list,
+        R.string.markdown_checklist,
+        R.string.markdown_code,
+        R.string.markdown_code_block
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -1120,25 +1130,28 @@ fun MarkdownToolbar(
             .padding(horizontal = 20.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        actions.forEach { (label, action) ->
+        actions.forEachIndexed { index, (label, action) ->
+            val description = stringResource(descriptions[index])
             Box(
                 modifier = Modifier
                     .heightIn(min = 48.dp)
                     .clip(PillShape)
                     .background(MaterialTheme.extended.track)
-                    .clickable {
+                    .clickable(role = Role.Button) {
                         val result = action(currentContent, selectionStart, selectionEnd)
                         onContentChange(result.text)
                         onSelectionChange(result.selectionStart, result.selectionEnd)
                         onActionApplied()
                     }
+                    .semantics { contentDescription = description }
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.extended.onTrack
+                    color = MaterialTheme.extended.onTrack,
+                    modifier = Modifier.clearAndSetSemantics {}
                 )
             }
         }

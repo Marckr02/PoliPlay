@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -514,8 +515,9 @@ private fun TaskFormContent(
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
+                                    .heightIn(min = 48.dp)
                                     .padding(horizontal = 8.dp, vertical = 14.dp)
-                                    .clickable {
+                                    .clickable(role = Role.Button) {
                                         context.startActivity(
                                             Intent(
                                                 android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM

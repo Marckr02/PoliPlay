@@ -77,6 +77,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -86,8 +87,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.CampusNumeralSmall
+import com.example.campuspocket.core.designsystem.CampusOverline
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.notes.data.NoteEntity
@@ -132,7 +134,7 @@ fun FloatingDock(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .height(68.dp)
+            .heightIn(min = 68.dp)
             .then(elevationModifier)
             .clip(dockShape)
             .background(ext.dock)
@@ -180,7 +182,7 @@ fun FloatingDock(
                             painter = painterResource(
                                 if (active) destination.filledRes else destination.outlineRes
                             ),
-                            contentDescription = null,
+                            contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                             tint = if (active) ext.onLime else ext.inkMuted,
                             modifier = Modifier.size(24.dp)
                         )
@@ -189,9 +191,7 @@ fun FloatingDock(
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = destination.label,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 11.sp,
-                        lineHeight = 13.sp,
+                    style = CampusOverline.copy(
                         fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold
                     ),
                     color = if (selected) ext.onDock else ext.inkMuted,
@@ -287,7 +287,7 @@ fun RoundIconButton(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = contentColor,
                 modifier = Modifier.size(if (size >= 52.dp) 24.dp else 22.dp)
             )
@@ -335,7 +335,7 @@ fun RoundIconButton(
         ) {
             Icon(
                 painter = painterResource(iconRes),
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = contentColor,
                 modifier = Modifier.size(if (size >= 52.dp) 24.dp else 22.dp)
             )
@@ -389,7 +389,7 @@ fun CampusChip(
         if (selected) {
             Icon(
                 imageVector = Icons.Filled.Check,
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = content,
                 modifier = Modifier.size(16.dp)
             )
@@ -421,7 +421,7 @@ fun <T> PillSegmentedControl(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = 52.dp)
             .clip(PillShape)
             .background(ext.track)
             .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -444,7 +444,7 @@ fun <T> PillSegmentedControl(
                         isSelected = option == selected,
                         label = label,
                         onSelect = onSelect,
-                        modifier = Modifier.height(48.dp),
+                        modifier = Modifier.heightIn(min = 48.dp),
                         contentPadding = 12.dp
                     )
                 }
@@ -509,7 +509,7 @@ private fun <T> PillSegmentOption(
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Filled.Check,
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = content,
                     modifier = Modifier.size(14.dp)
                 )
@@ -723,7 +723,7 @@ fun WalletCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.width(230.dp).height(104.dp),
+        modifier = modifier.width(230.dp).heightIn(min = 104.dp),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = containerColor, contentColor = contentColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -742,7 +742,7 @@ fun WalletCard(
             Column {
                 Text(
                     text = amount,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp),
+                    style = CampusNumeralSmall,
                     color = contentColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -940,7 +940,7 @@ fun SearchPill(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .heightIn(min = 48.dp)
                     .clip(PillShape)
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp),
@@ -948,7 +948,7 @@ fun SearchPill(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Search,
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
@@ -1082,7 +1082,7 @@ fun PrimaryPillButton(
     val ext = MaterialTheme.extended
     Button(
         onClick = onClick,
-        modifier = modifier.height(52.dp),
+        modifier = modifier.heightIn(min = 52.dp),
         enabled = enabled,
         shape = PillShape,
         contentPadding = PaddingValues(horizontal = 24.dp),
@@ -1116,7 +1116,7 @@ fun SecondaryPillButton(
     val ext = MaterialTheme.extended
     Button(
         onClick = onClick,
-        modifier = modifier.height(52.dp),
+        modifier = modifier.heightIn(min = 52.dp),
         enabled = enabled,
         shape = PillShape,
         contentPadding = PaddingValues(horizontal = 24.dp),
@@ -1142,7 +1142,7 @@ fun DangerPillButton(
     val ext = MaterialTheme.extended
     Button(
         onClick = onClick,
-        modifier = modifier.height(52.dp),
+        modifier = modifier.heightIn(min = 52.dp),
         enabled = enabled,
         shape = PillShape,
         contentPadding = PaddingValues(horizontal = 24.dp),
@@ -1171,7 +1171,8 @@ fun CampusSectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.semantics { heading() }
         )
         if (actionText != null && onAction != null) {
             Text(

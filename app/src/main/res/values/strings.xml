@@ -202,6 +202,19 @@
     <string name="category_kind_income">Ingreso</string>
     <string name="category_icon">Icono</string>
     <string name="category_color">Color</string>
+    <string name="color_blue">Azul</string>
+    <string name="color_emerald">Verde esmeralda</string>
+    <string name="color_amber">Ámbar</string>
+    <string name="color_crimson">Rojo carmesí</string>
+    <string name="color_violet">Violeta</string>
+    <string name="color_cyan">Cian</string>
+    <string name="color_orange">Naranja</string>
+    <string name="color_pink">Rosa</string>
+    <string name="color_blue_short">Azul</string>
+    <string name="color_green_short">Verde</string>
+    <string name="color_yellow_short">Amarillo</string>
+    <string name="color_red_short">Rojo</string>
+    <string name="color_purple_short">Morado</string>
     <string name="budget_month">Mes</string>
     <string name="budget_semester">Semestre</string>
     <string name="budget_amount">Monto presupuestado</string>
@@ -398,8 +411,10 @@
     <string name="markdown_italic">Cursiva</string>
     <string name="markdown_heading">Título</string>
     <string name="markdown_list">Lista</string>
+    <string name="markdown_numbered_list">Lista numerada</string>
     <string name="markdown_checklist">Lista de tareas</string>
     <string name="markdown_code">Código</string>
+    <string name="markdown_code_block">Bloque de código</string>
     <string name="markdown_preview">Vista previa</string>
     <string name="markdown_edit">Editar</string>
 
@@ -552,6 +567,19 @@
     <string name="home_no_tasks">Sin tareas pendientes</string>
     <string name="home_no_classes_short">Sin clases</string>
     <string name="home_see_all">Ver todo</string>
+    <string name="home_quick_add_format">+ %1$s</string>
+    <string name="home_pending_tasks_title">Tareas pendientes</string>
+    <string name="home_search_no_results">Sin resultados para «%1$s»</string>
+    <string name="home_search_tasks">Tareas (%1$d)</string>
+    <string name="home_search_notes">Notas (%1$d)</string>
+    <string name="home_search_courses">Materias (%1$d)</string>
+    <string name="home_search_transactions">Movimientos (%1$d)</string>
+    <string name="home_search_bullet">• %1$s</string>
+    <string name="home_pace_per_day">%1$s / día hoy</string>
+    <plurals name="home_search_result_count">
+        <item quantity="one">%1$d resultado</item>
+        <item quantity="other">%1$d resultados</item>
+    </plurals>
 
     <!-- Académico / Hoy -->
     <string name="today_title">Hoy</string>

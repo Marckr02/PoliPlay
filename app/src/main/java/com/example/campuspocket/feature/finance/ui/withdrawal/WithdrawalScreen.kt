@@ -279,7 +279,7 @@ private fun CashDestinationCard(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_wallet),
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = MaterialTheme.extended.onLavender
                     )
                 }
@@ -395,7 +395,7 @@ private fun AmountChip(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(48.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         shape = MaterialTheme.shapes.small,
         color = if (selected) MaterialTheme.extended.selected
         else MaterialTheme.extended.track
@@ -408,7 +408,7 @@ private fun AmountChip(
                 if (selected) {
                     Icon(
                         imageVector = Icons.Filled.Check,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = MaterialTheme.extended.onSelected,
                         modifier = Modifier.size(16.dp)
                     )

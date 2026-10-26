@@ -16,7 +16,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -70,7 +70,7 @@ fun ContextualActionButton(
 
     Row(
         modifier = modifier
-            .height(56.dp)
+            .heightIn(min = 56.dp)
             .clip(PillShape)
             .background(ext.accent)
             .animateContentSize(tween(duration))
@@ -98,7 +98,7 @@ fun ContextualActionButton(
         ) { iconRes ->
             Icon(
                 painter = painterResource(iconRes),
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = ext.onAccent,
                 modifier = Modifier.size(24.dp)
             )

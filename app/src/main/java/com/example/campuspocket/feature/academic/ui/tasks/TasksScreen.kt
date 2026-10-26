@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -188,7 +190,9 @@ fun TasksScreen(
                                         text = stringResource(titleRes),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                                        modifier = Modifier
+                                            .padding(top = 8.dp, bottom = 2.dp)
+                                            .semantics { heading() }
                                     )
                                 }
                                 items(tasks, key = { it.id ?: 0L }) { task ->

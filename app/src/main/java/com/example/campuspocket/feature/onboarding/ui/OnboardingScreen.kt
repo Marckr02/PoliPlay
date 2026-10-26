@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,8 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -64,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.preferences.CampusModule
+import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.PrimaryPillButton
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
@@ -348,16 +348,13 @@ private fun ScheduleStep(
 
     // Tarjeta importar horario
     val ext = MaterialTheme.extended
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = ext.cream
-        )
+    BentoCard(
+        modifier = Modifier.padding(vertical = 4.dp),
+        containerColor = ext.cream,
+        contentColor = ext.onCream,
+        contentPadding = PaddingValues(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
@@ -371,7 +368,7 @@ private fun ScheduleStep(
                 ) {
                     Image(
                         painter = painterResource(R.drawable.ic_folder),
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(ext.onCream),
                         modifier = Modifier
                             .size(24.dp)
@@ -421,16 +418,12 @@ private fun ScheduleStep(
     Spacer(Modifier.height(8.dp))
 
     // Switch: Recordatorios de tareas
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+    BentoCard(
+        modifier = Modifier.padding(vertical = 4.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentPadding = PaddingValues(16.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
@@ -469,16 +462,12 @@ private fun ScheduleStep(
     }
 
     // Switch: Alarmas exactas
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+    BentoCard(
+        modifier = Modifier.padding(vertical = 4.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentPadding = PaddingValues(16.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(

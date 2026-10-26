@@ -23,9 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -64,7 +65,7 @@ fun CampusDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0x9E042229))
+                .background(ext.scrim)
                 .clickable(
                     interactionSource = interaction,
                     indication = null,
@@ -104,7 +105,7 @@ fun CampusDialog(
                         ) {
                             Icon(
                                 imageVector = icon,
-                                contentDescription = null,
+                                contentDescription = null, // decorativo: el título ya lo anuncia
                                 tint = if (destructive) ext.onPeach else ext.onLavender,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -113,7 +114,8 @@ fun CampusDialog(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.semantics { heading() }
                     )
                     message?.let {
                         Text(

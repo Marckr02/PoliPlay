@@ -116,7 +116,7 @@ fun CampusSelectField(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
@@ -168,7 +168,7 @@ fun CampusSelectItem(
             {
                 Icon(
                     imageVector = Icons.Filled.Check,
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = MaterialTheme.extended.selected
                 )
             }

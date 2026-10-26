@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -115,11 +116,14 @@ private fun CategoryRow(
     modifier: Modifier = Modifier
 ) {
     val background = Color(category.colorArgb)
+    val editLabel = stringResource(R.string.edit)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .clickable { category.id?.let(onEditCategory) }
+            .clickable(role = Role.Button, onClickLabel = editLabel) {
+                category.id?.let(onEditCategory)
+            }
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

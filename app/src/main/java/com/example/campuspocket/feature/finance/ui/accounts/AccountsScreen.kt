@@ -20,7 +20,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -37,6 +36,7 @@ import com.example.campuspocket.core.designsystem.ContrastUtil
 import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.AccountsCarousel
 import com.example.campuspocket.core.designsystem.components.BentoCard
+import com.example.campuspocket.core.designsystem.components.CampusTextButton
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
@@ -70,12 +70,14 @@ fun AccountsScreen(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Row {
-                TextButton(onClick = onManageCategories) {
-                    Text(stringResource(R.string.categories_manage))
-                }
-                TextButton(onClick = onAddAccount) {
-                    Text(stringResource(R.string.finance_new_account))
-                }
+                CampusTextButton(
+                    text = stringResource(R.string.categories_manage),
+                    onClick = onManageCategories
+                )
+                CampusTextButton(
+                    text = stringResource(R.string.finance_new_account),
+                    onClick = onAddAccount
+                )
             }
         }
 

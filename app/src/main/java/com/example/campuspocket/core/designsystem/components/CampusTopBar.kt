@@ -22,6 +22,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.R
@@ -75,6 +77,7 @@ fun CampusTopBar(
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 8.dp)
+                .semantics { heading() }
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,

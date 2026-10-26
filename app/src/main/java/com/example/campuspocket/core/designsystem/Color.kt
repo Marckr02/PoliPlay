@@ -94,6 +94,7 @@ internal object CampusPalette {
         val DockInactive = Color(0xFFB7D0D6)
         val Cream = Color(0xFFFFF1CC)
         val OnCream = Color(0xFF5A3F00)
+        val Scrim = Color(0x9E042229)
     }
 
     object Dark {
@@ -171,6 +172,7 @@ internal object CampusPalette {
         val DockInactive = Color(0xFFA9C4CA)
         val Cream = Color(0xFF4A3A12)
         val OnCream = Color(0xFFFFE3A0)
+        val Scrim = Color(0x9E042229)
     }
 }
 
@@ -229,7 +231,8 @@ data class CampusExtendedColors(
     val onDock: Color,
     val dockInactive: Color,
     val cream: Color,
-    val onCream: Color
+    val onCream: Color,
+    val scrim: Color
 )
 
 internal val LightExtendedColors = CampusExtendedColors(
@@ -282,7 +285,8 @@ internal val LightExtendedColors = CampusExtendedColors(
     onDock = CampusPalette.Light.OnDock,
     dockInactive = CampusPalette.Light.DockInactive,
     cream = CampusPalette.Light.Cream,
-    onCream = CampusPalette.Light.OnCream
+    onCream = CampusPalette.Light.OnCream,
+    scrim = CampusPalette.Light.Scrim
 )
 
 internal val DarkExtendedColors = CampusExtendedColors(
@@ -335,7 +339,8 @@ internal val DarkExtendedColors = CampusExtendedColors(
     onDock = CampusPalette.Dark.OnDock,
     dockInactive = CampusPalette.Dark.DockInactive,
     cream = CampusPalette.Dark.Cream,
-    onCream = CampusPalette.Dark.OnCream
+    onCream = CampusPalette.Dark.OnCream,
+    scrim = CampusPalette.Dark.Scrim
 )
 
 internal val LocalCampusExtendedColors = compositionLocalOf { LightExtendedColors }

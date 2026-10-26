@@ -6,18 +6,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.extended
@@ -47,15 +47,13 @@ fun ModuleCard(
     accentContainer: Color = MaterialTheme.colorScheme.primaryContainer,
     onAccentContainer: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
-    Card(
+    BentoCard(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        modifier = modifier,
+        contentPadding = PaddingValues(20.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -67,7 +65,7 @@ fun ModuleCard(
             ) {
                 Icon(
                     painter = painterResource(iconRes),
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = onAccentContainer,
                     modifier = Modifier.size(26.dp)
                 )
@@ -89,7 +87,7 @@ fun ModuleCard(
             Spacer(Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -110,32 +108,27 @@ fun SelectableModuleCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .toggleable(
-                value = selected,
-                enabled = enabled,
-                role = Role.Checkbox,
-                onValueChange = onSelectedChange
-            ),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.extended.lavender
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+    BentoCard(
+        modifier = modifier.toggleable(
+            value = selected,
+            enabled = enabled,
+            role = Role.Checkbox,
+            onValueChange = onSelectedChange
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        containerColor = if (selected) {
+            MaterialTheme.extended.lavender
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        contentPadding = PaddingValues(16.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 painter = painterResource(iconRes),
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = if (selected) {
                     MaterialTheme.extended.onLavender
                 } else {
@@ -178,7 +171,8 @@ fun SectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.semantics { heading() }
         )
         subtitle?.let {
             Text(
@@ -198,20 +192,18 @@ fun SettingsSectionCard(
     subtitle: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    BentoCard(
+        modifier = modifier,
+        contentPadding = PaddingValues(20.dp)
     ) {
         Column(
-            Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.semantics { heading() }
             )
             subtitle?.let {
                 Text(

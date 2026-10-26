@@ -2,7 +2,6 @@ package com.example.campuspocket.feature.finance.ui.accounts
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +13,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -40,7 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -168,18 +170,26 @@ fun AccountFormScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 (0 until 10).forEach { index ->
                     val color = Color(ColorPalette[index])
                     val isSelected = state.colorArgb == ColorPalette[index]
+                    val colorName = stringResource(ColorPalette.nameRes(index))
                     Box(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(CircleShape)
-                            .semantics { selected = isSelected }
-                            .clickable { viewModel.onColorChange(ColorPalette[index]) },
+                            .selectable(
+                                selected = isSelected,
+                                onClick = { viewModel.onColorChange(ColorPalette[index]) },
+                                role = Role.RadioButton
+                            )
+                            .semantics { contentDescription = colorName },
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -199,7 +209,7 @@ fun AccountFormScreen(
                             if (isSelected) {
                                 Icon(
                                     imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
+                                    contentDescription = null, // decorativo: el selector ya anuncia el color
                                     tint = ContrastUtil.onColorFor(color),
                                     modifier = Modifier.size(18.dp)
                                 )

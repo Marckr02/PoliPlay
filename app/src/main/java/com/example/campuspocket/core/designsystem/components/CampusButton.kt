@@ -2,15 +2,17 @@ package com.example.campuspocket.core.designsystem.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.campuspocket.core.designsystem.PillShape
@@ -45,7 +47,7 @@ fun CampusButton(
     }
     Button(
         onClick = onClick,
-        modifier = modifier.height(54.dp),
+        modifier = modifier.heightIn(min = 54.dp),
         enabled = enabled && !loading,
         shape = PillShape,
         contentPadding = PaddingValues(horizontal = 24.dp),
@@ -66,7 +68,7 @@ fun CampusButton(
             if (leadingIcon != null) {
                 androidx.compose.material3.Icon(
                     imageVector = leadingIcon,
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     modifier = Modifier.size(18.dp)
                 )
                 androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
@@ -103,4 +105,23 @@ fun CampusPrimaryButton(
         enabled = enabled,
         loading = loading
     )
+}
+
+/** Enlace de acción textual con área táctil mínima de 48 dp. */
+@Composable
+fun CampusTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    contentColor: Color = MaterialTheme.colorScheme.primary
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 48.dp),
+        enabled = enabled,
+        colors = ButtonDefaults.textButtonColors(contentColor = contentColor)
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelLarge)
+    }
 }

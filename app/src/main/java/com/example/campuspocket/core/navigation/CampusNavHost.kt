@@ -51,9 +51,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -506,7 +508,7 @@ private fun QuickAddSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
-        scrimColor = Color(0x9E042229),
+        scrimColor = ext.scrim,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         dragHandle = {
             Box(
@@ -537,7 +539,9 @@ private fun QuickAddSheet(
                 ),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier
+                    .padding(bottom = 12.dp)
+                    .semantics { heading() }
             )
             options.forEach { option ->
                 Row(
@@ -545,7 +549,7 @@ private fun QuickAddSheet(
                         .fillMaxWidth()
                         .heightIn(min = 64.dp)
                         .clip(RoundedCornerShape(18.dp))
-                        .clickable {
+                        .clickable(role = Role.Button) {
                             option.onClick()
                             onDismiss()
                         }
@@ -561,7 +565,7 @@ private fun QuickAddSheet(
                     ) {
                         Icon(
                             painter = painterResource(option.iconRes),
-                            contentDescription = null,
+                            contentDescription = null, // decorativo: la fila ya muestra título y descripción
                             tint = option.contentColor,
                             modifier = Modifier.size(24.dp)
                         )
@@ -570,8 +574,7 @@ private fun QuickAddSheet(
                     Column(Modifier.weight(1f)) {
                         Text(
                             text = stringResource(option.labelRes),
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontSize = 15.sp,
+                            style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.ExtraBold
                             ),
                             color = MaterialTheme.colorScheme.onSurface

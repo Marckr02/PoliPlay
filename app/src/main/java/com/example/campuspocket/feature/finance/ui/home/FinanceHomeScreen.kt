@@ -373,7 +373,7 @@ private fun FinanceSummaryRow(
             Spacer(Modifier.width(4.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
             )

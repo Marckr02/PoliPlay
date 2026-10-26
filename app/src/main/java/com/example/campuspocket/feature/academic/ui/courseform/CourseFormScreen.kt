@@ -2,7 +2,6 @@ package com.example.campuspocket.feature.academic.ui.courseform
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -34,6 +35,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -160,6 +164,16 @@ private fun CourseFormContent(
                 0xFF06B6D4.toInt(),
                 0xFFF97316.toInt()
             )
+            val paletteColorNames = listOf(
+                R.string.color_blue_short,
+                R.string.color_green_short,
+                R.string.color_yellow_short,
+                R.string.color_red_short,
+                R.string.color_purple_short,
+                R.string.color_pink,
+                R.string.color_cyan,
+                R.string.color_orange
+            )
             Column(modifier = Modifier.padding(top = 4.dp)) {
                 Text(
                     text = stringResource(R.string.course_color),
@@ -168,16 +182,25 @@ private fun CourseFormContent(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .selectableGroup(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    paletteColors.forEach { colorArgb ->
+                    paletteColors.forEachIndexed { index, colorArgb ->
                         val isSelected = state.colorArgb == colorArgb
+                        val colorName = stringResource(paletteColorNames[index])
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(CircleShape)
-                                .clickable { onColorChange(colorArgb) },
+                                .selectable(
+                                    selected = isSelected,
+                                    onClick = { onColorChange(colorArgb) },
+                                    role = Role.RadioButton
+                                )
+                                .semantics { contentDescription = colorName },
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
@@ -194,7 +217,7 @@ private fun CourseFormContent(
                                 if (isSelected) {
                                     Icon(
                                         imageVector = Icons.Filled.Check,
-                                        contentDescription = null,
+                                        contentDescription = null, // decorativo: el selector ya anuncia el color
                                         tint = ContrastUtil.onColorFor(Color(colorArgb)),
                                         modifier = Modifier.size(20.dp)
                                     )

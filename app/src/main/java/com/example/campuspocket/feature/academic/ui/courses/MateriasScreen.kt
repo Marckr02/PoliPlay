@@ -221,7 +221,7 @@ private fun CourseCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Person,
-                            contentDescription = null,
+                            contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )

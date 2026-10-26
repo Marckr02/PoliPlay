@@ -284,7 +284,7 @@ private fun PaymentsEmptyCard(onAddPayment: () -> Unit) {
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_schedule),
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = ext.onLavender,
                     modifier = Modifier.size(24.dp)
                 )

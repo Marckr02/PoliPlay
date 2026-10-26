@@ -52,3 +52,14 @@ val CampusTypography = Typography(
     labelMedium = style(12, 16, FontWeight.Bold, 0.2f),
     labelSmall = style(12, 16, FontWeight.SemiBold, 0.4f)
 )
+
+/**
+ * Estilos especiales fuera de la escala Material: cifras hero, numerales de
+ * tarjeta, sobrelíneas y etiquetas del teclado. Evitan tamaños y alturas de
+ * línea sueltos en las pantallas y escalan con el ajuste de fuente del sistema.
+ */
+val CampusNumeralHero = style(52, 58, FontWeight.ExtraBold, -2f)
+val CampusNumeral = style(32, 38, FontWeight.ExtraBold, -0.8f)
+val CampusNumeralSmall = style(24, 30, FontWeight.ExtraBold, -0.4f)
+val CampusOverline = style(11, 16, FontWeight.Bold, 0.8f)
+val CampusKeypadLabel = style(20, 22, FontWeight.ExtraBold, -0.2f)

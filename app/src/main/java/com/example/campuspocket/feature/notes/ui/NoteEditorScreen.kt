@@ -55,7 +55,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -354,19 +353,19 @@ private fun SaveStatus(isSaving: Boolean, lastSavedAt: Long) {
         if (isSaving) {
             Text(
                 text = stringResource(R.string.note_saving_status),
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             Icon(
                 imageVector = Icons.Filled.Check,
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = ext.onMint,
                 modifier = Modifier.size(12.dp)
             )
             Text(
                 text = stringResource(R.string.note_saved_status),
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = ext.onMint
             )
         }
@@ -393,7 +392,7 @@ private fun NoteLinkChip(
     ) {
         Icon(
             painter = painterResource(iconRes),
-            contentDescription = null,
+            contentDescription = null, // decorativo: la etiqueta contigua describe la accion
             tint = if (hasValue) ext.onCream else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp)
         )

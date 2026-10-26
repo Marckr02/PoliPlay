@@ -63,7 +63,7 @@ fun TimeField(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_schedule),
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = if (errorRes != null) {
                     MaterialTheme.colorScheme.error
                 } else {

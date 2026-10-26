@@ -361,7 +361,7 @@ private fun CourseHeroHeader(course: Course, modifier: Modifier = Modifier) {
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Person,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )

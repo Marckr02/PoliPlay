@@ -36,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,6 +70,7 @@ import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.BudgetProgressBar
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
+import com.example.campuspocket.core.designsystem.components.CampusTextButton
 import com.example.campuspocket.core.designsystem.components.CategoryExpenseChart
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
@@ -369,14 +369,11 @@ internal fun BudgetPaceCard(
                 color = ext.onInk.copy(alpha = 0.72f),
                 modifier = Modifier.weight(1f)
             )
-            TextButton(
+            CampusTextButton(
+                text = stringResource(R.string.budget_total_edit),
                 onClick = onEditBudget,
-                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                    contentColor = ext.lime
-                )
-            ) {
-                Text(stringResource(R.string.budget_total_edit))
-            }
+                contentColor = ext.lime
+            )
         }
         Text(
             text = stringResource(
@@ -426,14 +423,14 @@ internal fun BudgetPaceCard(
                 if (pace.isOver) {
                     Icon(
                         painter = painterResource(R.drawable.ic_arrow_up),
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = statusContent,
                         modifier = Modifier.size(16.dp)
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Filled.Check,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = statusContent,
                         modifier = Modifier.size(16.dp)
                     )

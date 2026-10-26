@@ -57,17 +57,17 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
+import com.example.campuspocket.core.designsystem.CampusNumeralHero
 import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusChip
@@ -501,12 +501,7 @@ private fun AmountSection(
     ) {
         Text(
             text = "$ ${state.amountDisplay}",
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 52.sp,
-                lineHeight = 58.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontFeatureSettings = "tnum"
-            ),
+            style = CampusNumeralHero.copy(fontFeatureSettings = "tnum"),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -518,7 +513,8 @@ private fun AmountSection(
                 text = stringResource(R.string.transaction_error_amount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
             )
         }
 
@@ -535,7 +531,7 @@ private fun AmountSection(
             ) {
                 Icon(
                     imageVector = if (over) Icons.Filled.Warning else Icons.Filled.CheckCircle,
-                    contentDescription = null,
+                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                     tint = color,
                     modifier = Modifier.size(16.dp)
                 )
@@ -719,7 +715,7 @@ private fun AccountSection(
                         },
                         leading = { CategoryDot(account.colorArgb) },
                         role = Role.RadioButton,
-                        modifier = Modifier.height(52.dp)
+                        modifier = Modifier.heightIn(min = 52.dp)
                     )
                 }
                 if (balances.size > visibleBalances(balances, selectedId).size) {
@@ -908,7 +904,7 @@ private fun CategorySheet(
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Search,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -988,7 +984,7 @@ private fun CategorySheetRow(
         if (selected) {
             Icon(
                 imageVector = Icons.Filled.Check,
-                contentDescription = null,
+                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                 tint = MaterialTheme.extended.accent,
                 modifier = Modifier.size(20.dp)
             )
@@ -1059,7 +1055,7 @@ private fun AccountSheet(
                         if (account.id == selectedId) {
                             Icon(
                                 imageVector = Icons.Filled.Check,
-                                contentDescription = null,
+                                contentDescription = null, // decorativo: la etiqueta contigua describe la accion
                                 tint = MaterialTheme.extended.accent,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -1076,7 +1072,8 @@ private fun SectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.semantics { heading() }
     )
 }
 
@@ -1085,7 +1082,8 @@ private fun ErrorText(resId: Int) {
     Text(
         text = stringResource(resId),
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.error
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
     )
 }
 
