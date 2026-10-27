@@ -3,10 +3,18 @@
 Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
 - `0.MENOR.PARCHE` - `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
 
-## [0.11.0] - 2026-10-27
-Commit: ver etiqueta `v0.11.0`
+## [Sin publicar]
 
-Ola 2 del Bloque D.
+Ola 3 del Bloque D.
+
+### Añadido
+- Calificaciones por materia (sistema EPN): Nota 1 y Nota 2 (sobre 20), suma, promedio, estado (Aprobado directo ≥28, Supletorio 18-27, Reprobado <18), examen supletorio (sobre 40) y simulador "¿cuánto necesito?" con fórmula exacta.
+- Color por materia coherente en toda la app: Hoy, Semana, Tareas (barra lateral) y Notas (si vinculadas a materia).
+
+### Pruebas
+- 206 pruebas unitarias, 56 instrumentadas y `lintDebug` en verde.
+
+## [0.11.0] - 2026-10-27
 
 ### Añadido
 - Línea de tiempo "Tu día" en Inicio: clases de hoy, tareas pendientes que vencen hoy y pagos programados activos con vencimiento hoy. Los pagos sin hora se agrupan como "Todo el día".

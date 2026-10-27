@@ -14,6 +14,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import com.example.campuspocket.core.designsystem.CampusTheme
+import com.example.campuspocket.feature.academic.domain.model.Course
+import com.example.campuspocket.feature.academic.domain.repository.CourseRepository
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
 import com.example.campuspocket.feature.notes.domain.repository.NoteRepository
@@ -67,9 +69,20 @@ class NoteUiTest {
         override suspend fun deleteFolder(id: Long) = Unit
     }
 
+    private class CourseRepo : CourseRepository {
+        override fun observeCourses(): Flow<List<Course>> = flowOf(emptyList())
+        override fun observeCourse(courseId: Long): Flow<Course?> = flowOf(null)
+        override suspend fun getCourse(courseId: Long): Course? = null
+        override suspend fun insertCourse(course: Course): Long = 0L
+        override suspend fun updateCourse(course: Course) = Unit
+        override suspend fun deleteCourse(courseId: Long) = Unit
+        override suspend fun getActiveSemesterEnd() = null
+    }
+
     @Test
     fun crearNotaYBuscarla() {
         val repo = Repo()
+        val courseRepo = CourseRepo()
         composeRule.setContent {
             CampusTheme {
                 androidx.compose.runtime.CompositionLocalProvider(
@@ -79,7 +92,7 @@ class NoteUiTest {
                     NotesScreen(
                         onOpenNote = {},
                         onNewNote = {},
-                        viewModel = NotesViewModel(repo)
+                        viewModel = NotesViewModel(repo, courseRepo)
                     )
                 }
             }

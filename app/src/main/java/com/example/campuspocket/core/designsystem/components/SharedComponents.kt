@@ -85,10 +85,12 @@ import androidx.compose.ui.unit.dp
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.util.Haptics
+import com.example.campuspocket.core.designsystem.ContrastUtil
 import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
+import com.example.campuspocket.feature.academic.domain.model.Course
 import com.example.campuspocket.feature.academic.domain.model.Priority
 import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -582,6 +584,7 @@ fun TaskItemCard(
     modifier: Modifier = Modifier,
     task: Task,
     courseName: String?,
+    courseColorArgb: Int? = null,
     onClick: () -> Unit,
     onToggleCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit
@@ -670,6 +673,17 @@ fun TaskItemCard(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Barra de color de la materia (si hay)
+                    courseColorArgb?.let { colorArgb ->
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .fillMaxHeight()
+                                .background(Color(colorArgb))
+                                .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
+                        )
+                    }
+                    Spacer(Modifier.width(if (courseColorArgb != null) 8.dp else 12.dp))
                     CampusCheckbox(
                         checked = optimisticChecked,
                         onCheckedChange = { checked ->
@@ -1035,10 +1049,19 @@ fun NoteCard(
     onPinToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onMove: () -> Unit,
+    courseColorArgb: Int? = null,
     modifier: Modifier = Modifier
 ) {
     val ext = MaterialTheme.extended
-    val (container, content) = notePalette(note.id)
+    val (container, content) = if (courseColorArgb != null) {
+        // Usar color de la materia con variaciones para modo claro/oscuro
+        val courseColor = Color(courseColorArgb)
+        val container = courseColor.copy(alpha = 0.18f).compositeOver(MaterialTheme.colorScheme.surface)
+        val content = ContrastUtil.onColorFor(courseColor)
+        container to content
+    } else {
+        notePalette(note.id)
+    }
     PastelNoteCard(
         note = note,
         containerColor = container,
@@ -1069,8 +1092,12 @@ fun StaggeredNotesGrid(
     onPinToggle: (Long, Boolean) -> Unit,
     onDelete: (NoteEntity) -> Unit,
     onMove: (NoteEntity) -> Unit,
+    courses: List<com.example.campuspocket.feature.academic.domain.model.Course> = emptyList(),
     modifier: Modifier = Modifier
 ) {
+    val courseColors = remember(courses) {
+        courses.associateBy({ it.id!! }, { it.colorArgb })
+    }
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
         modifier = modifier.fillMaxWidth(),
@@ -1085,6 +1112,7 @@ fun StaggeredNotesGrid(
                 onPinToggle = { pinned -> onPinToggle(note.id, pinned) },
                 onDelete = { onDelete(note) },
                 onMove = { onMove(note) },
+                courseColorArgb = note.courseId?.let { courseColors[it] },
                 modifier = Modifier.animateItem()
             )
         }

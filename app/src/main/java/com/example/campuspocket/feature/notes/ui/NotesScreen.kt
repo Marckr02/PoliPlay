@@ -139,7 +139,8 @@ fun NotesScreen(
                             if (undone) viewModel.restoreNote(deleted)
                         }
                     },
-                    onMove = { note -> movingNote = note }
+                    onMove = { note -> movingNote = note },
+                    courses = state.courses
                 )
             }
 

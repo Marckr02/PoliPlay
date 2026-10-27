@@ -2,6 +2,8 @@ package com.example.campuspocket.feature.notes.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.campuspocket.feature.academic.domain.model.Course
+import com.example.campuspocket.feature.academic.domain.repository.CourseRepository
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
 import com.example.campuspocket.feature.notes.domain.escapeLikePattern
@@ -23,13 +25,15 @@ data class NotesUiState(
     val folders: List<FolderEntity> = emptyList(),
     val notes: List<NoteEntity> = emptyList(),
     val currentFolderId: Long? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val courses: List<Course> = emptyList()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class NotesViewModel @Inject constructor(
-    private val noteRepository: NoteRepository
+    private val noteRepository: NoteRepository,
+    private val courseRepository: CourseRepository
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
@@ -37,19 +41,20 @@ class NotesViewModel @Inject constructor(
 
     val uiState: StateFlow<NotesUiState> = combine(
         query,
-        currentFolderId
-    ) { q, folderId -> q to folderId }
-        .flatMapLatest { (q, folderId) ->
+        currentFolderId,
+        courseRepository.observeCourses()
+    ) { q, folderId, courses -> Triple(q, folderId, courses) }
+        .flatMapLatest { (q, folderId, courses) ->
             if (q.isNotBlank()) {
                 val escaped = "%" + escapeLikePattern(q.trim()) + "%"
                 combine(noteRepository.searchNotes(escaped), MutableStateFlow(emptyList<FolderEntity>())) { notes, folders ->
-                    NotesUiState(query = q, folders = folders, notes = notes, currentFolderId = folderId, isLoading = false)
+                    NotesUiState(query = q, folders = folders, notes = notes, currentFolderId = folderId, isLoading = false, courses = courses)
                 }
             } else {
                 val foldersFlow = if (folderId == null) noteRepository.observeRootFolders() else noteRepository.observeChildFolders(folderId)
                 val notesFlow = if (folderId == null) noteRepository.observeNotesWithoutFolder() else noteRepository.observeNotesByFolder(folderId)
                 combine(foldersFlow, notesFlow) { folders, notes ->
-                    NotesUiState(query = "", folders = folders, notes = notes, currentFolderId = folderId, isLoading = false)
+                    NotesUiState(query = "", folders = folders, notes = notes, currentFolderId = folderId, isLoading = false, courses = courses)
                 }
             }
         }

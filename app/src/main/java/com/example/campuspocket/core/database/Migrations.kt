@@ -108,10 +108,36 @@ object Migrations {
         }
     }
 
+    /**
+     * v5 -> v6 (Ola 3 Bloque D): calificaciones por materia con simulador.
+     * - Nueva tabla `grades` para notas de evaluaciones (parciales, trabajos, final).
+     * - `isFinalExam` marca el examen final para el simulador "¿cuánto necesito?".
+     */
+    val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `grades` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`courseId` INTEGER NOT NULL, " +
+                    "`title` TEXT NOT NULL, " +
+                    "`score` REAL NOT NULL, " +
+                    "`maxScore` REAL NOT NULL, " +
+                    "`weight` REAL NOT NULL DEFAULT 1.0, " +
+                    "`isFinalExam` INTEGER NOT NULL DEFAULT 0, " +
+                    "`date` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`courseId`) REFERENCES `courses`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )"
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_grades_courseId` ON `grades` (`courseId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_grades_date` ON `grades` (`date`)")
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
         MIGRATION_3_4,
-        MIGRATION_4_5
+        MIGRATION_4_5,
+        MIGRATION_5_6
     )
 }

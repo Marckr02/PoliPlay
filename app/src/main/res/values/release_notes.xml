@@ -5,10 +5,7 @@
          Se actualiza en cada lanzamiento; el historial completo está en CHANGELOG.md. -->
 
     <string-array name="release_notes_current">
-        <item>Inicio ahora muestra "Tu día": tus clases de hoy, las tareas que vencen hoy y los pagos programados para hoy.</item>
-        <item>Desde el icono de la app puedes repetir tu último gasto con el monto, la nota, la cuenta y la categoría ya completos.</item>
-        <item>También hay un atajo de nota rápida en el icono de la app.</item>
-        <item>En Ajustes puedes exportar tu horario y tus entregas pendientes a un archivo de calendario (.ics).</item>
-        <item>El atajo "Nueva nota" abre correctamente el editor.</item>
+        <item>Calificaciones por materia: ingresa Nota 1 y Nota 2 (sobre 20) y la app calcula tu estado (aprobado directo, supletorio o reprobado) y cuánto necesitas en el supletorio.</item>
+        <item>Color de la materia coherente en todas las pantallas: Hoy, Semana, Tareas y Notas usan el mismo color por materia.</item>
     </string-array>
 </resources>

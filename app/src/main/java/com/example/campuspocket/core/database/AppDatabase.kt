@@ -28,6 +28,8 @@ import com.example.campuspocket.feature.finance.data.TransactionDao
 import com.example.campuspocket.feature.finance.data.TransactionEntity
 import com.example.campuspocket.feature.finance.data.TransactionTemplateDao
 import com.example.campuspocket.feature.finance.data.TransactionTemplateEntity
+import com.example.campuspocket.feature.academic.data.GradeDao
+import com.example.campuspocket.feature.academic.data.GradeEntity
 import com.example.campuspocket.feature.notes.data.FolderDao
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteDao
@@ -36,7 +38,7 @@ import com.example.campuspocket.feature.notes.data.NoteEntity
 /**
  * Base de datos única de la app. Se construye en DatabaseModule (Hilt).
  *
- * Esquema actual v5. Cada cambio de esquema debe subir `version`, agregar su Migration
+ * Esquema actual v6. Cada cambio de esquema debe subir `version`, agregar su Migration
  * en `Migrations` y actualizar los snapshots de `app/schemas`; DatabaseModule no usa
  * borrado destructivo.
  */
@@ -57,9 +59,10 @@ import com.example.campuspocket.feature.notes.data.NoteEntity
         ScheduledPaymentEntity::class,
         FolderEntity::class,
         NoteEntity::class,
-        ImportHintEntity::class
+        ImportHintEntity::class,
+        GradeEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -79,4 +82,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun noteDao(): NoteDao
     abstract fun importHintDao(): ImportHintDao
+    abstract fun gradeDao(): GradeDao
 }

@@ -196,10 +196,12 @@ fun TasksScreen(
                                     )
                                 }
                                 items(tasks, key = { it.id ?: 0L }) { task ->
+                                    val course = state.courses.firstOrNull { it.id == task.courseId }
                                     TaskItemCard(
                                         modifier = Modifier.animateItem(),
                                         task = task,
-                                        courseName = state.courses.firstOrNull { it.id == task.courseId }?.name,
+                                        courseName = course?.name,
+                                        courseColorArgb = course?.colorArgb,
                                         onClick = { task.id?.let(onOpenTask) },
                                         onToggleCompleted = { done -> viewModel.setCompleted(task, done) },
                                         onDelete = { viewModel.delete(task) }
