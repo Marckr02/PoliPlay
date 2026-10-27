@@ -1,21 +1,21 @@
 package com.example.campuspocket.core.designsystem.components
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.example.campuspocket.core.designsystem.CampusTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
 
 /**
- * Prueba instrumentada para el arreglo del domingo en CampusDatePickerDialog.
- *
- * Sin el arreglo, el domingo (columna 7) quedaba cortado por el ancho limitado
- * del CampusDialog (~292 dp vs 360 dp requeridos por DatePicker).
- * Esta prueba verifica que el encabezado "D" y el día 25 (domingo 25 oct 2026)
- * están visibles y clicables.
+ * Regresión del selector de fecha:
+ * - Debe estar en español aunque el dispositivo use otro idioma.
+ * - La columna del domingo debe estar visible y ser seleccionable.
  */
 class CampusDatePickerDialogTest {
 
@@ -24,25 +24,30 @@ class CampusDatePickerDialogTest {
 
     @Test
     fun domingoVisibleYSeleccionable() {
+        var confirmada: LocalDate? = null
+
         composeRule.setContent {
             CampusTheme {
                 CampusDatePickerDialog(
                     title = "Fecha",
-                    initialDate = LocalDate.of(2026, 10, 25), // domingo
+                    initialDate = LocalDate.of(2026, 10, 1),
                     onDismiss = {},
-                    onConfirm = {}
+                    onConfirm = { confirmada = it }
                 )
             }
         }
 
-        // El encabezado "D" (domingo) debe estar visible
-        composeRule.onNodeWithText("D").assertIsDisplayed()
+        // Material3 usa ClearAndSetSemantics en los encabezados de día: el
+        // nombre accesible es "domingo", no el glifo "D".
+        composeRule.onNodeWithContentDescription("domingo").assertIsDisplayed()
 
-        // El día 25 (domingo 25 oct 2026) debe estar visible
-        // Puede haber múltiples nodos con "25" (día + año), tomamos el primero
-        composeRule.onAllNodes(hasText("25"))[0].assertIsDisplayed()
+        // El 25 de octubre de 2026 es domingo: debe verse y poder elegirse.
+        composeRule.onNodeWithText("domingo, 25 de octubre de 2026")
+            .assertIsDisplayed()
+            .performClick()
+            .assertIsSelected()
 
-        // Opcional: verificar que se puede hacer click en el día 25
-        // composeRule.onAllNodes(hasText("25"))[0].performClick()
+        composeRule.onNodeWithText("Aceptar").performClick()
+        assertEquals(LocalDate.of(2026, 10, 25), confirmada)
     }
 }

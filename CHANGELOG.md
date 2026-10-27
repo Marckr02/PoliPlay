@@ -3,6 +3,28 @@
 Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
 - `0.MENOR.PARCHE` — `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
 
+## [0.9.2] — 2026-10-26
+Commit: ver etiqueta `v0.9.2`
+
+### Añadido
+- Búsqueda global como pantalla secundaria: campo enfocado, filtros Todo / Tareas / Notas / Movimientos / Materias, resultados agrupados con coincidencias resaltadas, búsquedas recientes y navegación directa al elemento.
+- Transiciones por tipo de pantalla: fundido entre pestañas, formularios y modales desde abajo, detalles con eje horizontal; respetan la preferencia de movimiento reducido.
+- El selector de fecha se muestra en español aunque el dispositivo esté configurado en otro idioma.
+
+### Cambiado
+- Release con R8 activo (minificación y reducción de recursos) y reglas para kotlinx.serialization y PDFBox; verificado en emulador.
+- El dock vuelve a ocupar solo su franja inferior; la altura mínima introducida en 0.9.1 lo expandía hasta la pantalla completa.
+- El onboarding permite omitir la importación del horario con "Lo haré después" sin tener que buscar el botón final.
+- README documenta los atajos del icono, el icono monocromático, R8 y las cifras actuales de pruebas.
+- `.opencode/` deja de versionarse (las habilidades siguen en disco).
+- Versión 0.9.2 (versionCode 902).
+
+### Corregido
+- El selector de fecha usa la configuración local de Material3 en lugar de cambiar el idioma global del proceso.
+- Las pruebas de tareas, la tarjeta de presupuesto de Inicio y el selector de fecha reflejan los textos y la semántica actuales.
+
+---
+
 ## [0.9.1] — 2026-10-26
 Commit: ver etiqueta `v0.9.1`
 

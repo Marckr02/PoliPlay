@@ -1,5 +1,7 @@
 package com.example.campuspocket.core.designsystem.components
 
+import android.content.res.Configuration
+import android.os.LocaleList
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredWidth
@@ -12,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -38,9 +42,14 @@ fun CampusDatePickerDialog(
     onConfirm: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    remember {
-        Locale.setDefault(Locale.forLanguageTag("es"))
-        true
+    // La app es solo en español: el selector debe hablar el mismo idioma aunque
+    // el dispositivo esté configurado en otro. Material3 lee la configuración
+    // local, no Locale.getDefault(), así que se provee una configuración española.
+    val configuration = LocalConfiguration.current
+    val spanishConfiguration = remember(configuration) {
+        Configuration(configuration).apply {
+            setLocales(LocaleList(Locale.forLanguageTag("es")))
+        }
     }
 
     val pickerState = rememberDatePickerState(
@@ -68,17 +77,21 @@ fun CampusDatePickerDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
         modifier = modifier
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 380.dp)
-                .horizontalScroll(rememberScrollState())
-        ) {
-            DatePicker(
-                state = pickerState,
-                title = { Text(text = title) },
-                colors = campusDatePickerColors(),
-                modifier = Modifier.requiredWidth(360.dp)
-            )
+        // El proveedor va dentro del contenido: el diálogo compone en su propia
+        // ventana y no hereda los CompositionLocal del llamador.
+        CompositionLocalProvider(LocalConfiguration provides spanishConfiguration) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 380.dp)
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                DatePicker(
+                    state = pickerState,
+                    title = { Text(text = title) },
+                    colors = campusDatePickerColors(),
+                    modifier = Modifier.requiredWidth(360.dp)
+                )
+            }
         }
     }
 }

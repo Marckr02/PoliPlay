@@ -5,6 +5,8 @@ package com.example.campuspocket.feature.academic.ui
 import android.annotation.SuppressLint
 
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
@@ -16,6 +18,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.lifecycle.SavedStateHandle
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.di.AppScope
+import com.example.campuspocket.core.navigation.LocalSnackbarHost
 import com.example.campuspocket.feature.academic.domain.model.Course
 import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.domain.model.TaskReminder
@@ -145,12 +148,14 @@ class AcademicUiTest {
 
         composeRule.setContent {
             CampusTheme {
-                TasksScreen(
-                    onAddTask = {},
-                    onOpenTask = {},
-                    onBack = {},
-                    viewModel = TasksViewModel(taskRepo, FakeCourseRepository(listOf(course)), AppScope())
-                )
+                CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
+                    TasksScreen(
+                        onAddTask = {},
+                        onOpenTask = {},
+                        onBack = {},
+                        viewModel = TasksViewModel(taskRepo, FakeCourseRepository(listOf(course)), AppScope())
+                    )
+                }
             }
         }
 
@@ -177,12 +182,14 @@ class AcademicUiTest {
 
         composeRule.setContent {
             CampusTheme {
-                TasksScreen(
-                    onAddTask = {},
-                    onOpenTask = {},
-                    onBack = {},
-                    viewModel = TasksViewModel(taskRepo, FakeCourseRepository(), AppScope())
-                )
+                CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
+                    TasksScreen(
+                        onAddTask = {},
+                        onOpenTask = {},
+                        onBack = {},
+                        viewModel = TasksViewModel(taskRepo, FakeCourseRepository(), AppScope())
+                    )
+                }
             }
         }
 

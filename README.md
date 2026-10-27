@@ -12,7 +12,7 @@ Desde el rediseño híbrido profesional:
 
 ## Cómo compilar
 
-Requisito: Android Studio con SDK 36 (la directiva de seguridad local requiere el `aapt2.exe` del SDK; `gradle.properties` ya lo apunta con ruta local).
+Requisito: Android Studio con SDK 37 (la directiva de seguridad local requiere el `aapt2.exe` del SDK; `gradle.properties` ya lo apunta con ruta local).
 
 ```
 ./gradlew.bat clean assembleDebug
@@ -30,14 +30,24 @@ app\build\outputs\apk\release\app-release.apk
 
 Pasarlo a otro Android: copiar el `.apk` al dispositivo y abrirlo (Android pedirá permitir instalar de fuentes desconocidas). O por ADB: `adb install app-release.apk`.
 
+## Atajos del icono
+
+Mantén pulsado el icono de CampusPocket para abrir un acceso directo:
+
+- **Nuevo gasto** → formulario de movimiento con tipo Gasto.
+- **Nueva tarea** → formulario de tarea nuevo.
+- **Nueva nota** → editor de notas en blanco.
+
+Los atajos se declaran en `app/src/main/res/xml/shortcuts.xml` y llegan a la app como un extra `route` que `MainActivity` entrega a la navegación. El icono adaptativo incluye capa monocromática (`ic_launcher_monochrome`), por lo que en Android 13+ también respeta los iconos tematizados del sistema.
+
 ### Clave de firma (IMPORTANTE, guardar aparte)
 El release está firmado con el keystore local `keystore.jks` (alias `campuspocket`, contraseñas en `keystore.properties`). **Ese archivo NO se sube a ningún repositorio**: solo existe en la máquina del propietario. Si se pierde, actualizaciones futuras de la app tendrían que instalarse como app nueva (Android exige la misma firma para actualizar).
 
 ## Cómo probar
 
-- **Unitarias (JVM)**: `.\gradlew.bat testDebugUnitTest` → 158 pruebas cubriendo dominio puro (Money, parser PDF, reloj, tareas, transacciones, presupuestos, ritmo del presupuesto, retiro en cajero, pagos recurrentes, bloqueo, notas, respaldo) y preferencias (UserPreferencesRepository con DataStore real en archivo temporal).
-- **Instrumentadas (emulador AVD `CampusTest` o similar)**: `.\gradlew.bat connectedDebugAndroidTest` → 41 pruebas: migraciones reales (1→2, 2→3, 3→4), retiro atómico y validaciones, presupuesto total mensual, respaldo ida/vuelta, Room DAOs, Compose UI y humo de arranque.
-- **Release**: `.\gradlew.bat assembleRelease` + `.\gradlew.bat lintDebug` en verde.
+- **Unitarias (JVM)**: `.\gradlew.bat testDebugUnitTest` → 189 pruebas cubriendo dominio puro (Money, parser PDF, reloj, tareas, transacciones, presupuestos, ritmo del presupuesto, retiro en cajero, pagos recurrentes, bloqueo, notas, respaldo), búsqueda global y preferencias (UserPreferencesRepository con DataStore real en archivo temporal).
+- **Instrumentadas (emulador AVD `CampusTest` o similar)**: `.\gradlew.bat connectedDebugAndroidTest` → 54 pruebas: migraciones reales (1→2, 2→3, 3→4), retiro atómico y validaciones, presupuesto total mensual, respaldo ida/vuelta, Room DAOs, Compose UI, dock y humo de arranque.
+- **Release**: `.\gradlew.bat assembleRelease` genera un APK con R8 y recursos reducidos; probado en emulador (pestañas, búsqueda, exportar e importar respaldo) y `.\gradlew.bat lintDebug` en verde.
 
 ## Respaldo (exportar / restaurar)
 

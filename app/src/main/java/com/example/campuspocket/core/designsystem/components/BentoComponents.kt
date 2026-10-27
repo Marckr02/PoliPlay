@@ -153,7 +153,7 @@ fun FloatingDock(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight()
+                    .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .semantics(mergeDescendants = true) { this.selected = selected }
                     .combinedClickable(

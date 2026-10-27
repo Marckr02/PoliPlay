@@ -83,7 +83,7 @@ class HomeScreenTest {
 
         composeRule.onNodeWithText("DISPONIBLE PARA GASTAR").assertIsDisplayed()
         composeRule.onNodeWithText(Money.format(11_000L)).assertIsDisplayed()
-        composeRule.onAllNodes(hasText("gastado", substring = true))[0].assertIsDisplayed()
+        composeRule.onAllNodes(hasText("día hoy", substring = true))[0].assertIsDisplayed()
     }
 
     @Test

@@ -15,8 +15,9 @@ captures/
 keystore.properties
 gradle.properties
 
-# Archivos de sesion del agente
+# Archivos de sesion y habilidades del agente (no forman parte de la app)
 session-*.md
+.opencode/
 
 # Salidas del arnés de diagnóstico del importador (nunca subir PDFs reales ni volcados)
 tools/pdf-dumps/

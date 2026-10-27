@@ -210,7 +210,11 @@ fun OnboardingScreen(
                     }
                 },
                 onBack = viewModel::goBackToModules,
-                onFinish = viewModel::finish
+                onFinish = viewModel::finish,
+                onSkipImport = {
+                    viewModel.handlePdfResult(null)
+                    viewModel.finish()
+                }
             )
         }
     }
@@ -332,7 +336,8 @@ private fun ScheduleStep(
     onExactAlarmsClick: () -> Unit,
     onNotificationPermissionClick: () -> Unit,
     onBack: () -> Unit,
-    onFinish: () -> Unit
+    onFinish: () -> Unit,
+    onSkipImport: () -> Unit
 ) {
     Text(
         text = stringResource(R.string.onboarding_title_schedule),
@@ -399,7 +404,7 @@ private fun ScheduleStep(
             )
             SecondaryPillButton(
                 text = stringResource(R.string.onboarding_import_later),
-                onClick = { /* No-op, just skip */ },
+                onClick = onSkipImport,
                 modifier = Modifier.fillMaxWidth()
             )
         }
