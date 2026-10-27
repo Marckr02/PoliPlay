@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DateRange
@@ -38,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -53,6 +51,7 @@ import com.example.campuspocket.core.designsystem.PillShape
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusChip
 import com.example.campuspocket.core.designsystem.components.CampusTextButton
+import com.example.campuspocket.core.designsystem.components.EmptyMovementsState
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.components.SearchPill
 import com.example.campuspocket.core.designsystem.components.TransactionRow
@@ -124,7 +123,7 @@ fun LazyListScope.historyItems(
         }
 
         state.transactions.isEmpty() -> item(key = "history_empty", contentType = "empty") {
-            HistoryEmptyCard()
+            EmptyMovementsState()
         }
 
         else -> {
@@ -335,49 +334,6 @@ private fun DayGroupHeader(
             style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
             color = if (netCents >= 0) ext.success else MaterialTheme.colorScheme.error
         )
-    }
-}
-
-@Composable
-private fun HistoryEmptyCard() {
-    val ext = MaterialTheme.extended
-    BentoCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(ext.lavender),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_wallet),
-                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
-                    tint = ext.onLavender,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.empty_transactions),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = stringResource(R.string.empty_transactions_message),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
     }
 }
 

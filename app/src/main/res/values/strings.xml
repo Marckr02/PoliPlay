@@ -772,4 +772,13 @@
     <string name="task_repeat_semester_end">Hasta fin de semestre</string>
     <string name="notification_complete_task">Completar</string>
     <string name="notification_snooze_task">Posponer 1 h</string>
+
+    <!-- Ola 1 Bloque D: descartar cambios y deshacer borrados -->
+    <string name="discard_changes_title">¿Descartar cambios?</string>
+    <string name="discard_changes_message">Perderás los cambios que no hayas guardado.</string>
+    <string name="discard_changes_confirm">Descartar</string>
+    <string name="discard_changes_keep_editing">Seguir editando</string>
+    <string name="transaction_deleted_snackbar">Movimiento eliminado</string>
+    <string name="note_deleted_snackbar">Nota eliminada</string>
+    <string name="scheduled_payment_deleted_snackbar">Pago programado eliminado</string>
 </resources>

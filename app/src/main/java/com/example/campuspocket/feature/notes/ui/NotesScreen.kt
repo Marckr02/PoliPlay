@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import com.example.campuspocket.core.designsystem.components.CampusButtonStyle
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
+import com.example.campuspocket.core.designsystem.components.EmptyNotesState
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
 import com.example.campuspocket.core.designsystem.components.FolderChipsRow
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
@@ -42,8 +44,11 @@ import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.components.SearchPill
 import com.example.campuspocket.core.designsystem.components.StaggeredNotesGrid
 import com.example.campuspocket.core.designsystem.extended
+import com.example.campuspocket.core.navigation.LocalSnackbarHost
+import com.example.campuspocket.core.navigation.showUndoSnackbar
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
+import kotlinx.coroutines.launch
 
 /**
  * Notas: buscador en píldora, chips de carpetas y cuadrícula escalonada de
@@ -57,8 +62,11 @@ fun NotesScreen(
     viewModel: NotesViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val snackbarHost = LocalSnackbarHost.current
+    val deletedMessage = stringResource(R.string.note_deleted_snackbar)
+    val undoLabel = stringResource(R.string.snackbar_undo)
     var showNewFolder by remember { mutableStateOf(false) }
-    var deletingNote by remember { mutableStateOf<NoteEntity?>(null) }
     var movingNote by remember { mutableStateOf<NoteEntity?>(null) }
     var deletingFolder by remember { mutableStateOf<FolderEntity?>(null) }
 
@@ -120,7 +128,17 @@ fun NotesScreen(
                     notes = state.notes,
                     onNoteClick = onOpenNote,
                     onPinToggle = { noteId, pinned -> viewModel.togglePin(noteId, pinned) },
-                    onDelete = { note -> deletingNote = note },
+                    onDelete = { note ->
+                        scope.launch {
+                            val deleted = viewModel.deleteNoteForUndo(note.id) ?: return@launch
+                            val undone = snackbarHost.showUndoSnackbar(
+                                message = deletedMessage,
+                                actionLabel = undoLabel,
+                                timeoutMillis = 5_000L
+                            )
+                            if (undone) viewModel.restoreNote(deleted)
+                        }
+                    },
                     onMove = { note -> movingNote = note }
                 )
             }
@@ -134,25 +152,10 @@ fun NotesScreen(
                 )
             }
 
-            state.folders.isEmpty() -> {
-                EmptyStateCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    title = stringResource(R.string.notes_empty_heading),
-                    message = stringResource(R.string.empty_notes),
-                    icon = painterResource(R.drawable.ic_notes),
-                    actionText = stringResource(R.string.notes_new),
-                    onAction = onNewNote
-                )
-            }
-
             else -> {
-                EmptyStateCard(
+                EmptyNotesState(
                     modifier = Modifier.fillMaxWidth(),
-                    title = stringResource(R.string.notes_folder_empty),
-                    message = stringResource(R.string.empty_notes),
-                    icon = painterResource(R.drawable.ic_notes),
-                    actionText = stringResource(R.string.notes_new),
-                    onAction = onNewNote
+                    onNewNote = onNewNote
                 )
             }
         }
@@ -196,21 +199,6 @@ fun NotesScreen(
         )
     }
 
-    deletingNote?.let { note ->
-        CampusDialog(
-            onDismissRequest = { deletingNote = null },
-            title = note.title.ifBlank { stringResource(R.string.notes_empty_title) },
-            message = stringResource(R.string.delete_note_confirm),
-            icon = Icons.Filled.Delete,
-            destructive = true,
-            confirmText = stringResource(R.string.delete),
-            onConfirm = {
-                viewModel.deleteNote(note.id)
-                deletingNote = null
-            }
-        )
-    }
-
     movingNote?.let { note ->
         CampusDialog(
             onDismissRequest = { movingNote = null },
@@ -250,7 +238,11 @@ fun NotesScreen(
 fun PreviewNotesScreen() {
     CampusTheme {
         Surface {
-            NotesScreen(onOpenNote = {}, onNewNote = {})
+            androidx.compose.runtime.CompositionLocalProvider(
+                LocalSnackbarHost provides remember { androidx.compose.material3.SnackbarHostState() }
+            ) {
+                NotesScreen(onOpenNote = {}, onNewNote = {})
+            }
         }
     }
 }

@@ -69,7 +69,9 @@ data class TransactionFormUiState(
     /** Contador de guardados en modo "Seguir añadiendo" para disparar snackbar. */
     val savedCount: Int = 0,
     /** ID de la última transacción insertada (para deshacer en modo "Seguir añadiendo"). */
-    val lastInsertedTransactionId: Long? = null
+    val lastInsertedTransactionId: Long? = null,
+    /** Hay cambios del usuario que aún no se han guardado. */
+    val hasUnsavedChanges: Boolean = false
 ) {
     val isEditing: Boolean get() = transactionId != null
 
@@ -314,7 +316,11 @@ class TransactionFormViewModel @Inject constructor(
     fun onAmountChange(value: String) {
         val digits = value.filter(Char::isDigit).take(9)
         val cents = digits.toLongOrNull() ?: 0L
-        _uiState.value = _uiState.value.copy(amountCents = cents, error = null)
+        _uiState.value = _uiState.value.copy(
+            amountCents = cents,
+            error = null,
+            hasUnsavedChanges = true
+        )
     }
 
     fun onAccountChange(accountId: Long) {
@@ -322,12 +328,17 @@ class TransactionFormViewModel @Inject constructor(
             accountId = accountId,
             refundOfId = null,
             usesLastAccount = false,
-            error = null
+            error = null,
+            hasUnsavedChanges = true
         )
     }
 
     fun onTargetAccountChange(accountId: Long) {
-        _uiState.value = _uiState.value.copy(targetAccountId = accountId, error = null)
+        _uiState.value = _uiState.value.copy(
+            targetAccountId = accountId,
+            error = null,
+            hasUnsavedChanges = true
+        )
     }
 
     /** Cambia el tipo sin perder monto, cuenta, fecha ni nota. */
@@ -348,7 +359,8 @@ class TransactionFormViewModel @Inject constructor(
             targetAccountId = if (type == TransactionType.TRANSFER) state.targetAccountId else null,
             refundOfId = if (type == TransactionType.REFUND) state.refundOfId else null,
             usesLastCategory = false,
-            error = null
+            error = null,
+            hasUnsavedChanges = true
         )
     }
 
@@ -376,7 +388,8 @@ class TransactionFormViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 categoryId = id,
                 usesLastCategory = false,
-                error = null
+                error = null,
+                hasUnsavedChanges = true
             )
         }
     }
@@ -385,7 +398,8 @@ class TransactionFormViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             categoryId = categoryId,
             usesLastCategory = false,
-            error = null
+            error = null,
+            hasUnsavedChanges = true
         )
     }
 
@@ -408,7 +422,8 @@ class TransactionFormViewModel @Inject constructor(
             refundOfId = null,
             usesLastAccount = false,
             usesLastCategory = false,
-            error = null
+            error = null,
+            hasUnsavedChanges = true
         )
         template.id?.let { id ->
             viewModelScope.launch { financeRepository.touchTransactionTemplate(id) }
@@ -453,11 +468,17 @@ class TransactionFormViewModel @Inject constructor(
     }
 
     fun onRefundOfChange(transactionId: Long?) {
-        _uiState.value = _uiState.value.copy(refundOfId = transactionId)
+        _uiState.value = _uiState.value.copy(
+            refundOfId = transactionId,
+            hasUnsavedChanges = true
+        )
     }
 
     fun onDescriptionChange(value: String) {
-        _uiState.value = _uiState.value.copy(description = value)
+        _uiState.value = _uiState.value.copy(
+            description = value,
+            hasUnsavedChanges = true
+        )
     }
 
     /** Autocompleta nota, categoría y monto desde una descripción anterior (v6). */
@@ -472,12 +493,13 @@ class TransactionFormViewModel @Inject constructor(
             categoryId = categoryId,
             amountCents = suggestion.amountCents.takeIf { it > 0L } ?: state.amountCents,
             usesLastCategory = false,
-            error = null
+            error = null,
+            hasUnsavedChanges = true
         )
     }
 
     fun onDateChange(date: LocalDate) {
-        _uiState.value = _uiState.value.copy(date = date)
+        _uiState.value = _uiState.value.copy(date = date, hasUnsavedChanges = true)
     }
 
     fun onToggleDescription() {
@@ -529,12 +551,14 @@ class TransactionFormViewModel @Inject constructor(
                         amountCents = 0,
                         error = null,
                         savedCount = state.savedCount + 1,
-                        lastInsertedTransactionId = insertedId
+                        lastInsertedTransactionId = insertedId,
+                        hasUnsavedChanges = false
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
                         saved = true,
-                        lastInsertedTransactionId = insertedId
+                        lastInsertedTransactionId = insertedId,
+                        hasUnsavedChanges = false
                     )
                 }
             } finally {
@@ -548,6 +572,27 @@ class TransactionFormViewModel @Inject constructor(
         viewModelScope.launch {
             financeRepository.deleteTransaction(id)
             _uiState.value = _uiState.value.copy(deleted = true)
+        }
+    }
+
+    /**
+     * Borra el movimiento en edición y devuelve una copia para poder restaurarlo
+     * si el usuario pulsa "Deshacer" en el snackbar.
+     */
+    suspend fun deleteForUndo(): Transaction? {
+        val id = _uiState.value.transactionId ?: return null
+        val transaction = financeRepository.getTransaction(id) ?: return null
+        financeRepository.deleteTransaction(id)
+        return transaction
+    }
+
+    /** Restaura el movimiento eliminado conservando su id original. */
+    fun restore(transaction: Transaction) {
+        viewModelScope.launch {
+            financeRepository.insertTransaction(transaction)
+            // Conserva el estado de cambios previo: si el usuario había editado
+            // campos antes de borrar, la guarda de descarte debe seguir activa.
+            _uiState.value = _uiState.value.copy(deleted = false)
         }
     }
 

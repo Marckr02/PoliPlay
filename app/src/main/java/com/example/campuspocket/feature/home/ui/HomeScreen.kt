@@ -1,6 +1,7 @@
 package com.example.campuspocket.feature.home.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -421,6 +422,11 @@ private fun NextClassCard(
 ) {
     val ext = MaterialTheme.extended
     BentoCard(
+        modifier = Modifier.border(
+            1.dp,
+            ext.inkLine,
+            MaterialTheme.shapes.extraLarge
+        ),
         onClick = onClick,
         containerColor = ext.ink,
         contentColor = ext.onInk,

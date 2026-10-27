@@ -49,7 +49,9 @@ data class CategoryFormUiState(
     val colorArgb: Int = 0xFF4C8DFF.toInt(),
     val nameError: Boolean = false,
     val isLoaded: Boolean = false,
-    val saved: Boolean = false
+    val saved: Boolean = false,
+    /** Hay cambios del usuario que aún no se han guardado. */
+    val hasUnsavedChanges: Boolean = false
 ) {
     val isEditing: Boolean get() = categoryId != null
 }
@@ -88,15 +90,19 @@ class CategoryFormViewModel @Inject constructor(
     }
 
     fun onNameChange(value: String) {
-        _uiState.value = _uiState.value.copy(name = value, nameError = false)
+        _uiState.value = _uiState.value.copy(
+            name = value,
+            nameError = false,
+            hasUnsavedChanges = true
+        )
     }
 
     fun onKindChange(value: CategoryKind) {
-        _uiState.value = _uiState.value.copy(kind = value)
+        _uiState.value = _uiState.value.copy(kind = value, hasUnsavedChanges = true)
     }
 
     fun onColorChange(value: Int) {
-        _uiState.value = _uiState.value.copy(colorArgb = value)
+        _uiState.value = _uiState.value.copy(colorArgb = value, hasUnsavedChanges = true)
     }
 
     fun save() {
@@ -114,7 +120,10 @@ class CategoryFormViewModel @Inject constructor(
             )
             if (state.isEditing) financeRepository.updateCategory(category)
             else financeRepository.insertCategory(category)
-            _uiState.value = _uiState.value.copy(saved = true)
+            _uiState.value = _uiState.value.copy(
+                saved = true,
+                hasUnsavedChanges = false
+            )
         }
     }
 

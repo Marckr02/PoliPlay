@@ -1,9 +1,26 @@
 # Changelog
 
 Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
-- `0.MENOR.PARCHE` — `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
+- `0.MENOR.PARCHE` - `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
 
-## [0.9.2] — 2026-10-26
+## [0.10.0] - 2026-10-26
+Commit: ver etiqueta `v0.10.0`
+
+Ola 1 del Bloque D.
+
+### Añadido
+- Confirmación "¿Descartar cambios?" al volver de los formularios de cuenta, categoría, materia, tarea, pago, movimiento y retiro cuando hay datos sin guardar.
+- "Deshacer" al eliminar notas, movimientos y pagos programados desde el aviso inferior; ya no hay diálogo de confirmación para esos tres borrados.
+- Estados vacíos ilustrados en Movimientos, Notas, Pagos y Materias, con acción directa cuando corresponde.
+
+### Cambiado
+- Los textos usan cifras tabulares: montos, fechas y contadores conservan su ancho al cambiar de valor.
+- La tarjeta de próxima clase de Inicio lleva borde `inkLine` para distinguirse del fondo en tema oscuro.
+
+### Pruebas
+- 189 pruebas unitarias, 54 instrumentadas y `lintDebug` en verde.
+
+## [0.9.2] - 2026-10-26
 Commit: ver etiqueta `v0.9.2`
 
 ### Añadido

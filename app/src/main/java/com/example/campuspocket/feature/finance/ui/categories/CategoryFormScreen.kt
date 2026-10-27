@@ -45,6 +45,7 @@ import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
+import com.example.campuspocket.core.designsystem.components.rememberDiscardChangesGuard
 import com.example.campuspocket.feature.finance.data.CategoryKind
 
 @Composable
@@ -56,6 +57,10 @@ fun CategoryFormScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showArchiveDialog by remember { mutableStateOf(false) }
+    val requestBack = rememberDiscardChangesGuard(
+        hasUnsavedChanges = state.hasUnsavedChanges && !state.saved,
+        onDiscard = onDone
+    )
 
     LaunchedEffect(state.saved) {
         if (state.saved) onDone()
@@ -64,7 +69,7 @@ fun CategoryFormScreen(
     Column(modifier = modifier.fillMaxSize().imePadding()) {
         CampusTopBar(
             title = stringResource(if (state.isEditing) R.string.category_edit else R.string.category_new),
-            onBack = onDone
+            onBack = requestBack
         )
         if (!state.isLoaded) {
             Box(

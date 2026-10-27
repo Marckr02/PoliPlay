@@ -73,6 +73,7 @@ import com.example.campuspocket.core.designsystem.components.campusDatePickerCol
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.SegmentedControl
+import com.example.campuspocket.core.designsystem.components.rememberDiscardChangesGuard
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.feature.academic.domain.model.Priority
 import com.example.campuspocket.feature.academic.domain.model.RepeatRule
@@ -106,6 +107,10 @@ fun TaskFormScreen(
     val linkedNotes by viewModel.linkedNotes.collectAsStateWithLifecycle(emptyList<com.example.campuspocket.feature.notes.data.NoteEntity>())
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val requestBack = rememberDiscardChangesGuard(
+        hasUnsavedChanges = state.hasUnsavedChanges && !state.saved && !state.deleted,
+        onDiscard = onDone
+    )
 
     LaunchedEffect(state.saved, state.deleted) {
         if (state.saved || state.deleted) onDone()
@@ -115,7 +120,7 @@ fun TaskFormScreen(
         state = state,
         courses = courses,
         linkedNotes = linkedNotes,
-        onBack = onDone,
+        onBack = requestBack,
         onTitleChange = viewModel::onTitleChange,
         onDescriptionChange = viewModel::onDescriptionChange,
         onCourseChange = viewModel::onCourseChange,

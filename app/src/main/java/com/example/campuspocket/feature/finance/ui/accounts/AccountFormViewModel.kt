@@ -27,7 +27,9 @@ data class AccountFormUiState(
     val isLoaded: Boolean = false,
     val saved: Boolean = false,
     val archivedDone: Boolean = false,
-    val notFound: Boolean = false
+    val notFound: Boolean = false,
+    /** Hay cambios del usuario que aún no se han guardado. */
+    val hasUnsavedChanges: Boolean = false
 ) {
     val isEditing: Boolean get() = accountId != null
 
@@ -74,25 +76,35 @@ class AccountFormViewModel @Inject constructor(
     }
 
     fun onNameChange(value: String) {
-        _uiState.value = _uiState.value.copy(name = value, nameError = false)
+        _uiState.value = _uiState.value.copy(
+            name = value,
+            nameError = false,
+            hasUnsavedChanges = true
+        )
     }
 
     fun onTypeChange(value: AccountType) {
-        _uiState.value = _uiState.value.copy(type = value)
+        _uiState.value = _uiState.value.copy(type = value, hasUnsavedChanges = true)
     }
 
     /** Entrada estilo cajero: solo dígitos; cada dígito entra por la derecha del monto. */
     fun onInitialAmountChange(value: String) {
         val digits = value.filter(Char::isDigit).take(9)
-        _uiState.value = _uiState.value.copy(initialAmountCents = digits.toLongOrNull() ?: 0L)
+        _uiState.value = _uiState.value.copy(
+            initialAmountCents = digits.toLongOrNull() ?: 0L,
+            hasUnsavedChanges = true
+        )
     }
 
     fun onIncludeInTotalChange(value: Boolean) {
-        _uiState.value = _uiState.value.copy(includeInTotal = value)
+        _uiState.value = _uiState.value.copy(
+            includeInTotal = value,
+            hasUnsavedChanges = true
+        )
     }
 
     fun onColorChange(value: Int) {
-        _uiState.value = _uiState.value.copy(colorArgb = value)
+        _uiState.value = _uiState.value.copy(colorArgb = value, hasUnsavedChanges = true)
     }
 
     fun save() {
@@ -118,7 +130,10 @@ class AccountFormViewModel @Inject constructor(
             )
             if (state.isEditing) financeRepository.updateAccount(account)
             else financeRepository.insertAccount(account)
-            _uiState.value = _uiState.value.copy(saved = true)
+            _uiState.value = _uiState.value.copy(
+                saved = true,
+                hasUnsavedChanges = false
+            )
         }
     }
 
@@ -126,7 +141,10 @@ class AccountFormViewModel @Inject constructor(
         val id = _uiState.value.accountId ?: return
         viewModelScope.launch {
             financeRepository.archiveAccount(id)
-            _uiState.value = _uiState.value.copy(archivedDone = true)
+            _uiState.value = _uiState.value.copy(
+                archivedDone = true,
+                hasUnsavedChanges = false
+            )
         }
     }
 }

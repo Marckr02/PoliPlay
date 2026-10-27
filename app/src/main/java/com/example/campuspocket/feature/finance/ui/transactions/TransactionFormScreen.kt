@@ -46,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,6 +81,7 @@ import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.TransactionKeypadPanel
 import com.example.campuspocket.core.designsystem.components.TransactionTypeSelector
+import com.example.campuspocket.core.designsystem.components.rememberDiscardChangesGuard
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.navigation.LocalSnackbarHost
@@ -92,6 +94,7 @@ import com.example.campuspocket.feature.finance.domain.TransactionError
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
 import com.example.campuspocket.feature.finance.domain.model.TransactionTemplate
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -121,6 +124,7 @@ fun TransactionFormScreen(
     val templates by viewModel.templates.collectAsStateWithLifecycle()
     val snackbarHost = LocalSnackbarHost.current
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     val savedMessage = stringResource(
         if (state.type == TransactionType.EXPENSE) {
             R.string.transaction_saved_undo
@@ -129,18 +133,26 @@ fun TransactionFormScreen(
         }
     )
     val undoLabel = stringResource(R.string.undo)
+    val deletedMessage = stringResource(R.string.transaction_deleted_snackbar)
     val savedTemplateMessage = stringResource(R.string.template_saved)
     val deletedTemplateMessage = stringResource(R.string.template_deleted)
     val defaultTemplateName = stringResource(R.string.template_default_name)
 
     var showDatePicker by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
     var showTemplateDialog by remember { mutableStateOf(false) }
     var showCategorySheet by remember { mutableStateOf(false) }
     var categoryQuery by remember { mutableStateOf("") }
     var accountSheet by remember { mutableStateOf<AccountSheetTarget?>(null) }
     var templateName by remember { mutableStateOf("") }
+    var deleteInProgress by remember { mutableStateOf(false) }
     val templateScroll = rememberScrollState()
+    val requestBack = rememberDiscardChangesGuard(
+        hasUnsavedChanges = state.hasUnsavedChanges &&
+            !state.saved &&
+            !state.deleted &&
+            !deleteInProgress,
+        onDiscard = onDone
+    )
 
     // Guardar y volver: deja ver el snackbar con Deshacer unos segundos.
     LaunchedEffect(state.saved) {
@@ -184,7 +196,7 @@ fun TransactionFormScreen(
     Column(modifier = modifier.fillMaxSize().imePadding()) {
         CampusTopBar(
             title = stringResource(transactionTitleRes(state.type, state.isEditing)),
-            onBack = onDone,
+            onBack = requestBack,
             backContentDescription = stringResource(R.string.close),
             backIcon = Icons.Filled.Close
         )
@@ -326,8 +338,30 @@ fun TransactionFormScreen(
                 if (state.isEditing) {
                     CampusButton(
                         text = stringResource(R.string.delete),
-                        onClick = { showDeleteDialog = true },
+                        onClick = {
+                            if (deleteInProgress) return@CampusButton
+                            deleteInProgress = true
+                            scope.launch {
+                                val deleted = viewModel.deleteForUndo()
+                                if (deleted == null) {
+                                    deleteInProgress = false
+                                    return@launch
+                                }
+                                val undone = snackbarHost.showUndoSnackbar(
+                                    message = deletedMessage,
+                                    actionLabel = undoLabel,
+                                    timeoutMillis = 5_000L
+                                )
+                                if (undone) {
+                                    viewModel.restore(deleted)
+                                    deleteInProgress = false
+                                } else {
+                                    onDone()
+                                }
+                            }
+                        },
                         style = CampusButtonStyle.DESTRUCTIVE,
+                        enabled = !deleteInProgress,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -350,21 +384,6 @@ fun TransactionFormScreen(
             onConfirm = {
                 viewModel.onDateChange(it)
                 showDatePicker = false
-            }
-        )
-    }
-
-    if (showDeleteDialog) {
-        CampusDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = stringResource(R.string.delete),
-            message = stringResource(R.string.delete_transaction_confirm),
-            icon = Icons.Filled.Warning,
-            destructive = true,
-            confirmText = stringResource(R.string.delete),
-            onConfirm = {
-                showDeleteDialog = false
-                viewModel.delete()
             }
         )
     }

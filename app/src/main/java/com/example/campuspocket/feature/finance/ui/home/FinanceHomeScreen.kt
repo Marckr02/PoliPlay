@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -54,10 +55,12 @@ import com.example.campuspocket.feature.finance.ui.history.historyItems
 import com.example.campuspocket.feature.finance.ui.payments.PaymentsView
 import com.example.campuspocket.feature.finance.ui.payments.PaymentsViewModel
 import com.example.campuspocket.feature.finance.ui.payments.paymentItems
+import com.example.campuspocket.feature.finance.ui.payments.rememberPaymentDeletionHandler
 import com.example.campuspocket.feature.finance.ui.summary.BudgetInsightsRow
 import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceCard
 import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceSuggestionCard
 import com.example.campuspocket.feature.finance.ui.summary.SummaryViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterNotNull
 
 enum class FinanceTab { MOVEMENTS, BUDGETS, PAYMENTS }
@@ -91,6 +94,10 @@ fun FinanceHomeScreen(
     var paymentsView by rememberSaveable { mutableStateOf(PaymentsView.LIST) }
 
     val listState = rememberLazyListState()
+
+    // El "Deshacer" de pagos debe sobrevivir al cambio de pestaña: si el scope
+    // viviera en el ítem perezoso, cambiar de pestaña cancelaría la restauración.
+    val paymentsUndoScope = rememberCoroutineScope()
 
     // Posición por pestaña: firstVisibleItemIndex + offset (v5).
     val scrollPositions = rememberSaveable {
@@ -138,7 +145,8 @@ fun FinanceHomeScreen(
         onManageCategories = onManageCategories,
         onAddPayment = onAddPayment,
         onEditPayment = onEditPayment,
-        onOpenCalendar = onOpenCalendar
+        onOpenCalendar = onOpenCalendar,
+        paymentsUndoScope = paymentsUndoScope
     )
 
     LazyColumn(
@@ -298,7 +306,8 @@ private fun financeTabContent(
     onManageCategories: () -> Unit,
     onAddPayment: () -> Unit,
     onEditPayment: (Long) -> Unit,
-    onOpenCalendar: () -> Unit
+    onOpenCalendar: () -> Unit,
+    paymentsUndoScope: CoroutineScope
 ): LazyListScope.() -> Unit = when (currentTab) {
     FinanceTab.MOVEMENTS -> {
         val viewModel: HistoryViewModel = hiltViewModel()
@@ -329,6 +338,7 @@ private fun financeTabContent(
     FinanceTab.PAYMENTS -> {
         val viewModel: PaymentsViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
+        val onDeletePayment = rememberPaymentDeletionHandler(viewModel, paymentsUndoScope)
         val content: LazyListScope.() -> Unit = {
             paymentItems(
                 state = state,
@@ -337,7 +347,8 @@ private fun financeTabContent(
                 onViewChange = onPaymentsViewChange,
                 onAddPayment = onAddPayment,
                 onEditPayment = onEditPayment,
-                onOpenCalendar = onOpenCalendar
+                onOpenCalendar = onOpenCalendar,
+                onDeletePayment = onDeletePayment
             )
         }
         content

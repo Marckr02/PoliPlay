@@ -46,7 +46,9 @@ data class CourseFormUiState(
     val isEditing: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
-    val saved: Boolean = false
+    val saved: Boolean = false,
+    /** Hay cambios del usuario que aún no se han guardado. */
+    val hasUnsavedChanges: Boolean = false
 )
 
 @HiltViewModel
@@ -93,25 +95,43 @@ class CourseFormViewModel @Inject constructor(
         }
     }
 
-    fun onCodeChange(value: String) = _uiState.update { it.copy(code = value, codeError = null) }
-    fun onNameChange(value: String) = _uiState.update { it.copy(name = value, nameError = null) }
-    fun onSectionChange(value: String) = _uiState.update { it.copy(section = value, sectionError = null) }
-    fun onTeacherChange(value: String) = _uiState.update { it.copy(teacher = value) }
-    fun onColorChange(color: Int) = _uiState.update { it.copy(colorArgb = color) }
+    fun onCodeChange(value: String) = _uiState.update {
+        it.copy(code = value, codeError = null, hasUnsavedChanges = true)
+    }
+    fun onNameChange(value: String) = _uiState.update {
+        it.copy(name = value, nameError = null, hasUnsavedChanges = true)
+    }
+    fun onSectionChange(value: String) = _uiState.update {
+        it.copy(section = value, sectionError = null, hasUnsavedChanges = true)
+    }
+    fun onTeacherChange(value: String) = _uiState.update {
+        it.copy(teacher = value, hasUnsavedChanges = true)
+    }
+    fun onColorChange(color: Int) = _uiState.update {
+        it.copy(colorArgb = color, hasUnsavedChanges = true)
+    }
 
     fun addSession() = _uiState.update {
-        it.copy(sessions = it.sessions + SessionFormState(), sessionsError = null)
+        it.copy(
+            sessions = it.sessions + SessionFormState(),
+            sessionsError = null,
+            hasUnsavedChanges = true
+        )
     }
 
     fun removeSession(index: Int) = _uiState.update {
-        it.copy(sessions = it.sessions.toMutableList().apply { removeAt(index) })
+        it.copy(
+            sessions = it.sessions.toMutableList().apply { removeAt(index) },
+            hasUnsavedChanges = true
+        )
     }
 
     fun updateSession(index: Int, session: SessionFormState) = _uiState.update {
         it.copy(
             sessions = it.sessions.toMutableList().apply {
                 set(index, session.copy(dayError = null, startError = null, endError = null))
-            }
+            },
+            hasUnsavedChanges = true
         )
     }
 
@@ -167,7 +187,9 @@ class CourseFormViewModel @Inject constructor(
             } else {
                 courseRepository.updateCourse(course)
             }
-            _uiState.update { it.copy(isSaving = false, saved = true) }
+            _uiState.update {
+                it.copy(isSaving = false, saved = true, hasUnsavedChanges = false)
+            }
         }
     }
 

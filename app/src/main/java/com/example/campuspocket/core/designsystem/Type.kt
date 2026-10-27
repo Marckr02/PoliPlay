@@ -26,7 +26,9 @@ private fun style(
     fontWeight = weight,
     fontSize = size.sp,
     lineHeight = lineHeight.sp,
-    letterSpacing = letterSpacing.sp
+    letterSpacing = letterSpacing.sp,
+    // Cifras de ancho fijo: montos, fechas y contadores no bailan al cambiar.
+    fontFeatureSettings = "tnum"
 )
 
 /**

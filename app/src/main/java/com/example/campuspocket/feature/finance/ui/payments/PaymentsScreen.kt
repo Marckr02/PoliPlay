@@ -1,6 +1,5 @@
 package com.example.campuspocket.feature.finance.ui.payments
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,30 +10,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,19 +40,21 @@ import androidx.lifecycle.viewModelScope
 import com.example.campuspocket.R
 import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.components.BentoCard
-import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.designsystem.components.CampusChip
 import com.example.campuspocket.core.designsystem.components.CampusDialog
 import com.example.campuspocket.core.designsystem.components.CampusTextField
+import com.example.campuspocket.core.designsystem.components.EmptyPaymentsState
 import com.example.campuspocket.core.designsystem.components.LoadingShimmer
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
-import com.example.campuspocket.core.designsystem.extended
+import com.example.campuspocket.core.navigation.LocalSnackbarHost
+import com.example.campuspocket.core.navigation.showUndoSnackbar
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.domain.repository.FinanceRepository
 import com.example.campuspocket.feature.finance.ui.calendar.CalendarScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -97,6 +93,7 @@ fun PaymentsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var view by rememberSaveable { mutableStateOf(PaymentsView.LIST) }
+    val onDeletePayment = rememberPaymentDeletionHandler(viewModel)
 
     LazyColumn(modifier = modifier.fillMaxWidth()) {
         paymentItems(
@@ -106,8 +103,35 @@ fun PaymentsScreen(
             onViewChange = { view = it },
             onAddPayment = onAddPayment,
             onEditPayment = onEditPayment,
-            onOpenCalendar = onOpenCalendar
+            onOpenCalendar = onOpenCalendar,
+            onDeletePayment = onDeletePayment
         )
+    }
+}
+
+/**
+ * Elimina el pago de inmediato y ofrece deshacer en el snackbar. Vive en la
+ * pantalla, no en la tarjeta: al borrarse, el ítem sale de la lista y su scope
+ * desaparecería antes de poder restaurarlo.
+ */
+@Composable
+internal fun rememberPaymentDeletionHandler(
+    viewModel: PaymentsViewModel,
+    scope: CoroutineScope = rememberCoroutineScope()
+): (ScheduledPaymentEntity) -> Unit {
+    val snackbarHost = LocalSnackbarHost.current
+    val deletedMessage = stringResource(R.string.scheduled_payment_deleted_snackbar)
+    val undoLabel = stringResource(R.string.snackbar_undo)
+    return { payment ->
+        scope.launch {
+            viewModel.deleteForUndo(payment)
+            val undone = snackbarHost.showUndoSnackbar(
+                message = deletedMessage,
+                actionLabel = undoLabel,
+                timeoutMillis = 5_000L
+            )
+            if (undone) viewModel.restore(payment)
+        }
     }
 }
 
@@ -122,7 +146,8 @@ fun LazyListScope.paymentItems(
     onViewChange: (PaymentsView) -> Unit,
     onAddPayment: () -> Unit,
     onEditPayment: (Long) -> Unit,
-    onOpenCalendar: () -> Unit
+    onOpenCalendar: () -> Unit,
+    onDeletePayment: (ScheduledPaymentEntity) -> Unit
 ) {
     item(key = "payments_header", contentType = "header") {
         Box(Modifier.padding(horizontal = 20.dp)) {
@@ -154,9 +179,7 @@ fun LazyListScope.paymentItems(
             }
 
             state.payments.isEmpty() -> item(key = "payments_empty", contentType = "empty") {
-                Box(Modifier.padding(horizontal = 20.dp)) {
-                    PaymentsEmptyCard(onAddPayment = onAddPayment)
-                }
+                EmptyPaymentsState(onNewPayment = onAddPayment)
             }
 
             else -> items(
@@ -167,7 +190,8 @@ fun LazyListScope.paymentItems(
                 PaymentCardItem(
                     payment = payment,
                     viewModel = viewModel,
-                    onEditPayment = onEditPayment
+                    onEditPayment = onEditPayment,
+                    onDeletePayment = onDeletePayment
                 )
             }
         }
@@ -190,10 +214,10 @@ fun LazyListScope.paymentItems(
 private fun PaymentCardItem(
     payment: ScheduledPaymentEntity,
     viewModel: PaymentsViewModel,
-    onEditPayment: (Long) -> Unit
+    onEditPayment: (Long) -> Unit,
+    onDeletePayment: (ScheduledPaymentEntity) -> Unit
 ) {
     var payNow by remember(payment.id) { mutableStateOf(false) }
-    var deleting by remember(payment.id) { mutableStateOf(false) }
 
     Box(Modifier.padding(horizontal = 20.dp)) {
         PaymentCard(
@@ -201,7 +225,7 @@ private fun PaymentCardItem(
             onToggleActive = { viewModel.toggleActive(payment) },
             onMarkPaid = { payNow = true },
             onEdit = { onEditPayment(payment.id) },
-            onDelete = { deleting = true }
+            onDelete = { onDeletePayment(payment) }
         )
     }
 
@@ -212,21 +236,6 @@ private fun PaymentCardItem(
             onConfirm = { amountCents ->
                 viewModel.markPaid(payment, amountCents, LocalDate.now())
                 payNow = false
-            }
-        )
-    }
-
-    if (deleting) {
-        CampusDialog(
-            onDismissRequest = { deleting = false },
-            title = payment.name,
-            message = stringResource(R.string.scheduled_payment_delete_confirm),
-            icon = Icons.Filled.Warning,
-            destructive = true,
-            confirmText = stringResource(R.string.delete),
-            onConfirm = {
-                viewModel.delete(payment.id)
-                deleting = false
             }
         )
     }
@@ -262,53 +271,6 @@ private fun PayNowDialog(
             )
         }
     )
-}
-
-@Composable
-private fun PaymentsEmptyCard(onAddPayment: () -> Unit) {
-    val ext = MaterialTheme.extended
-    BentoCard(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(ext.lavender),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_schedule),
-                    contentDescription = null, // decorativo: la etiqueta contigua describe la accion
-                    tint = ext.onLavender,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.empty_scheduled_payments),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = stringResource(R.string.empty_scheduled_payments_message),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        CampusButton(
-            text = stringResource(R.string.scheduled_payment_new),
-            onClick = onAddPayment,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
 }
 
 @Composable
@@ -482,9 +444,15 @@ class PaymentsViewModel @Inject constructor(
         }
     }
 
-    fun delete(id: Long) {
+    /** Borra el pago inmediatamente para poder ofrecer "Deshacer" con la entidad completa. */
+    suspend fun deleteForUndo(payment: ScheduledPaymentEntity) {
+        financeRepository.deleteScheduledPayment(payment.id)
+    }
+
+    /** Reinserta el pago eliminado conservando su id original. */
+    fun restore(payment: ScheduledPaymentEntity) {
         viewModelScope.launch {
-            financeRepository.deleteScheduledPayment(id)
+            financeRepository.insertScheduledPayment(payment)
         }
     }
 }

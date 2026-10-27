@@ -35,7 +35,9 @@ data class WithdrawalUiState(
     val error: WithdrawalError? = null,
     val savedAmountCents: Long? = null,
     val isSaving: Boolean = false,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    /** El usuario ya eligió cuenta o monto y todavía no ha retirado. */
+    val hasUnsavedChanges: Boolean = false
 ) {
     val selectedAccount: AccountBalance?
         get() = savingsAccounts.firstOrNull { it.account.id == selectedAccountId }
@@ -48,7 +50,9 @@ private data class WithdrawalFormState(
     val amountCents: Long = 0,
     val error: WithdrawalError? = null,
     val savedAmountCents: Long? = null,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    /** Se marca al tocar cuenta o monto; se limpia al completar el retiro. */
+    val touched: Boolean = false
 )
 
 /**
@@ -86,12 +90,13 @@ class WithdrawalViewModel @Inject constructor(
             error = current.error,
             savedAmountCents = current.savedAmountCents,
             isSaving = current.isSaving,
-            isLoading = false
+            isLoading = false,
+            hasUnsavedChanges = current.touched && current.savedAmountCents == null
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, WithdrawalUiState())
 
     fun selectAccount(accountId: Long) {
-        form.value = form.value.copy(accountId = accountId, error = null)
+        form.value = form.value.copy(accountId = accountId, error = null, touched = true)
     }
 
     fun selectPreset(dollars: Int) {
@@ -99,7 +104,8 @@ class WithdrawalViewModel @Inject constructor(
             isCustomAmount = false,
             presetDollars = dollars,
             amountCents = dollars * 100L,
-            error = null
+            error = null,
+            touched = true
         )
     }
 
@@ -108,7 +114,8 @@ class WithdrawalViewModel @Inject constructor(
             isCustomAmount = true,
             presetDollars = null,
             amountCents = 0L,
-            error = null
+            error = null,
+            touched = true
         )
     }
 
@@ -119,7 +126,8 @@ class WithdrawalViewModel @Inject constructor(
             isCustomAmount = true,
             presetDollars = null,
             amountCents = digits.toLongOrNull() ?: 0L,
-            error = null
+            error = null,
+            touched = true
         )
     }
 
@@ -147,7 +155,8 @@ class WithdrawalViewModel @Inject constructor(
                     form.value = form.value.copy(
                         savedAmountCents = amount,
                         isSaving = false,
-                        error = null
+                        error = null,
+                        touched = false
                     )
                 is WithdrawalResult.Failure ->
                     form.value = form.value.copy(error = result.error, isSaving = false)

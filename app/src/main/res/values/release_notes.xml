@@ -5,11 +5,10 @@
          Se actualiza en cada lanzamiento; el historial completo está en CHANGELOG.md. -->
 
     <string-array name="release_notes_current">
-        <item>La búsqueda ahora es una pantalla completa: escribe y filtra por tareas, notas, movimientos o materias, con búsquedas recientes.</item>
-        <item>Los cambios de pantalla son más claros: los formularios suben desde abajo, los detalles se deslizan y las pestañas se funden.</item>
-        <item>El selector de fecha aparece en español aunque tu teléfono esté en otro idioma.</item>
-        <item>En la bienvenida puedes omitir la importación del horario con "Lo haré después" y empezar de inmediato.</item>
-        <item>El dock inferior ocupa solo su franja y deja libre el contenido de la pantalla.</item>
-        <item>La app de release se optimiza con R8; tus datos y funciones siguen igual.</item>
+        <item>Si sales de un formulario con cambios sin guardar, la app te pide confirmación antes de descartarlos.</item>
+        <item>Ahora puedes deshacer el borrado de notas, movimientos y pagos programados desde el aviso inferior.</item>
+        <item>Movimientos, Notas, Pagos y Materias muestran una ilustración cuando todavía no tienen contenido.</item>
+        <item>Los montos, las fechas y los contadores usan cifras de ancho fijo y dejan de moverse al cambiar.</item>
+        <item>La tarjeta de próxima clase se distingue mejor del fondo en tema oscuro.</item>
     </string-array>
 </resources>

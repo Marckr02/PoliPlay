@@ -59,6 +59,7 @@ import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.CampusSwitch
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
+import com.example.campuspocket.core.designsystem.components.rememberDiscardChangesGuard
 import com.example.campuspocket.feature.finance.data.AccountType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +71,10 @@ fun AccountFormScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showArchiveDialog by remember { mutableStateOf(false) }
+    val requestBack = rememberDiscardChangesGuard(
+        hasUnsavedChanges = state.hasUnsavedChanges && !state.saved && !state.archivedDone,
+        onDiscard = onDone
+    )
 
     LaunchedEffect(state.saved, state.archivedDone) {
         if (state.saved || state.archivedDone) onDone()
@@ -78,7 +83,7 @@ fun AccountFormScreen(
     Column(modifier = modifier.fillMaxSize().imePadding()) {
         CampusTopBar(
             title = stringResource(if (state.isEditing) R.string.account_name else R.string.finance_new_account),
-            onBack = onDone
+            onBack = requestBack
         )
         if (!state.isLoaded) {
             Box(

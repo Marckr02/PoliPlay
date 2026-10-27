@@ -72,11 +72,16 @@ class NoteUiTest {
         val repo = Repo()
         composeRule.setContent {
             CampusTheme {
-                NotesScreen(
-                    onOpenNote = {},
-                    onNewNote = {},
-                    viewModel = NotesViewModel(repo)
-                )
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.example.campuspocket.core.navigation.LocalSnackbarHost provides
+                        androidx.compose.material3.SnackbarHostState()
+                ) {
+                    NotesScreen(
+                        onOpenNote = {},
+                        onNewNote = {},
+                        viewModel = NotesViewModel(repo)
+                    )
+                }
             }
         }
 

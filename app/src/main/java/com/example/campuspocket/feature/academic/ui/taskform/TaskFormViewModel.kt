@@ -51,7 +51,9 @@ data class TaskFormUiState(
     val titleError: Boolean = false,
     val saved: Boolean = false,
     val deleted: Boolean = false,
-    val notFound: Boolean = false
+    val notFound: Boolean = false,
+    /** Hay cambios del usuario que aún no se han guardado. */
+    val hasUnsavedChanges: Boolean = false
 ) {
     val isEditing: Boolean get() = taskId != null
     val dueAt: Instant get() = date.atTime(time).atZone(ZoneId.systemDefault()).toInstant()
@@ -129,27 +131,27 @@ class TaskFormViewModel @Inject constructor(
     }
 
     fun onTitleChange(value: String) {
-        _uiState.update { it.copy(title = value, titleError = false) }
+        _uiState.update { it.copy(title = value, titleError = false, hasUnsavedChanges = true) }
     }
 
     fun onDescriptionChange(value: String) {
-        _uiState.update { it.copy(description = value) }
+        _uiState.update { it.copy(description = value, hasUnsavedChanges = true) }
     }
 
     fun onCourseChange(courseId: Long?) {
-        _uiState.update { it.copy(courseId = courseId) }
+        _uiState.update { it.copy(courseId = courseId, hasUnsavedChanges = true) }
     }
 
     fun onDateChange(date: LocalDate) {
-        _uiState.update { it.copy(date = date) }
+        _uiState.update { it.copy(date = date, hasUnsavedChanges = true) }
     }
 
     fun onTimeChange(time: LocalTime) {
-        _uiState.update { it.copy(time = time) }
+        _uiState.update { it.copy(time = time, hasUnsavedChanges = true) }
     }
 
     fun onPriorityChange(priority: Priority) {
-        _uiState.update { it.copy(priority = priority) }
+        _uiState.update { it.copy(priority = priority, hasUnsavedChanges = true) }
     }
 
     fun toggleReminder(minutesBefore: Int) {
@@ -159,7 +161,8 @@ class TaskFormViewModel @Inject constructor(
                 reminderMinutes = (
                     if (minutesBefore in current) current - minutesBefore
                     else current + minutesBefore
-                    ).sorted()
+                    ).sorted(),
+                hasUnsavedChanges = true
             )
         }
     }
@@ -167,7 +170,9 @@ class TaskFormViewModel @Inject constructor(
     // -- Subtareas ---------------------------------------------------------
 
     fun onSubtaskDraftChange(value: String) {
-        _uiState.update { it.copy(subtaskDraft = value, subtaskError = false) }
+        _uiState.update {
+            it.copy(subtaskDraft = value, subtaskError = false, hasUnsavedChanges = true)
+        }
     }
 
     fun addSubtask() {
@@ -184,7 +189,8 @@ class TaskFormViewModel @Inject constructor(
                     position = state.subtasks.size
                 ),
                 subtaskDraft = "",
-                subtaskError = false
+                subtaskError = false,
+                hasUnsavedChanges = true
             )
         }
     }
@@ -195,7 +201,8 @@ class TaskFormViewModel @Inject constructor(
             else state.copy(
                 subtasks = state.subtasks
                     .filterIndexed { i, _ -> i != index }
-                    .mapIndexed { i, subtask -> subtask.copy(position = i) }
+                    .mapIndexed { i, subtask -> subtask.copy(position = i) },
+                hasUnsavedChanges = true
             )
         }
     }
@@ -206,7 +213,8 @@ class TaskFormViewModel @Inject constructor(
             else state.copy(
                 subtasks = state.subtasks.mapIndexed { i, subtask ->
                     if (i == index) subtask.copy(done = !subtask.done) else subtask
-                }
+                },
+                hasUnsavedChanges = true
             )
         }
     }
@@ -221,18 +229,22 @@ class TaskFormViewModel @Inject constructor(
                     rule == RepeatRule.NONE -> null
                     state.repeatUntil == null -> state.semesterEnd
                     else -> state.repeatUntil
-                }
+                },
+                hasUnsavedChanges = true
             )
         }
     }
 
     fun onRepeatUntilChange(date: LocalDate) {
-        _uiState.update { it.copy(repeatUntil = date) }
+        _uiState.update { it.copy(repeatUntil = date, hasUnsavedChanges = true) }
     }
 
     fun useSemesterEnd() {
         _uiState.update { state ->
-            state.copy(repeatUntil = state.semesterEnd ?: state.repeatUntil)
+            state.copy(
+                repeatUntil = state.semesterEnd ?: state.repeatUntil,
+                hasUnsavedChanges = true
+            )
         }
     }
 
@@ -283,7 +295,7 @@ class TaskFormViewModel @Inject constructor(
             } else {
                 taskRepository.insert(task.copy(reminders = reminderTasks))
             }
-            _uiState.update { it.copy(saved = true) }
+            _uiState.update { it.copy(saved = true, hasUnsavedChanges = false) }
         }
     }
 

@@ -70,6 +70,8 @@ fun MoneyText(
     textAlign: TextAlign? = null,
     signed: Boolean = false
 ) {
+    // Los montos siempre usan cifras tabulares, aunque el estilo recibido no las traiga.
+    val moneyStyle = style.copy(fontFeatureSettings = "tnum")
     if (LocalPrivacyMode.current) {
         val placeholder = stringResource(PLACEHOLDER_RES)
         val hiddenLabel = stringResource(R.string.amount_hidden)
@@ -78,7 +80,7 @@ fun MoneyText(
             modifier = modifier.clearAndSetSemantics {
                 contentDescription = hiddenLabel
             },
-            style = style,
+            style = moneyStyle,
             color = color,
             maxLines = maxLines,
             overflow = overflow,
@@ -88,7 +90,7 @@ fun MoneyText(
         Text(
             text = if (signed) Money.formatSigned(amountCents) else Money.format(amountCents),
             modifier = modifier,
-            style = style,
+            style = moneyStyle,
             color = color,
             maxLines = maxLines,
             overflow = overflow,

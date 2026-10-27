@@ -50,6 +50,7 @@ import com.example.campuspocket.core.designsystem.components.CampusSelectItem
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.EmptyStateCard
+import com.example.campuspocket.core.designsystem.components.rememberDiscardChangesGuard
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.util.Money
@@ -65,11 +66,15 @@ fun WithdrawalScreen(
     viewModel: WithdrawalViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val requestBack = rememberDiscardChangesGuard(
+        hasUnsavedChanges = state.hasUnsavedChanges && state.savedAmountCents == null,
+        onDiscard = onDone
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         CampusTopBar(
             title = stringResource(R.string.finance_withdrawal),
-            onBack = onDone
+            onBack = requestBack
         )
         when {
             state.isLoading -> Box(

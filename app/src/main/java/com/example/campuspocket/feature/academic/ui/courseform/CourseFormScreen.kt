@@ -49,6 +49,7 @@ import com.example.campuspocket.core.designsystem.components.CampusChip
 import com.example.campuspocket.core.designsystem.components.CampusTextField
 import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
+import com.example.campuspocket.core.designsystem.components.rememberDiscardChangesGuard
 import com.example.campuspocket.feature.academic.domain.model.SchoolDays
 import com.example.campuspocket.feature.academic.ui.TimeField
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -61,6 +62,10 @@ fun CourseFormScreen(
     viewModel: CourseFormViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val requestBack = rememberDiscardChangesGuard(
+        hasUnsavedChanges = state.hasUnsavedChanges && !state.saved,
+        onDiscard = onDone
+    )
 
     LaunchedEffect(state.saved) {
         if (state.saved) onDone()
@@ -68,7 +73,7 @@ fun CourseFormScreen(
 
     CourseFormContent(
         state = state,
-        onBack = onDone,
+        onBack = requestBack,
         onSave = viewModel::save,
         onCodeChange = viewModel::onCodeChange,
         onNameChange = viewModel::onNameChange,

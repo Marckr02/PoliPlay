@@ -90,6 +90,21 @@ class NotesViewModel @Inject constructor(
         viewModelScope.launch { noteRepository.deleteNote(id) }
     }
 
+    /**
+     * Borra una nota y devuelve una copia para restaurarla si el usuario pulsa
+     * "Deshacer" en el snackbar.
+     */
+    suspend fun deleteNoteForUndo(id: Long): NoteEntity? {
+        val note = noteRepository.getNote(id) ?: return null
+        noteRepository.deleteNote(id)
+        return note
+    }
+
+    /** Reinserta la nota eliminada conservando su id y su carpeta. */
+    fun restoreNote(note: NoteEntity) {
+        viewModelScope.launch { noteRepository.insertNote(note) }
+    }
+
     fun togglePin(id: Long, pinned: Boolean) {
         viewModelScope.launch { noteRepository.togglePin(id, pinned) }
     }

@@ -46,6 +46,7 @@ import com.example.campuspocket.core.designsystem.components.CampusTopBar
 import com.example.campuspocket.core.designsystem.components.PillSegmentedControl
 import com.example.campuspocket.core.designsystem.components.SecondaryPillButton
 import com.example.campuspocket.core.designsystem.components.campusDatePickerColors
+import com.example.campuspocket.core.designsystem.components.rememberDiscardChangesGuard
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.data.Frequency
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
@@ -83,13 +84,17 @@ fun PaymentFormScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
 
     var showDatePicker by remember { mutableStateOf(false) }
+    val requestBack = rememberDiscardChangesGuard(
+        hasUnsavedChanges = state.hasUnsavedChanges && !state.saved,
+        onDiscard = onDone
+    )
 
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
 
     Column(modifier = modifier.fillMaxSize().imePadding()) {
         CampusTopBar(
             title = stringResource(if (state.isEditing) R.string.edit else R.string.scheduled_payment_name),
-            onBack = onDone
+            onBack = requestBack
         )
         if (!state.isLoaded) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -279,7 +284,9 @@ data class PaymentFormUiState(
     val error: PaymentDomainError? = null,
     val isLoaded: Boolean = false,
     val saved: Boolean = false,
-    val notFound: Boolean = false
+    val notFound: Boolean = false,
+    /** Hay cambios del usuario que aún no se han guardado. */
+    val hasUnsavedChanges: Boolean = false
 ) {
     val isEditing: Boolean get() = paymentId != null
     val amountDisplay: String get() = Money.toLocalDecimalString(amountCents)
@@ -334,14 +341,37 @@ class PaymentFormViewModel @Inject constructor(
         }
     }
 
-    fun onNameChange(v: String) = _uiState.update { it.copy(name = v, nameError = false) }
-    fun onAmountChange(v: String) = _uiState.update { it.copy(amountCents = v.filter(Char::isDigit).take(9).toLongOrNull() ?: 0L) }
-    fun onAccountChange(v: Long) = _uiState.update { it.copy(accountId = v, error = null) }
-    fun onCategoryChange(v: Long) = _uiState.update { it.copy(categoryId = v, error = null) }
-    fun onFrequencyChange(v: String) = _uiState.update { it.copy(frequency = v) }
-    fun onNextDueDateChange(v: LocalDate) = _uiState.update { it.copy(nextDueDate = v, anchorDayOfMonth = v.dayOfMonth) }
-    fun onRemindDaysChange(v: Int) = _uiState.update { it.copy(remindDaysBefore = v) }
-    fun onActiveChange(v: Boolean) = _uiState.update { it.copy(active = v) }
+    fun onNameChange(v: String) = _uiState.update {
+        it.copy(name = v, nameError = false, hasUnsavedChanges = true)
+    }
+    fun onAmountChange(v: String) = _uiState.update {
+        it.copy(
+            amountCents = v.filter(Char::isDigit).take(9).toLongOrNull() ?: 0L,
+            hasUnsavedChanges = true
+        )
+    }
+    fun onAccountChange(v: Long) = _uiState.update {
+        it.copy(accountId = v, error = null, hasUnsavedChanges = true)
+    }
+    fun onCategoryChange(v: Long) = _uiState.update {
+        it.copy(categoryId = v, error = null, hasUnsavedChanges = true)
+    }
+    fun onFrequencyChange(v: String) = _uiState.update {
+        it.copy(frequency = v, hasUnsavedChanges = true)
+    }
+    fun onNextDueDateChange(v: LocalDate) = _uiState.update {
+        it.copy(
+            nextDueDate = v,
+            anchorDayOfMonth = v.dayOfMonth,
+            hasUnsavedChanges = true
+        )
+    }
+    fun onRemindDaysChange(v: Int) = _uiState.update {
+        it.copy(remindDaysBefore = v, hasUnsavedChanges = true)
+    }
+    fun onActiveChange(v: Boolean) = _uiState.update {
+        it.copy(active = v, hasUnsavedChanges = true)
+    }
 
     fun save() {
         val s = _uiState.value
@@ -364,7 +394,7 @@ class PaymentFormViewModel @Inject constructor(
             )
             if (s.isEditing) financeRepository.updateScheduledPayment(entity)
             else financeRepository.insertScheduledPayment(entity)
-            _uiState.update { it.copy(saved = true) }
+            _uiState.update { it.copy(saved = true, hasUnsavedChanges = false) }
         }
     }
 }
