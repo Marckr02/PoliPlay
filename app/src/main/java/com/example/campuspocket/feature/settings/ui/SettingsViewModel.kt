@@ -14,6 +14,7 @@ import com.example.campuspocket.BuildConfig
 import com.example.campuspocket.core.backup.BackupImportException
 import com.example.campuspocket.core.backup.BackupImportIssue
 import com.example.campuspocket.core.backup.BackupManager
+import com.example.campuspocket.core.calendar.CalendarExportManager
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.PreferenceKeys
 import com.example.campuspocket.core.preferences.ThemeMode
@@ -51,13 +52,18 @@ data class SettingsUiState(
     val pendingImport: Uri? = null,
     val importError: BackupImportIssue? = null,
     val exportDone: Boolean = false,
-    val importDone: Boolean = false
+    val importDone: Boolean = false,
+    val calendarBusy: Boolean = false,
+    val calendarExportDone: Boolean = false,
+    val calendarExportFailed: Boolean = false,
+    val calendarExportEmpty: Boolean = false
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val backupManager: BackupManager,
+    private val calendarExportManager: CalendarExportManager,
     private val dataStore: DataStore<Preferences>,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val semesterDao: SemesterDao,
@@ -142,6 +148,55 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissImport() { _uiState.value = _uiState.value.copy(pendingImport = null, importError = null) }
     fun dismissExportDone() { _uiState.value = _uiState.value.copy(exportDone = false) }
+
+    // ---- Calendario (.ics) ----
+
+    fun suggestedCalendarFileName(): String = "campuspocket-calendario-${LocalDate.now()}.ics"
+
+    fun exportCalendarTo(uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                calendarBusy = true,
+                calendarExportDone = false,
+                calendarExportFailed = false,
+                calendarExportEmpty = false
+            )
+            try {
+                val export = calendarExportManager.build()
+                if (export.eventCount == 0) {
+                    _uiState.value = _uiState.value.copy(
+                        calendarBusy = false,
+                        calendarExportEmpty = true
+                    )
+                    return@launch
+                }
+                withContext(ioDispatcher) {
+                    val out = context.contentResolver.openOutputStream(uri, "w")
+                        ?: throw IllegalStateException("No se pudo abrir el archivo")
+                    out.use { stream ->
+                        stream.write(export.content.toByteArray(Charsets.UTF_8))
+                    }
+                }
+                _uiState.value = _uiState.value.copy(
+                    calendarBusy = false,
+                    calendarExportDone = true
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    calendarBusy = false,
+                    calendarExportFailed = true
+                )
+            }
+        }
+    }
+
+    fun dismissCalendarExport() {
+        _uiState.value = _uiState.value.copy(
+            calendarExportDone = false,
+            calendarExportFailed = false,
+            calendarExportEmpty = false
+        )
+    }
 
     // ---- Banner de respaldo (>30 días o nunca, descartable 7 días) ----
     // la lógica vive en el companion como Companion.shouldShowBackupBanner (pura, probeable)

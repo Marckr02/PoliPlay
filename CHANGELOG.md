@@ -3,6 +3,23 @@
 Todas las versiones siguen [SemVer](https://semver.org/lang/es/) en fase `0.x`:
 - `0.MENOR.PARCHE` - `MENOR` sube con `feat:`, `PARCHE` con `fix:`.
 
+## [0.11.0] - 2026-10-27
+Commit: ver etiqueta `v0.11.0`
+
+Ola 2 del Bloque D.
+
+### Añadido
+- Línea de tiempo "Tu día" en Inicio: clases de hoy, tareas pendientes que vencen hoy y pagos programados activos con vencimiento hoy. Los pagos sin hora se agrupan como "Todo el día".
+- Atajo "Repetir último gasto" en el icono de la app: abre el formulario de gasto con monto, nota, cuenta y categoría del último gasto guardado. Solo aparece cuando existe al menos un gasto.
+- Atajo "Nota rápida" en el icono de la app.
+- Exportación del calendario a `.ics` desde Ajustes: horario semanal hasta el fin del semestre activo y entregas pendientes de hoy en adelante como eventos de 30 minutos.
+
+### Corregido
+- El atajo "Nueva nota" y el texto compartido abren el editor de nota en lugar de una ruta inválida.
+
+### Pruebas
+- 197 pruebas unitarias, 56 instrumentadas y `lintDebug` en verde.
+
 ## [0.10.0] - 2026-10-26
 Commit: ver etiqueta `v0.10.0`
 

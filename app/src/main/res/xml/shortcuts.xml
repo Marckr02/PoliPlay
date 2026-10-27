@@ -36,7 +36,7 @@
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.example.campuspocket"
             android:targetClass="com.example.campuspocket.MainActivity">
-            <extra android:name="route" android:value="notes/editor" />
+            <extra android:name="route" android:value="notes/editor/-1" />
         </intent>
     </shortcut>
 </shortcuts>

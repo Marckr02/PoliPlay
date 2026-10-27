@@ -943,6 +943,10 @@ private fun NavGraphBuilder.financeGraph(
                 navArgument(FinanceDestinations.TRANSACTION_ID_ARG) {
                     type = NavType.LongType
                     defaultValue = -1L
+                },
+                navArgument(FinanceDestinations.REPEAT_LAST_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
                 }
             )
         ) {

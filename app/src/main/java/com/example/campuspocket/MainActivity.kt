@@ -15,8 +15,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.designsystem.LocalPrivacyMode
 import com.example.campuspocket.core.designsystem.MotionKeyHolder
@@ -24,6 +26,7 @@ import com.example.campuspocket.core.navigation.CampusNavHost
 import com.example.campuspocket.core.notifications.ReminderReceiver
 import com.example.campuspocket.core.preferences.ThemeMode
 import com.example.campuspocket.core.preferences.UserPreferencesRepository
+import com.example.campuspocket.core.shortcuts.ShortcutPublisher
 import com.example.campuspocket.feature.finance.notifications.DailyPaymentReviewWorker
 import com.example.campuspocket.feature.onboarding.ui.OnboardingScreen
 import com.example.campuspocket.feature.settings.security.LockChecker
@@ -49,6 +52,10 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
+    /** Atajos dinámicos del ícono (repetir gasto y nota rápida). */
+    @Inject
+    lateinit var shortcutPublisher: ShortcutPublisher
+
     private val motionKeyHolder = MotionKeyHolder()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +65,14 @@ class MainActivity : FragmentActivity() {
         // Revisión diaria de pagos programados a las 8:00.
         DailyPaymentReviewWorker.enqueueOnce(applicationContext)
         consumeIntents(intent)
+
+        // Los atajos se recargan al volver a primer plano para reflejar gastos
+        // creados mientras la app estaba en segundo plano.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                shortcutPublisher.keepPublished()
+            }
+        }
 
         setContent {
             // null = aún no llegó la primera lectura de DataStore (evita parpadeos).
@@ -126,14 +141,14 @@ class MainActivity : FragmentActivity() {
             intent.removeExtra(ReminderReceiver.EXTRA_TASK_ID)
         }
 
-        val routeExtra = intent.getStringExtra("route")
+        val routeExtra = intent.getStringExtra(ShortcutPublisher.EXTRA_ROUTE)
         if (!routeExtra.isNullOrBlank()) {
             pendingRoute.value = routeExtra
-            intent.removeExtra("route")
+            intent.removeExtra(ShortcutPublisher.EXTRA_ROUTE)
         } else if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
             val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
             if (!sharedText.isNullOrBlank()) {
-                pendingRoute.value = "notes/editor"
+                pendingRoute.value = "notes/editor/-1"
                 intent.action = null
             }
         }

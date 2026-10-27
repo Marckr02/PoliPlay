@@ -5,10 +5,10 @@
          Se actualiza en cada lanzamiento; el historial completo está en CHANGELOG.md. -->
 
     <string-array name="release_notes_current">
-        <item>Si sales de un formulario con cambios sin guardar, la app te pide confirmación antes de descartarlos.</item>
-        <item>Ahora puedes deshacer el borrado de notas, movimientos y pagos programados desde el aviso inferior.</item>
-        <item>Movimientos, Notas, Pagos y Materias muestran una ilustración cuando todavía no tienen contenido.</item>
-        <item>Los montos, las fechas y los contadores usan cifras de ancho fijo y dejan de moverse al cambiar.</item>
-        <item>La tarjeta de próxima clase se distingue mejor del fondo en tema oscuro.</item>
+        <item>Inicio ahora muestra "Tu día": tus clases de hoy, las tareas que vencen hoy y los pagos programados para hoy.</item>
+        <item>Desde el icono de la app puedes repetir tu último gasto con el monto, la nota, la cuenta y la categoría ya completos.</item>
+        <item>También hay un atajo de nota rápida en el icono de la app.</item>
+        <item>En Ajustes puedes exportar tu horario y tus entregas pendientes a un archivo de calendario (.ics).</item>
+        <item>El atajo "Nueva nota" abre correctamente el editor.</item>
     </string-array>
 </resources>

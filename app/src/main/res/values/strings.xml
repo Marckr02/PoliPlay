@@ -5,6 +5,8 @@
     <string name="shortcut_add_expense">Nuevo gasto</string>
     <string name="shortcut_add_task">Nueva tarea</string>
     <string name="shortcut_add_note">Nueva nota</string>
+    <string name="shortcut_repeat_expense">Repetir último gasto</string>
+    <string name="shortcut_quick_note">Nota rápida</string>
 
     <!-- Navigation -->
     <string name="nav_academic">Académico</string>
@@ -429,6 +431,12 @@
     <string name="settings_export_success">Datos exportados correctamente</string>
     <string name="settings_import_success">Datos importados correctamente</string>
     <string name="settings_import_confirm">Esto reemplazará todos tus datos. ¿Continuar?</string>
+    <string name="settings_calendar">Calendario</string>
+    <string name="settings_calendar_note">Exporta tu horario y las entregas pendientes como archivo .ics.</string>
+    <string name="settings_calendar_export">Exportar calendario (.ics)</string>
+    <string name="settings_calendar_export_success">Calendario exportado correctamente</string>
+    <string name="settings_calendar_export_error">No se pudo exportar el calendario</string>
+    <string name="settings_calendar_empty">No hay clases ni entregas pendientes para exportar</string>
     <string name="settings_notifications">Notificaciones</string>
     <string name="settings_notifications_system">Notificaciones (sistema)</string>
     <string name="settings_exact_alarms">Alarmas exactas</string>
@@ -570,6 +578,11 @@
     <string name="home_quick_add_format">+ %1$s</string>
     <string name="home_pending_tasks_title">Tareas pendientes</string>
     <string name="home_pace_per_day">%1$s / día hoy</string>
+    <string name="home_timeline_title">Tu día</string>
+    <string name="home_timeline_all_day">Todo el día</string>
+    <string name="home_timeline_class">Clase</string>
+    <string name="home_timeline_task">Tarea</string>
+    <string name="home_timeline_payment">Pago</string>
 
     <!-- Búsqueda global (v7 B4) -->
     <string name="search_placeholder">Busca en toda la app</string>

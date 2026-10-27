@@ -38,8 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -62,6 +64,7 @@ import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.academic.domain.model.Task
+import com.example.campuspocket.feature.academic.ui.TimeText
 import com.example.campuspocket.feature.finance.domain.BudgetPace
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -179,7 +182,10 @@ fun HomeScreen(
             }
         }
 
-        if (preferences.isModuleEnabled(CampusModule.ACADEMIC)) {
+        val showFinance = preferences.isModuleEnabled(CampusModule.FINANCE)
+        val showAcademic = preferences.isModuleEnabled(CampusModule.ACADEMIC)
+
+        if (showAcademic) {
             NextClassCard(
                 nextClass = state.nextClass,
                 laterClass = state.laterClass,
@@ -190,8 +196,20 @@ fun HomeScreen(
             )
         }
 
-        val showFinance = preferences.isModuleEnabled(CampusModule.FINANCE)
-        val showAcademic = preferences.isModuleEnabled(CampusModule.ACADEMIC)
+        val timeline = state.timeline.filter { entry ->
+            when (entry.kind) {
+                HomeTimelineKind.CLASS, HomeTimelineKind.TASK -> showAcademic
+                HomeTimelineKind.PAYMENT -> showFinance
+            }
+        }
+        if (timeline.isNotEmpty()) {
+            HomeTimelineSection(
+                timeline = timeline,
+                onOpenCourse = onOpenCourse,
+                onOpenModule = onOpenModule
+            )
+        }
+
         if (showFinance || showAcademic) {
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 176.dp),
@@ -408,6 +426,146 @@ private fun HomeAvatar(displayName: String?, onClick: () -> Unit) {
                     text = displayName.take(1).uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     color = ext.onLavender
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Línea de tiempo del día: clases, entregas y pagos en orden. Los pagos no
+ * tienen hora y aparecen como "Todo el día".
+ */
+@Composable
+private fun HomeTimelineSection(
+    timeline: List<HomeTimelineEntry>,
+    onOpenCourse: (Long) -> Unit,
+    onOpenModule: (CampusModule) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        CampusSectionHeader(title = stringResource(R.string.home_timeline_title))
+        BentoCard(contentPadding = PaddingValues(16.dp)) {
+            timeline.forEachIndexed { index, entry ->
+                if (index > 0) Spacer(Modifier.height(10.dp))
+                HomeTimelineRow(
+                    entry = entry,
+                    onClick = {
+                        when (entry.kind) {
+                            HomeTimelineKind.CLASS -> entry.courseId
+                                ?.let(onOpenCourse)
+                                ?: onOpenModule(CampusModule.ACADEMIC)
+                            HomeTimelineKind.TASK -> onOpenModule(CampusModule.ACADEMIC)
+                            HomeTimelineKind.PAYMENT -> onOpenModule(CampusModule.FINANCE)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeTimelineRow(
+    entry: HomeTimelineEntry,
+    onClick: () -> Unit
+) {
+    val ext = MaterialTheme.extended
+    val container = when (entry.kind) {
+        HomeTimelineKind.CLASS -> ext.sky
+        HomeTimelineKind.TASK -> ext.lavender
+        HomeTimelineKind.PAYMENT -> ext.mint
+    }
+    val content = when (entry.kind) {
+        HomeTimelineKind.CLASS -> ext.onSky
+        HomeTimelineKind.TASK -> ext.onLavender
+        HomeTimelineKind.PAYMENT -> ext.onMint
+    }
+    val iconRes = when (entry.kind) {
+        HomeTimelineKind.CLASS -> R.drawable.ic_schedule
+        HomeTimelineKind.TASK -> R.drawable.ic_action_task_list
+        HomeTimelineKind.PAYMENT -> R.drawable.ic_wallet
+    }
+    val fallbackLabel = when (entry.kind) {
+        HomeTimelineKind.CLASS -> R.string.home_timeline_class
+        HomeTimelineKind.TASK -> R.string.home_timeline_task
+        HomeTimelineKind.PAYMENT -> R.string.home_timeline_payment
+    }
+    val timeLabel = entry.time?.let(TimeText::format)
+        ?: stringResource(R.string.home_timeline_all_day)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = timeLabel,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(64.dp)
+        )
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(container),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null, // decorativo: el texto contiguo describe el elemento
+                tint = content,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = entry.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            when {
+                entry.amountCents != null -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.home_timeline_payment),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = " · ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    MoneyText(
+                        amountCents = entry.amountCents,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                !entry.subtitle.isNullOrBlank() -> Text(
+                    text = entry.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                else -> Text(
+                    text = stringResource(fallbackLabel),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

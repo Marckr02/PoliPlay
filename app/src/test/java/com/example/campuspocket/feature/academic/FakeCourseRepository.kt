@@ -7,10 +7,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 
 /** Fake en memoria para las pruebas de ViewModels. Registra cada operación recibida. */
-class FakeCourseRepository(initial: List<Course> = emptyList()) : CourseRepository {
+class FakeCourseRepository(
+    initial: List<Course> = emptyList(),
+    private val semesterEnd: LocalDate? = null
+) : CourseRepository {
 
     private val coursesFlow = MutableStateFlow(initial)
     val inserted = mutableListOf<Course>()
@@ -41,6 +45,8 @@ class FakeCourseRepository(initial: List<Course> = emptyList()) : CourseReposito
         deleted += courseId
         coursesFlow.value = coursesFlow.value.filterNot { it.id == courseId }
     }
+
+    override suspend fun getActiveSemesterEnd(): LocalDate? = semesterEnd
 
     fun setCourses(courses: List<Course>) {
         coursesFlow.value = courses

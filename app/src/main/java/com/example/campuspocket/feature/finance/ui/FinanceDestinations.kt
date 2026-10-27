@@ -20,20 +20,30 @@ object FinanceDestinations {
 
     const val TRANSACTION_TYPE_ARG = "type"
     const val TRANSACTION_ID_ARG = "transactionId"
+    const val REPEAT_LAST_ARG = "repeatLast"
     const val TRANSACTION_FORM_ROUTE =
-        "finance/transaction_form/{$TRANSACTION_TYPE_ARG}?$TRANSACTION_ID_ARG={$TRANSACTION_ID_ARG}"
+        "finance/transaction_form/{$TRANSACTION_TYPE_ARG}?$TRANSACTION_ID_ARG={$TRANSACTION_ID_ARG}&$REPEAT_LAST_ARG={$REPEAT_LAST_ARG}"
 
     fun accountDetail(accountId: Long): String = "finance/account/$accountId"
 
     fun accountForm(accountId: Long? = null): String =
         if (accountId == null) "finance/account_form" else "finance/account_form?$ACCOUNT_ID_ARG=$accountId"
 
-    fun transactionForm(type: String, transactionId: Long? = null): String =
-        if (transactionId == null) {
+    fun transactionForm(
+        type: String,
+        transactionId: Long? = null,
+        repeatLast: Boolean = false
+    ): String {
+        val query = buildList {
+            transactionId?.let { add("$TRANSACTION_ID_ARG=$it") }
+            if (repeatLast) add("$REPEAT_LAST_ARG=true")
+        }
+        return if (query.isEmpty()) {
             "finance/transaction_form/$type"
         } else {
-            "finance/transaction_form/$type?$TRANSACTION_ID_ARG=$transactionId"
+            "finance/transaction_form/$type?${query.joinToString("&")}"
         }
+    }
 
     fun categoryForm(categoryId: Long? = null): String =
         if (categoryId == null) {

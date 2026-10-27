@@ -2,6 +2,7 @@ package com.example.campuspocket.feature.finance
 
 import com.example.campuspocket.feature.finance.data.AccountType
 import com.example.campuspocket.feature.finance.data.CategoryKind
+import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.data.TransactionDao
 import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
@@ -21,7 +22,8 @@ import java.time.LocalDate
 class FakeFinanceRepository(
     accounts: List<Account> = emptyList(),
     categories: List<Category> = emptyList(),
-    transactions: List<Transaction> = emptyList()
+    transactions: List<Transaction> = emptyList(),
+    payments: List<ScheduledPaymentEntity> = emptyList()
 ) : FinanceRepository {
 
     private val accountsFlow = MutableStateFlow(accounts)
@@ -170,7 +172,7 @@ class FakeFinanceRepository(
         }
 
     // ---- Pagos programados (Fase 5B) ----
-    private val paymentsFlow = MutableStateFlow<List<com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity>>(emptyList())
+    private val paymentsFlow = MutableStateFlow(payments)
     val paidTransactions = mutableListOf<com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity>()
 
     override fun observeActiveScheduledPayments() = paymentsFlow.map { list -> list.filter { it.active } }

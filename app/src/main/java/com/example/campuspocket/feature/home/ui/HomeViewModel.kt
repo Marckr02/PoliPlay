@@ -15,6 +15,7 @@ import com.example.campuspocket.feature.academic.ui.TimeText
 import com.example.campuspocket.feature.finance.data.BudgetEntity
 import com.example.campuspocket.feature.finance.data.CategoryKind
 import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
+import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
@@ -57,6 +58,23 @@ data class HomeClass(
     val endLabel: String
 )
 
+/** Tipo de elemento de la línea de tiempo del día. */
+enum class HomeTimelineKind { CLASS, TASK, PAYMENT }
+
+/**
+ * Elemento ya resuelto de la línea de tiempo de Inicio. [time] es null para
+ * los pagos programados: no tienen hora y se muestran como "Todo el día".
+ */
+data class HomeTimelineEntry(
+    val key: String,
+    val kind: HomeTimelineKind,
+    val time: LocalTime?,
+    val title: String,
+    val subtitle: String? = null,
+    val amountCents: Long? = null,
+    val courseId: Long? = null
+)
+
 /** Estado de solo lectura que alimenta Inicio. */
 data class HomeUiState(
     val today: LocalDate = LocalDate.now(),
@@ -69,6 +87,7 @@ data class HomeUiState(
     val monthlySpentCents: Long = 0,
     val monthlyRemainingCents: Long? = null,
     val recentNotes: List<NoteEntity> = emptyList(),
+    val timeline: List<HomeTimelineEntry> = emptyList(),
     val isLoading: Boolean = true
 )
 
@@ -122,6 +141,7 @@ class HomeViewModel @Inject constructor(
         financeRepository.observeAllBudgets(),
         financeRepository.observeMonthlyBudgets(),
         financeRepository.observeActiveCategories(),
+        financeRepository.observeActiveScheduledPayments(),
         todayFlow
     ) { values ->
         @Suppress("UNCHECKED_CAST")
@@ -132,7 +152,9 @@ class HomeViewModel @Inject constructor(
         val monthlyBudgets = values[2] as List<MonthlyBudgetEntity>
         @Suppress("UNCHECKED_CAST")
         val categories = values[3] as List<Category>
-        val today = values[4] as LocalDate
+        @Suppress("UNCHECKED_CAST")
+        val payments = values[4] as List<ScheduledPaymentEntity>
+        val today = values[5] as LocalDate
         val month = YearMonth.from(today)
         val expenseCategories = categories
             .filter { it.kind == CategoryKind.EXPENSE }
@@ -158,7 +180,8 @@ class HomeViewModel @Inject constructor(
             monthlyBudgetCents = monthlyBudgetCents,
             monthlySpentCents = monthlySpentCents,
             monthlyRemainingCents = monthlyBudgetCents?.minus(monthlySpentCents),
-            transactions = transactions
+            transactions = transactions,
+            payments = payments
         )
     }
 
@@ -174,7 +197,7 @@ class HomeViewModel @Inject constructor(
         val nextIndex = classes.indexOfFirst { it.end.isAfter(now) }
         val next = classes.getOrNull(nextIndex)?.resolve(now)
         val later = if (nextIndex >= 0) classes.getOrNull(nextIndex + 1)?.resolve(now) else null
-        val zone = ZoneId.systemDefault()
+        val zone = clock.zone
 
         HomeUiState(
             today = today,
@@ -191,6 +214,14 @@ class HomeViewModel @Inject constructor(
             recentNotes = notes
                 .sortedWith(compareByDescending<NoteEntity> { it.pinned }.thenByDescending { it.updatedAt })
                 .take(2),
+            timeline = timelineFor(
+                courses = courses,
+                classes = classes,
+                tasks = tasks,
+                payments = finance.payments,
+                today = today,
+                zone = zone
+            ),
             isLoading = false
         )
     }.stateIn(
@@ -230,6 +261,59 @@ class HomeViewModel @Inject constructor(
                 }
         }.sortedBy { it.start }
 
+    /**
+     * Une clases, entregas y pagos del día en una sola secuencia. Los pagos no
+     * tienen hora: se ordenan primero como "Todo el día".
+     */
+    private fun timelineFor(
+        courses: List<Course>,
+        classes: List<HomeClass>,
+        tasks: List<Task>,
+        payments: List<ScheduledPaymentEntity>,
+        today: LocalDate,
+        zone: ZoneId
+    ): List<HomeTimelineEntry> {
+        val courseNames = courses.mapNotNull { course -> course.id?.let { it to course.name } }.toMap()
+        val classEntries = classes.map { item ->
+            HomeTimelineEntry(
+                key = "class-${item.courseId}-${item.start}",
+                kind = HomeTimelineKind.CLASS,
+                time = item.start,
+                title = item.courseName,
+                subtitle = item.room?.takeIf { it.isNotBlank() },
+                courseId = item.courseId.takeIf { it > 0L }
+            )
+        }
+        val taskEntries = tasks
+            .filter { it.dueAt.atZone(zone).toLocalDate() == today }
+            .map { task ->
+                val due = task.dueAt.atZone(zone)
+                HomeTimelineEntry(
+                    key = "task-${task.id ?: "${task.title}-${task.dueAt}"}",
+                    kind = HomeTimelineKind.TASK,
+                    time = due.toLocalTime(),
+                    title = task.title,
+                    subtitle = task.courseId?.let(courseNames::get)
+                )
+            }
+        val paymentEntries = payments
+            .filter { it.nextDueDate == today }
+            .map { payment ->
+                HomeTimelineEntry(
+                    key = "payment-${payment.id}",
+                    kind = HomeTimelineKind.PAYMENT,
+                    time = null,
+                    title = payment.name,
+                    amountCents = payment.amountCents
+                )
+            }
+        return (classEntries + taskEntries + paymentEntries).sortedWith(
+            compareBy<HomeTimelineEntry> { it.time ?: LocalTime.MIN }
+                .thenBy { it.kind.ordinal }
+                .thenBy { it.title }
+        )
+    }
+
     private fun HomeClass.resolve(now: LocalTime): HomeClass {
         val current = !now.isBefore(start) && now.isBefore(end)
         val minutes = if (now.isBefore(start)) {
@@ -250,6 +334,7 @@ class HomeViewModel @Inject constructor(
         val monthlyBudgetCents: Long?,
         val monthlySpentCents: Long,
         val monthlyRemainingCents: Long?,
-        val transactions: List<Transaction>
+        val transactions: List<Transaction>,
+        val payments: List<ScheduledPaymentEntity>
     )
 }

@@ -88,6 +88,7 @@ fun SettingsScreen(
     var showExportWarning by remember { mutableStateOf(false) }
     var showImportConfirm by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<Int?>(null) }
+    var calendarMessage by remember { mutableStateOf<Int?>(null) }
     var nameSaved by remember { mutableStateOf(false) }
 
     // Campo de perfil: se sincroniza con el valor guardado y con el borrado.
@@ -106,6 +107,12 @@ fun SettingsScreen(
     val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) viewModel.prepareImport(uri)
     }
+    val calendarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/calendar")) { uri ->
+        if (uri != null) {
+            calendarMessage = null
+            viewModel.exportCalendarTo(uri)
+        }
+    }
 
     LaunchedEffect(state.pendingImport, state.importError, state.importDone) {
         when {
@@ -120,6 +127,19 @@ fun SettingsScreen(
             }
             state.importDone -> message = R.string.settings_import_success
             else -> {}
+        }
+    }
+
+    LaunchedEffect(state.calendarExportDone, state.calendarExportFailed, state.calendarExportEmpty) {
+        val result = when {
+            state.calendarExportDone -> R.string.settings_calendar_export_success
+            state.calendarExportFailed -> R.string.settings_calendar_export_error
+            state.calendarExportEmpty -> R.string.settings_calendar_empty
+            else -> null
+        }
+        if (result != null) {
+            calendarMessage = result
+            viewModel.dismissCalendarExport()
         }
     }
 
@@ -310,6 +330,31 @@ fun SettingsScreen(
             }
             if (state.busy) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             message?.let {
+                Text(
+                    text = stringResource(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // ---- Calendario ----
+        SettingsSectionCard(
+            title = stringResource(R.string.settings_calendar),
+            subtitle = stringResource(R.string.settings_calendar_note)
+        ) {
+            SecondaryPillButton(
+                text = stringResource(R.string.settings_calendar_export),
+                onClick = { calendarLauncher.launch(viewModel.suggestedCalendarFileName()) },
+                enabled = !state.calendarBusy,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (state.calendarBusy) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            calendarMessage?.let {
                 Text(
                     text = stringResource(it),
                     style = MaterialTheme.typography.bodySmall,

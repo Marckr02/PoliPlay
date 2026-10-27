@@ -10,6 +10,7 @@ import com.example.campuspocket.feature.finance.domain.TransactionError
 import com.example.campuspocket.feature.finance.testAccount
 import com.example.campuspocket.feature.finance.testCategory
 import com.example.campuspocket.feature.finance.testExpense
+import com.example.campuspocket.feature.finance.testIncome
 import com.example.campuspocket.feature.finance.ui.FinanceDestinations
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -56,12 +57,14 @@ class TransactionFormViewModelTest {
         type: TransactionType,
         id: Long? = null,
         repository: FakeFinanceRepository = FakeFinanceRepository(accounts, categories),
-        clock: Clock = FIXED_CLOCK
+        clock: Clock = FIXED_CLOCK,
+        repeatLast: Boolean = false
     ) = TransactionFormViewModel(
         SavedStateHandle(
             mapOf(
                 FinanceDestinations.TRANSACTION_TYPE_ARG to type.name,
-                FinanceDestinations.TRANSACTION_ID_ARG to (id ?: -1L)
+                FinanceDestinations.TRANSACTION_ID_ARG to (id ?: -1L),
+                FinanceDestinations.REPEAT_LAST_ARG to repeatLast
             )
         ),
         repository,
@@ -156,6 +159,38 @@ class TransactionFormViewModelTest {
         assertEquals(TransactionType.REFUND, saved.type)
         assertNull(saved.refundOfId)
         assertTrue(vm.uiState.value.saved)
+    }
+
+    @Test
+    fun `repetir ultimo gasto precarga monto nota cuenta y categoria`() = runTest(testDispatcher) {
+        val expense = testExpense(
+            id = 7,
+            accountId = 2,
+            categoryId = 1,
+            amountCents = 3_450,
+            description = "Café con pan",
+            date = LocalDate.of(2026, 10, 20)
+        )
+        val income = testIncome(
+            id = 8,
+            accountId = 1,
+            categoryId = 2,
+            amountCents = 9_000,
+            date = LocalDate.of(2026, 10, 21)
+        )
+        val repo = FakeFinanceRepository(accounts, categories, listOf(income, expense))
+
+        val vm = viewModel(TransactionType.EXPENSE, repository = repo, repeatLast = true)
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(3_450L, state.amountCents)
+        assertEquals("Café con pan", state.description)
+        assertEquals(2L, state.accountId)
+        assertEquals(1L, state.categoryId)
+        assertTrue(state.showDescription)
+        assertTrue(state.isLoaded)
+        assertFalse(state.hasUnsavedChanges)
     }
 
     @Test

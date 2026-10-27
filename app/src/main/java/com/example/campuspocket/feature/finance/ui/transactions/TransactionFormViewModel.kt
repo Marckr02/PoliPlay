@@ -104,6 +104,10 @@ class TransactionFormViewModel @Inject constructor(
     private val editingId: Long? =
         savedStateHandle.get<Long>(FinanceDestinations.TRANSACTION_ID_ARG)?.takeIf { it != -1L }
 
+    /** Atajo "Repetir último gasto": precarga el último gasto guardado. */
+    private val repeatLast: Boolean =
+        savedStateHandle.get<Boolean>(FinanceDestinations.REPEAT_LAST_ARG) == true
+
     private val _uiState = MutableStateFlow(
         TransactionFormUiState(
             type = runCatching { TransactionType.valueOf(rawType) }
@@ -260,10 +264,36 @@ class TransactionFormViewModel @Inject constructor(
             }
         } else {
             viewModelScope.launch {
+                val type = _uiState.value.type
+
+                // "Repetir último gasto": monto, nota, cuenta y categoría del
+                // gasto más reciente. Si algo ya no es válido se completa abajo.
+                if (repeatLast && type == TransactionType.EXPENSE) {
+                    val latestExpense = runCatching {
+                        transactions.first().firstOrNull { it.type == TransactionType.EXPENSE }
+                    }.getOrNull()
+                    if (latestExpense != null) {
+                        val accountId = latestExpense.accountId.let { id ->
+                            financeRepository.getAccount(id)?.takeIf { !it.archived }?.id
+                        }
+                        val categoryId = latestExpense.categoryId?.let { id ->
+                            financeRepository.getCategory(id)
+                                ?.takeIf { !it.archived && it.kind == CategoryKind.EXPENSE }
+                                ?.id
+                        }
+                        _uiState.value = _uiState.value.copy(
+                            amountCents = latestExpense.amountCents,
+                            description = latestExpense.description.orEmpty(),
+                            accountId = accountId,
+                            categoryId = categoryId,
+                            showDescription = !latestExpense.description.isNullOrBlank()
+                        )
+                    }
+                }
+
                 // Captura rápida: cuenta del último movimiento y categoría sugerida
                 // por la franja horaria; si no hay historial, la última usada (v6).
                 val latest = runCatching { financeRepository.getLatestTransaction() }.getOrNull()
-                val type = _uiState.value.type
                 val accountId = latest?.accountId?.let { id ->
                     financeRepository.getAccount(id)?.takeIf { !it.archived }?.id
                 }

@@ -14,7 +14,10 @@ import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.home.ui.HomeScreen
+import com.example.campuspocket.feature.home.ui.HomeTimelineEntry
+import com.example.campuspocket.feature.home.ui.HomeTimelineKind
 import com.example.campuspocket.feature.home.ui.HomeUiState
+import java.time.LocalTime
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -153,6 +156,83 @@ class HomeScreenTest {
             }
         }
         composeRule.onNodeWithText("Tu espacio de estudio y organización").assertIsDisplayed()
+    }
+
+    @Test
+    fun laLineaDeTiempoMuestraElDiaYElPagoAbreFinanzas() {
+        var abierto: CampusModule? = null
+        composeRule.setContent {
+            CampusTheme {
+                HomeScreen(
+                    preferences = UserPreferences(),
+                    onOpenModule = { abierto = it },
+                    onOpenSettings = {},
+                    state = HomeUiState(
+                        timeline = listOf(
+                            HomeTimelineEntry(
+                                key = "payment-1",
+                                kind = HomeTimelineKind.PAYMENT,
+                                time = null,
+                                title = "Alquiler",
+                                amountCents = 50_000
+                            ),
+                            HomeTimelineEntry(
+                                key = "class-1",
+                                kind = HomeTimelineKind.CLASS,
+                                time = LocalTime.of(10, 0),
+                                title = "Cálculo",
+                                subtitle = "Aula 3",
+                                courseId = 1
+                            )
+                        )
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Tu día").assertIsDisplayed()
+        composeRule.onNodeWithText("Todo el día").assertIsDisplayed()
+        composeRule.onNodeWithText("Cálculo").assertIsDisplayed()
+        composeRule.onNodeWithText("Alquiler").performClick()
+        assertEquals(CampusModule.FINANCE, abierto)
+    }
+
+    @Test
+    fun laLineaDeTiempoRespetaLosModulosDesactivados() {
+        composeRule.setContent {
+            CampusTheme {
+                HomeScreen(
+                    preferences = UserPreferences(
+                        academicEnabled = true,
+                        financeEnabled = false,
+                        notesEnabled = true
+                    ),
+                    onOpenModule = {},
+                    onOpenSettings = {},
+                    state = HomeUiState(
+                        timeline = listOf(
+                            HomeTimelineEntry(
+                                key = "payment-1",
+                                kind = HomeTimelineKind.PAYMENT,
+                                time = null,
+                                title = "Alquiler",
+                                amountCents = 50_000
+                            ),
+                            HomeTimelineEntry(
+                                key = "class-1",
+                                kind = HomeTimelineKind.CLASS,
+                                time = LocalTime.of(10, 0),
+                                title = "Cálculo",
+                                courseId = 1
+                            )
+                        )
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Cálculo").assertIsDisplayed()
+        composeRule.onNodeWithText("Alquiler").assertDoesNotExist()
     }
 
     @Test
