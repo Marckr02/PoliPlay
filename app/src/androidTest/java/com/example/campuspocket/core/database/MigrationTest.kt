@@ -160,6 +160,15 @@ class MigrationTest {
         context.deleteDatabase(DB_4)
     }
 
+    /** v5 -> v6: la tabla `grades` debe coincidir con la entidad (`tipo`, `score`, `maxScore`, `date`). */
+    @Test
+    @Throws(IOException::class)
+    fun migracionDe5a6CreaGradesConElEsquemaDeLaEntidad() {
+        val name = "migration-5-6-test"
+        helper.createDatabase(name, 5).close()
+        helper.runMigrationsAndValidate(name, 6, true, Migrations.MIGRATION_5_6).close()
+    }
+
     private companion object {
         const val DB_1 = "migration-test-1"
         const val DB_2 = "migration-test-2"
