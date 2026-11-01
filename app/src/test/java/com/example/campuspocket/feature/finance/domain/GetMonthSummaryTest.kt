@@ -6,6 +6,7 @@ import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.domain.model.Category
 import com.example.campuspocket.feature.finance.domain.model.Transaction
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.YearMonth
@@ -121,6 +122,31 @@ class GetMonthSummaryTest {
         val result = GetMonthSummary.compute(oct, txs, emptyMap(), catMap, start, end)
         assertEquals(0, result.rows.size)
         assertEquals(0L, result.totalSpentCents)
+    }
+
+    @Test
+    fun `con includeEmptyCategories lista tambien las categorias sin gasto ni presupuesto`() {
+        val expenseCats = listOf(food, transport).mapNotNull { c -> c.id?.let { it to c } }.toMap()
+
+        val result = GetMonthSummary.compute(
+            oct, emptyList(), emptyMap(), expenseCats, start, end,
+            includeEmptyCategories = true
+        )
+
+        assertEquals(2, result.rows.size)
+        assertTrue(result.rows.all { it.budgetCents == null })
+        assertTrue(result.rows.all { it.netSpentCents == 0L })
+    }
+
+    @Test
+    fun `sin includeEmptyCategories un mes vacio no devuelve filas`() {
+        val expenseCats = listOf(food, transport).mapNotNull { c -> c.id?.let { it to c } }.toMap()
+
+        val result = GetMonthSummary.compute(
+            oct, emptyList(), emptyMap(), expenseCats, start, end
+        )
+
+        assertEquals(0, result.rows.size)
     }
 
     @Test

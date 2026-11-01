@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,6 +35,14 @@ data class BudgetsUiState(
     val totalBudgetCents: Long get() = rows.sumOf { it.budgetCents ?: 0L }
     val totalSpentCents: Long get() = rows.sumOf { it.netSpentCents }
 }
+
+/** Resultado de copiar presupuestos de un mes anterior al mes visible. */
+data class CopyBudgetsResult(
+    /** Mes de donde se copió; null si no hay presupuestos en los últimos 12 meses. */
+    val sourceMonth: YearMonth?,
+    val categoriesCopied: Int,
+    val totalCopied: Boolean
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -72,7 +81,8 @@ class BudgetsViewModel @Inject constructor(
                         budgets = bMap,
                         categories = expenseCategories,
                         monthStart = month.atDay(1),
-                        monthEnd = month.atEndOfMonth()
+                        monthEnd = month.atEndOfMonth(),
+                        includeEmptyCategories = true
                     )
                     val monthlyBudget = monthlyBudgets
                         .firstOrNull { it.yearMonth == month.toString() }
@@ -156,14 +166,42 @@ class BudgetsViewModel @Inject constructor(
         }
     }
 
-    /** Copia del mes anterior solo las categorías sin presupuesto este mes (no pisa nada). */
-    suspend fun copyFromPreviousMonth(): Int {
+    /**
+     * Copia al mes visible los presupuestos del mes anterior más reciente que tenga datos
+     * (hasta 12 meses atrás). No pisa nada: solo copia categorías de gasto activas que aún
+     * no tienen presupuesto este mes y el presupuesto total si este mes no tiene.
+     */
+    suspend fun copyFromPreviousMonth(): CopyBudgetsResult {
         val current = _yearMonth.value
-        val previous = current.minusMonths(1)
-        val existing = financeRepository.getBudgetsForMonth(current.toString()).map { it.categoryId }.toSet()
-        val toCopy = financeRepository.getBudgetsForMonth(previous.toString())
-            .filter { it.categoryId !in existing }
-        toCopy.forEach { financeRepository.upsertBudget(current.toString(), it.categoryId, it.amountCents) }
-        return toCopy.size
+        val currentKey = current.toString()
+
+        val categoryBudgetMonths = financeRepository.observeAllBudgets().first()
+            .map { it.yearMonth }.toSet()
+        val totalBudgetMonths = financeRepository.observeMonthlyBudgets().first()
+            .map { it.yearMonth }.toSet()
+
+        val source = generateSequence(current.minusMonths(1)) { it.minusMonths(1) }
+            .take(12)
+            .firstOrNull { it.toString() in categoryBudgetMonths || it.toString() in totalBudgetMonths }
+            ?: return CopyBudgetsResult(sourceMonth = null, categoriesCopied = 0, totalCopied = false)
+        val sourceKey = source.toString()
+
+        val activeExpenseIds = financeRepository.observeActiveCategories().first()
+            .filter { it.kind == CategoryKind.EXPENSE }
+            .mapNotNull { it.id }
+            .toSet()
+        val alreadyDefined = financeRepository.getBudgetsForMonth(currentKey).map { it.categoryId }.toSet()
+        val toCopy = financeRepository.getBudgetsForMonth(sourceKey)
+            .filter { it.categoryId in activeExpenseIds && it.categoryId !in alreadyDefined }
+        toCopy.forEach { financeRepository.upsertBudget(currentKey, it.categoryId, it.amountCents) }
+
+        val sourceTotal = financeRepository.getMonthlyBudget(sourceKey)
+        val currentTotal = financeRepository.getMonthlyBudget(currentKey)
+        var totalCopied = false
+        if (sourceTotal != null && currentTotal == null) {
+            financeRepository.upsertMonthlyBudget(currentKey, sourceTotal.amountCents)
+            totalCopied = true
+        }
+        return CopyBudgetsResult(source, toCopy.size, totalCopied)
     }
 }

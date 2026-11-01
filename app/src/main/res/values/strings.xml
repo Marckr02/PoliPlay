@@ -227,6 +227,11 @@
     <string name="budget_copy_previous">Copiar del mes anterior</string>
     <string name="budget_copied_previous_success">Se copiaron %1$d presupuestos del mes anterior</string>
     <string name="budget_copied_previous_empty">No hay presupuestos en el mes anterior para copiar</string>
+    <string name="budget_copy_done_categories">Se copiaron %1$d presupuestos por categoría de %2$s</string>
+    <string name="budget_copy_done_total">Se copió el presupuesto total de %1$s</string>
+    <string name="budget_copy_done_both">Se copiaron el presupuesto total y %1$d presupuestos por categoría de %2$s</string>
+    <string name="budget_copy_nothing_new">Este mes ya tiene todo lo que había en %1$s</string>
+    <string name="budget_copy_no_source">No hay presupuestos en los últimos 12 meses para copiar</string>
     <string name="budgets_monthly">Con presupuesto</string>
     <string name="budgets_no_budget">Sin presupuesto</string>
     <string name="budget_exceeded">Excedido</string>

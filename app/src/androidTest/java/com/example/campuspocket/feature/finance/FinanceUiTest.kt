@@ -214,7 +214,9 @@ class FinanceUiTest {
 
         composeRule.setContent {
             CampusTheme {
-                BudgetsScreen(viewModel = BudgetsViewModel(repo))
+                CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
+                    BudgetsScreen(viewModel = BudgetsViewModel(repo))
+                }
             }
         }
 
@@ -255,7 +257,9 @@ class FinanceUiTest {
 
         composeRule.setContent {
             CampusTheme {
-                BudgetsScreen(viewModel = BudgetsViewModel(repo))
+                CompositionLocalProvider(LocalSnackbarHost provides SnackbarHostState()) {
+                    BudgetsScreen(viewModel = BudgetsViewModel(repo))
+                }
             }
         }
 

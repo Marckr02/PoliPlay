@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -58,6 +59,7 @@ import com.example.campuspocket.core.designsystem.ShapeBar
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.finance.domain.GetMonthSummary
 import com.example.campuspocket.feature.finance.ui.summary.BudgetPaceCard
+import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -176,6 +178,40 @@ fun LazyListScope.budgetItems(
     }
 
     if (!state.semesterMode) {
+        item(key = "budget_copy_previous", contentType = "action") {
+            val snackbarHost = LocalSnackbarHost.current
+            val coroutineScope = rememberCoroutineScope()
+            val resources = LocalContext.current.resources
+            CampusButton(
+                text = stringResource(R.string.budget_copy_previous),
+                onClick = {
+                    coroutineScope.launch {
+                        val result = viewModel.copyFromPreviousMonth()
+                        val source = result.sourceMonth?.let { monthLabel(it) }
+                        val message = when {
+                            source == null ->
+                                resources.getString(R.string.budget_copy_no_source)
+                            result.categoriesCopied == 0 && !result.totalCopied ->
+                                resources.getString(R.string.budget_copy_nothing_new, source)
+                            result.totalCopied && result.categoriesCopied > 0 ->
+                                resources.getString(R.string.budget_copy_done_both, result.categoriesCopied, source)
+                            result.totalCopied ->
+                                resources.getString(R.string.budget_copy_done_total, source)
+                            else ->
+                                resources.getString(R.string.budget_copy_done_categories, result.categoriesCopied, source)
+                        }
+                        snackbarHost.showSnackbar(message)
+                    }
+                },
+                style = CampusButtonStyle.SECONDARY,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            )
+        }
+    }
+
+    if (!state.semesterMode) {
         item(key = "budget_pace", contentType = "pace") {
             var showTotalBudgetDialog by remember { mutableStateOf(false) }
             Box(Modifier.padding(horizontal = 20.dp)) {
@@ -271,29 +307,6 @@ fun LazyListScope.budgetItems(
                 iconRes = R.drawable.ic_wallet
             )
         }
-    }
-
-    item(key = "budget_copy_previous", contentType = "action") {
-        val snackbarHost = LocalSnackbarHost.current
-        val coroutineScope = rememberCoroutineScope()
-        val copiedMsg = stringResource(R.string.budget_copied_previous_success)
-        val emptyMsg = stringResource(R.string.budget_copied_previous_empty)
-        CampusButton(
-            text = stringResource(R.string.budget_copy_previous),
-            onClick = {
-                coroutineScope.launch {
-                    val count = viewModel.copyFromPreviousMonth()
-                    snackbarHost.showSnackbar(
-                        if (count > 0) String.format(Locale.getDefault(), copiedMsg, count)
-                        else emptyMsg
-                    )
-                }
-            },
-            style = CampusButtonStyle.SECONDARY,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-        )
     }
 }
 
@@ -533,6 +546,10 @@ private fun BudgetEditDialog(
         }
     )
 }
+
+private fun monthLabel(month: YearMonth): String =
+    month.month.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("es"))
+        .replaceFirstChar { it.uppercase() } + " " + month.year
 
 @Composable
 @Preview(name = "BudgetsScreen", showBackground = true)

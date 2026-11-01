@@ -49,7 +49,8 @@ object GetMonthSummary {
         budgets: Map<Long, Long>,              // categoryId -> amountCents
         categories: Map<Long, Category>,       // id -> Category
         monthStart: LocalDate,
-        monthEnd: LocalDate
+        monthEnd: LocalDate,
+        includeEmptyCategories: Boolean = false
     ): MonthSummary {
         val inMonth = transactions.filter { it.date >= monthStart && it.date <= monthEnd }
 
@@ -70,12 +71,14 @@ object GetMonthSummary {
             .mapNotNull { (k, v) -> k?.let { it to v.size } }
             .toMap()
 
-        val allCategoryIds = (spentByCategory.keys + budgets.keys).mapNotNull { it }.toSet()
+        val baseIds = spentByCategory.keys + budgets.keys
+        val allCategoryIds = (if (includeEmptyCategories) baseIds + categories.keys else baseIds)
+            .mapNotNull { it }.toSet()
         val rows = allCategoryIds.mapNotNull { cid ->
             val category = categories[cid] ?: return@mapNotNull null
             val budget = budgets[cid]
             val spent = spentByCategory[cid] ?: 0L
-            if (spent == 0L && budget == null) return@mapNotNull null
+            if (!includeEmptyCategories && spent == 0L && budget == null) return@mapNotNull null
             CategoryRow(
                 categoryId = cid,
                 name = category.name,
@@ -85,7 +88,9 @@ object GetMonthSummary {
                 budgetCents = budget,
                 remainingCents = budget?.let { it - spent }
             )
-        }.sortedByDescending { it.netSpentCents }
+        }.sortedWith(
+            compareByDescending<CategoryRow> { it.netSpentCents }.thenBy { it.name.lowercase() }
+        )
 
         val totalBudget = budgets.values.sum()
         val available = totalBudget - rows

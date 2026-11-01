@@ -8,6 +8,7 @@ import com.example.campuspocket.feature.finance.testExpense
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +20,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -68,5 +71,67 @@ class BudgetsViewModelTest {
         assertNotNull(pace)
         assertEquals(16_000L, pace!!.budgetCents)
         assertEquals(5_000L, pace.spentCents)
+    }
+
+    @Test
+    fun `mes sin movimientos lista las categorias de gasto sin presupuesto`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(
+            accounts = listOf(testAccount(id = 1)),
+            categories = listOf(
+                testCategory(id = 1, kind = CategoryKind.EXPENSE),
+                testCategory(id = 2, kind = CategoryKind.EXPENSE),
+                testCategory(id = 3, kind = CategoryKind.INCOME)
+            )
+        )
+        val viewModel = BudgetsViewModel(repo, fixedClock)
+        advanceUntilIdle()
+        viewModel.nextMonth()
+        advanceUntilIdle()
+
+        val rows = viewModel.uiState.value.rows
+        assertEquals(setOf(1L, 2L), rows.map { it.categoryId }.toSet())
+        assertTrue(rows.all { it.budgetCents == null })
+    }
+
+    @Test
+    fun `copiar trae categorias y total del mes anterior sin pisar lo existente`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(
+            accounts = listOf(testAccount(id = 1)),
+            categories = listOf(
+                testCategory(id = 1, kind = CategoryKind.EXPENSE),
+                testCategory(id = 2, kind = CategoryKind.EXPENSE)
+            )
+        )
+        repo.upsertBudget("2026-09", 1, 20_000)
+        repo.upsertBudget("2026-09", 2, 10_000)
+        repo.upsertMonthlyBudget("2026-09", 100_000)
+        repo.upsertBudget("2026-10", 2, 15_000)
+
+        val viewModel = BudgetsViewModel(repo, fixedClock)
+        advanceUntilIdle()
+        val result = viewModel.copyFromPreviousMonth()
+
+        assertEquals(YearMonth.of(2026, 9), result.sourceMonth)
+        assertEquals(1, result.categoriesCopied)
+        assertTrue(result.totalCopied)
+        assertEquals(20_000L, repo.getBudget("2026-10", 1)!!.amountCents)
+        assertEquals(15_000L, repo.getBudget("2026-10", 2)!!.amountCents)
+        assertEquals(100_000L, repo.getMonthlyBudget("2026-10")!!.amountCents)
+    }
+
+    @Test
+    fun `copiar busca el ultimo mes con datos y avisa si no hay ninguno`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(
+            accounts = listOf(testAccount(id = 1)),
+            categories = listOf(testCategory(id = 1, kind = CategoryKind.EXPENSE))
+        )
+        val viewModel = BudgetsViewModel(repo, fixedClock)
+        advanceUntilIdle()
+        assertNull(viewModel.copyFromPreviousMonth().sourceMonth)
+
+        repo.upsertMonthlyBudget("2026-07", 50_000)
+        val result = viewModel.copyFromPreviousMonth()
+        assertEquals(YearMonth.of(2026, 7), result.sourceMonth)
+        assertTrue(result.totalCopied)
     }
 }
