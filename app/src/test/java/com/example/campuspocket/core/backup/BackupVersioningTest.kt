@@ -26,12 +26,12 @@ class BackupVersioningTest {
           }
         }"""
         val file = readAndValidate(v2Json)
-        assertEquals(4, file.dbVersion) // normalizado a la actual
+        assertEquals(BACKUP_DB_VERSION, file.dbVersion) // normalizado a la actual
         assertEquals(31, file.tables.scheduledPayments.single().anchorDayOfMonth)
     }
 
     @Test
-    fun `un respaldo v3 se normaliza a v4 con los campos nuevos vacios`() {
+    fun `un respaldo v3 se normaliza a la version actual con los campos nuevos vacios`() {
         val v3Json = """{
           "formatVersion": 1, "dbVersion": 3, "exportedAt": "2026-10-04T00:00:00Z",
           "tables": {
@@ -43,10 +43,27 @@ class BackupVersioningTest {
           }
         }"""
         val file = readAndValidate(v3Json)
-        assertEquals(4, file.dbVersion)
+        assertEquals(BACKUP_DB_VERSION, file.dbVersion)
         assertEquals(0, file.tables.scheduledPayments.single().anchorDayOfMonth)
         assertEquals(0, file.tables.monthlyBudgets.size)
         assertEquals(null, file.tables.transactions.single().subtype)
+    }
+
+    @Test
+    fun `un respaldo v4 sin grades se lee con grades vacio y version actual`() {
+        val v4Json = """{
+          "formatVersion": 1, "dbVersion": 4, "exportedAt": "2026-10-04T00:00:00Z",
+          "tables": {
+            "semesters": [], "courses": [], "class_sessions": [], "tasks": [], "task_reminders": [],
+            "accounts": [], "categories": [], "budgets": [], "monthly_budgets": [],
+            "transactions": [], "scheduled_payments": [], "folders": [], "notes": [], "import_hints": []
+          }
+        }"""
+        val file = readAndValidate(v4Json)
+        assertEquals(BACKUP_DB_VERSION, file.dbVersion)
+        assertEquals(0, file.tables.grades.size)
+        assertEquals(0, file.tables.subtasks.size)
+        assertEquals(0, file.tables.transactionTemplates.size)
     }
 
     @Test
@@ -75,7 +92,7 @@ class BackupVersioningTest {
                 }
             ), dbVersion = BACKUP_DB_VERSION)
         }
-        if (file.dbVersion == 3) return file.copy(dbVersion = BACKUP_DB_VERSION)
+        if (file.dbVersion in 3..5) return file.copy(dbVersion = BACKUP_DB_VERSION)
         return file
     }
 }

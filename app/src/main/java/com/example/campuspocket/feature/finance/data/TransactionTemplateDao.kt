@@ -10,6 +10,9 @@ interface TransactionTemplateDao {
     @Insert
     suspend fun insert(template: TransactionTemplateEntity): Long
 
+    @Query("SELECT * FROM transaction_templates ORDER BY id")
+    suspend fun getAll(): List<TransactionTemplateEntity>
+
     @Query(
         "SELECT * FROM transaction_templates " +
             "ORDER BY lastUsedAt DESC, id DESC LIMIT :limit"

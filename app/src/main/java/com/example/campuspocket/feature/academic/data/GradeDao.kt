@@ -18,6 +18,9 @@ interface GradeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGrades(grades: List<GradeEntity>)
 
+    @Query("SELECT * FROM grades ORDER BY id")
+    suspend fun getAll(): List<GradeEntity>
+
     @Update
     suspend fun updateGrade(grade: GradeEntity): Int
 

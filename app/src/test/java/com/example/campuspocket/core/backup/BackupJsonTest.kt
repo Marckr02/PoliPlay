@@ -51,12 +51,17 @@ class BackupJsonTest {
             notes = listOf(
                 NoteData(1, "Apuntes", "texto **negrita**", 2, null, null, false, 1_792_000_000_000, 1_792_000_000_000)
             ),
-            importHints = listOf(ImportHintData("vista previa generada", "Vista Previa Generada"))
+            importHints = listOf(ImportHintData("vista previa generada", "Vista Previa Generada")),
+            subtasks = listOf(SubtaskData(1, 1, "Repasar el enunciado", true, 0)),
+            grades = listOf(GradeData(1, 1, "BIMESTRE_1", 18.0, 20.0, 1_793_000_000_000)),
+            transactionTemplates = listOf(
+                TransactionTemplateData(1, "Almuerzo", 1_500, "EXPENSE", 1, 1, 1_793_000_000_000)
+            )
         )
     )
 
     @Test
-    fun `ida y vuelta conserva las 14 tablas con ids y fechas`() {
+    fun `ida y vuelta conserva las 17 tablas con ids y fechas`() {
         val original = sampleBackup()
 
         val text = json.encodeToString(original)
@@ -68,6 +73,10 @@ class BackupJsonTest {
         assertEquals("2026-10-04T12:00:00Z", parsed.exportedAt)
         assertEquals(250_000L, parsed.tables.monthlyBudgets.single().amountCents)
         assertEquals("RETIRO_CAJERO", parsed.tables.transactions.last().subtype)
+        assertEquals("Repasar el enunciado", parsed.tables.subtasks.single().title)
+        assertEquals("BIMESTRE_1", parsed.tables.grades.single().tipo)
+        assertEquals(18.0, parsed.tables.grades.single().score, 0.001)
+        assertEquals("Almuerzo", parsed.tables.transactionTemplates.single().name)
     }
 
     @Test

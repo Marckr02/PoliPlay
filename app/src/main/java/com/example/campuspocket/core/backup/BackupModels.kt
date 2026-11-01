@@ -3,7 +3,9 @@ package com.example.campuspocket.core.backup
 import com.example.campuspocket.core.database.ImportHintEntity
 import com.example.campuspocket.feature.academic.data.ClassSessionEntity
 import com.example.campuspocket.feature.academic.data.CourseEntity
+import com.example.campuspocket.feature.academic.data.GradeEntity
 import com.example.campuspocket.feature.academic.data.SemesterEntity
+import com.example.campuspocket.feature.academic.data.SubtaskEntity
 import com.example.campuspocket.feature.academic.data.TaskEntity
 import com.example.campuspocket.feature.academic.data.TaskReminderEntity
 import com.example.campuspocket.feature.finance.data.AccountEntity
@@ -12,6 +14,7 @@ import com.example.campuspocket.feature.finance.data.CategoryEntity
 import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
 import com.example.campuspocket.feature.finance.data.ScheduledPaymentEntity
 import com.example.campuspocket.feature.finance.data.TransactionEntity
+import com.example.campuspocket.feature.finance.data.TransactionTemplateEntity
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
 import kotlinx.serialization.SerialName
@@ -19,10 +22,10 @@ import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 /**
- * Formato del respaldo JSON (versionado). Las 14 tablas viajan con sus ids tal cual.
+ * Formato del respaldo JSON (versionado). Las 17 tablas viajan con sus ids tal cual.
  * Reglas:
  * - formatVersion solo cambia si cambia la ESTRUCTURA del archivo.
- * - dbVersion refleja el esquema Room actual (v4). Al importar, v2 y v3 se
+ * - dbVersion refleja el esquema Room actual (v6). Al importar, v2 a v5 se
  *   normalizan; una versión superior se rechaza.
  * - Fechas como texto ISO ("yyyy-MM-dd"); booleans y Long tal cual.
  */
@@ -49,13 +52,16 @@ data class BackupTables(
     @SerialName("scheduled_payments") val scheduledPayments: List<ScheduledPaymentData> = emptyList(),
     val folders: List<FolderData> = emptyList(),
     val notes: List<NoteData> = emptyList(),
-    @SerialName("import_hints") val importHints: List<ImportHintData> = emptyList()
+    @SerialName("import_hints") val importHints: List<ImportHintData> = emptyList(),
+    val subtasks: List<SubtaskData> = emptyList(),
+    val grades: List<GradeData> = emptyList(),
+    @SerialName("transaction_templates") val transactionTemplates: List<TransactionTemplateData> = emptyList()
 )
 
 @Serializable data class SemesterData(val id: Long, val name: String, val startDate: String, val endDate: String, val isActive: Boolean)
 @Serializable data class CourseData(val id: Long, val semesterId: Long, val code: String, val name: String, val section: String, val teacher: String?, val colorArgb: Int)
 @Serializable data class ClassSessionData(val id: Long, val courseId: Long, val dayOfWeek: Int, val startMinute: Int, val endMinute: Int, val room: String?, val credits: Int?)
-@Serializable data class TaskData(val id: Long, val courseId: Long?, val title: String, val description: String?, val dueAt: Long, val priority: String, val completedAt: Long?, val createdAt: Long)
+@Serializable data class TaskData(val id: Long, val courseId: Long?, val title: String, val description: String?, val dueAt: Long, val priority: String, val completedAt: Long?, val createdAt: Long, val repeatRule: String = "NONE", val repeatUntil: Long? = null)
 @Serializable data class TaskReminderData(val id: Long, val taskId: Long, val remindAt: Long)
 @Serializable data class AccountData(val id: Long, val name: String, val type: String, val initialBalanceCents: Long, val colorArgb: Int, val includeInTotal: Boolean, val archived: Boolean, val sortOrder: Int)
 @Serializable data class CategoryData(val id: Long, val name: String, val kind: String, val iconKey: String, val colorArgb: Int, val archived: Boolean)
@@ -66,6 +72,9 @@ data class BackupTables(
 @Serializable data class FolderData(val id: Long, val name: String, val parentId: Long?)
 @Serializable data class NoteData(val id: Long, val title: String, val content: String, val folderId: Long?, val courseId: Long?, val taskId: Long?, val pinned: Boolean, val createdAt: Long, val updatedAt: Long)
 @Serializable data class ImportHintData(val rawKey: String, val cleanValue: String)
+@Serializable data class SubtaskData(val id: Long, val taskId: Long, val title: String, val done: Boolean, val position: Int)
+@Serializable data class GradeData(val id: Long, val courseId: Long, val tipo: String, val score: Double, val maxScore: Double, val date: Long)
+@Serializable data class TransactionTemplateData(val id: Long, val name: String, val amountCents: Long, val type: String, val accountId: Long?, val categoryId: Long?, val lastUsedAt: Long = 0L)
 
 // ---- Mapeos entidad <-> datos del respaldo --------------------------------
 
@@ -78,8 +87,8 @@ fun CourseData.toEntity() = CourseEntity(id, semesterId, code, name, section, te
 fun ClassSessionEntity.toBackup() = ClassSessionData(id, courseId, dayOfWeek, startMinute, endMinute, room, credits)
 fun ClassSessionData.toEntity() = ClassSessionEntity(id, courseId, dayOfWeek, startMinute, endMinute, room, credits)
 
-fun TaskEntity.toBackup() = TaskData(id, courseId, title, description, dueAt, priority, completedAt, createdAt)
-fun TaskData.toEntity() = TaskEntity(id, courseId, title, description, dueAt, priority, completedAt, createdAt)
+fun TaskEntity.toBackup() = TaskData(id, courseId, title, description, dueAt, priority, completedAt, createdAt, repeatRule, repeatUntil)
+fun TaskData.toEntity() = TaskEntity(id, courseId, title, description, dueAt, priority, completedAt, createdAt, repeatRule, repeatUntil)
 
 fun TaskReminderEntity.toBackup() = TaskReminderData(id, taskId, remindAt)
 fun TaskReminderData.toEntity() = TaskReminderEntity(id, taskId, remindAt)
@@ -110,3 +119,12 @@ fun NoteData.toEntity() = NoteEntity(id, title, content, folderId, courseId, tas
 
 fun ImportHintEntity.toBackup() = ImportHintData(rawKey, cleanValue)
 fun ImportHintData.toEntity() = ImportHintEntity(rawKey, cleanValue)
+
+fun SubtaskEntity.toBackup() = SubtaskData(id, taskId, title, done, position)
+fun SubtaskData.toEntity() = SubtaskEntity(id, taskId, title, done, position)
+
+fun GradeEntity.toBackup() = GradeData(id, courseId, tipo, score, maxScore, date)
+fun GradeData.toEntity() = GradeEntity(id, courseId, tipo, score, maxScore, date)
+
+fun TransactionTemplateEntity.toBackup() = TransactionTemplateData(id, name, amountCents, type, accountId, categoryId, lastUsedAt)
+fun TransactionTemplateData.toEntity() = TransactionTemplateEntity(id, name, amountCents, type, accountId, categoryId, lastUsedAt)

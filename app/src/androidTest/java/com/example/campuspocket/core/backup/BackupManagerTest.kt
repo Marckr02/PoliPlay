@@ -5,7 +5,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.campuspocket.core.database.AppDatabase
 import com.example.campuspocket.feature.academic.data.CourseEntity
+import com.example.campuspocket.feature.academic.data.GradeEntity
 import com.example.campuspocket.feature.academic.data.SemesterEntity
+import com.example.campuspocket.feature.academic.data.SubtaskEntity
 import com.example.campuspocket.feature.academic.data.TaskEntity
 import com.example.campuspocket.feature.academic.data.TaskReminderEntity
 import com.example.campuspocket.feature.finance.data.AccountEntity
@@ -15,6 +17,7 @@ import com.example.campuspocket.feature.finance.data.CategoryKind
 import com.example.campuspocket.feature.finance.data.MonthlyBudgetEntity
 import com.example.campuspocket.feature.finance.data.TransactionEntity
 import com.example.campuspocket.feature.finance.data.TransactionSubtype
+import com.example.campuspocket.feature.finance.data.TransactionTemplateEntity
 import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.notes.data.FolderEntity
 import com.example.campuspocket.feature.notes.data.NoteEntity
@@ -61,11 +64,22 @@ class BackupManagerTest {
         val semesterId = db.semesterDao().insert(SemesterEntity(name = "2026-B", startDate = LocalDate.of(2026, 8, 1), endDate = LocalDate.of(2027, 2, 28), isActive = true))
         val courseId = db.courseDao().insert(CourseEntity(semesterId = semesterId, code = "ISWD713", name = "Apps", section = "GR1", teacher = null, colorArgb = 1))
         val taskId = db.taskDao().insert(TaskEntity(courseId = courseId, title = "Deber", dueAt = 123L, createdAt = 99L))
+        db.taskDao().insertSubtasks(listOf(SubtaskEntity(taskId = taskId, title = "Repasar el enunciado", done = true, position = 0)))
         db.taskReminderDao().insert(TaskReminderEntity(taskId = taskId, remindAt = 100L))
+        db.gradeDao().insertGrade(GradeEntity(courseId = courseId, tipo = "BIMESTRE_1", score = 18.0, maxScore = 20.0, date = 77L))
         val cashId = db.accountDao().insert(AccountEntity(name = "Efectivo", type = AccountType.CASH.name, initialBalanceCents = 1_000))
         val bankId = db.accountDao().insert(AccountEntity(name = "Banco", type = AccountType.DEBIT.name, initialBalanceCents = 500))
         val savingsId = db.accountDao().insert(AccountEntity(name = "Ahorros", type = AccountType.SAVINGS.name, initialBalanceCents = 20_000))
         val catId = db.categoryDao().insert(CategoryEntity(name = "Comida", kind = CategoryKind.EXPENSE.name, iconKey = "category"))
+        db.transactionTemplateDao().insert(
+            TransactionTemplateEntity(
+                name = "Almuerzo",
+                amountCents = 1_500,
+                type = TransactionType.EXPENSE.name,
+                accountId = cashId,
+                categoryId = catId
+            )
+        )
         db.transactionDao().insert(TransactionEntity(type = TransactionType.EXPENSE.name, amountCents = 100, date = LocalDate.of(2026, 10, 1), accountId = cashId, categoryId = catId, createdAt = 50L))
         db.transactionDao().insert(TransactionEntity(type = TransactionType.TRANSFER.name, amountCents = 200, date = LocalDate.of(2026, 10, 2), accountId = cashId, targetAccountId = bankId, createdAt = 51L))
         db.transactionDao().insert(
@@ -89,8 +103,9 @@ class BackupManagerTest {
         manager.exportBackup(out)
         val backupText = out.toString(Charsets.UTF_8)
         assertTrue(backupText.contains("\"formatVersion\":1"))
-        assertTrue(backupText.contains("\"dbVersion\":4"))
+        assertTrue(backupText.contains("\"dbVersion\":6"))
         assertTrue(backupText.contains("\"monthly_budgets\""))
+        assertTrue(backupText.contains("\"transaction_templates\""))
         assertTrue(backupText.contains("\"RETIRO_CAJERO\""))
 
         // BORRAR TODO (simula pérdida total)
@@ -153,6 +168,25 @@ class BackupManagerTest {
         assertEquals("Apunte", note.title)
         assertEquals(subId, note.folderId)
         assertTrue(note.pinned)
+
+        // Tablas nuevas del esquema v6: subtareas, calificaciones y plantillas.
+        val subtasks = db.taskDao().getSubtasks(taskId)
+        assertEquals(1, subtasks.size)
+        assertEquals("Repasar el enunciado", subtasks.single().title)
+        assertTrue(subtasks.single().done)
+
+        val grades = db.gradeDao().getAll()
+        assertEquals(1, grades.size)
+        assertEquals(courseId, grades.single().courseId)
+        assertEquals("BIMESTRE_1", grades.single().tipo)
+        assertEquals(18.0, grades.single().score, 0.001)
+
+        val templates = db.transactionTemplateDao().getAll()
+        assertEquals(1, templates.size)
+        assertEquals("Almuerzo", templates.single().name)
+        assertEquals(1_500L, templates.single().amountCents)
+        assertEquals(cashId, templates.single().accountId)
+        assertEquals(catId, templates.single().categoryId)
     }
 
     @Test

@@ -15,7 +15,7 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 const val BACKUP_FORMAT_VERSION = 1
-const val BACKUP_DB_VERSION = 4   // esquema actual de Room (v4: subtype + monthly_budgets)
+const val BACKUP_DB_VERSION = 6   // esquema actual de Room (v6: + subtasks, grades, transaction_templates, repeat de tareas)
 const val BACKUP_MIN_DB_VERSION = 2   // aceptamos también respaldos de la v2
 
 /** Por qué un respaldo no sirve (la UI lo traduce con strings.xml). */
@@ -30,7 +30,7 @@ enum class BackupImportIssue {
 class BackupImportException(val issue: BackupImportIssue) : Exception("Respaldo no válido: $issue")
 
 /**
- * Exporta e importa el respaldo JSON completo (las 14 tablas, con ids).
+ * Exporta e importa el respaldo JSON completo (las 17 tablas, con ids).
  * La importación es todo-o-nada: valida ANTES de tocar nada y corre en UNA
  * transacción de Room (si algo falla, la base de datos queda intacta).
  */
@@ -58,7 +58,10 @@ class BackupManager @Inject constructor(
             scheduledPayments = db.scheduledPaymentDao().observeAll().firstList().map { it.toBackup() },
             folders = db.folderDao().observeAll().firstList().map { it.toBackup() },
             notes = db.noteDao().observeAll().firstList().map { it.toBackup() },
-            importHints = db.importHintDao().getAll().map { it.toBackup() }
+            importHints = db.importHintDao().getAll().map { it.toBackup() },
+            subtasks = db.taskDao().observeAllSubtasks().firstList().map { it.toBackup() },
+            grades = db.gradeDao().getAll().map { it.toBackup() },
+            transactionTemplates = db.transactionTemplateDao().getAll().map { it.toBackup() }
         )
         val file = BackupFile(
             formatVersion = BACKUP_FORMAT_VERSION,
@@ -104,8 +107,8 @@ class BackupManager @Inject constructor(
             )
             return migrated.copy(dbVersion = BACKUP_DB_VERSION)
         }
-        if (file.dbVersion == 3) {
-            // Los campos nuevos de la v4 son opcionales: subtype = null y monthly_budgets vacío.
+        if (file.dbVersion in 3..5) {
+            // Las tablas nuevas (subtasks, grades, transaction_templates) vienen vacías por defecto.
             return file.copy(dbVersion = BACKUP_DB_VERSION)
         }
         return file
@@ -123,6 +126,7 @@ class BackupManager @Inject constructor(
 
             // Borrado (hijos antes que padres).
             listOf(
+                "grades", "subtasks", "transaction_templates",
                 "transactions", "monthly_budgets", "budgets", "task_reminders", "tasks",
                 "class_sessions", "courses", "notes", "scheduled_payments", "folders",
                 "import_hints", "categories", "accounts", "semesters"
@@ -135,14 +139,17 @@ class BackupManager @Inject constructor(
             t.semesters.forEach { db.semesterDao().insert(it.toEntity()) }
             t.accounts.forEach { db.accountDao().insert(it.toEntity()) }
             t.categories.forEach { db.categoryDao().insert(it.toEntity()) }
+            t.transactionTemplates.forEach { db.transactionTemplateDao().insert(it.toEntity()) }
             t.importHints.forEach { db.importHintDao().upsert(it.toEntity()) }
             t.folders.forEach { db.folderDao().insert(it.toEntity()) }
             t.scheduledPayments.forEach { db.scheduledPaymentDao().insert(it.toEntity()) }
             t.notes.forEach { db.noteDao().insert(it.toEntity()) }
             t.courses.forEach { db.courseDao().insert(it.toEntity()) }
+            t.grades.takeIf { it.isNotEmpty() }?.let { db.gradeDao().insertGrades(it.map { g -> g.toEntity() }) }
             t.classSessions.forEach { db.classSessionDao().insert(it.toEntity()) }
             t.tasks.forEach { db.taskDao().insert(it.toEntity()) }
             t.taskReminders.forEach { db.taskReminderDao().insert(it.toEntity()) }
+            t.subtasks.takeIf { it.isNotEmpty() }?.let { db.taskDao().insertSubtasks(it.map { s -> s.toEntity() }) }
             t.budgets.forEach { db.budgetDao().insert(it.toEntity()) }
             t.monthlyBudgets.forEach { db.monthlyBudgetDao().insert(it.toEntity()) }
             t.transactions.forEach { db.transactionDao().insert(it.toEntity()) }
