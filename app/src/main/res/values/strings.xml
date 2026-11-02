@@ -694,6 +694,7 @@
     <string name="finance_insight_closing_title">Cierre estimado</string>
     <string name="finance_insight_closing_of">de %1$s</string>
     <string name="finance_insight_not_enough_data">Aún faltan datos</string>
+    <string name="finance_insight_closing_hint">Se estima cuando haya más días de gasto</string>
     <string name="finance_insight_closing_over_budget">Cierre por encima del presupuesto</string>
     <string name="summary_title">Resumen del mes</string>
     <string name="summary_pace_chart_title">Ritmo del gasto</string>

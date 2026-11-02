@@ -149,7 +149,7 @@ internal fun BudgetInsightsRow(
                         formatMoneyOrHidden(pace.budgetCents)
                     )
                 } else {
-                    stringResource(R.string.finance_insight_not_enough_data)
+                    stringResource(R.string.finance_insight_closing_hint)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (closingAlert) {
