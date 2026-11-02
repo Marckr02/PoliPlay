@@ -99,7 +99,9 @@ object Money {
         formatter.currency = Currency.getInstance(currencyCode)
         formatter.minimumFractionDigits = 2
         formatter.maximumFractionDigits = 2
-        return formatter.format(BigDecimal.valueOf(cents, 2))
+        // El signo va antes del símbolo: -$20,00 (el locale es-EC pondría "$-20,00").
+        val text = formatter.format(BigDecimal.valueOf(kotlin.math.abs(cents), 2))
+        return if (cents < 0L) "-$text" else text
     }
 
     /** Igual que [format] pero con "+" explícito para valores positivos. */

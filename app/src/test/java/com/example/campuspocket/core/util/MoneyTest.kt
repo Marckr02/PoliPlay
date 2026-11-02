@@ -90,4 +90,10 @@ class MoneyTest {
         assertEquals("$0.07", Money.format(7, "USD", Locale.US))
         assertEquals("+$19.99", Money.formatSigned(1999, "USD", Locale.US))
     }
+
+    @Test fun `el signo negativo va antes del simbolo de moneda`() {
+        assertEquals("-$20,00", Money.format(-2_000))
+        assertEquals("$20,00", Money.format(2_000))
+        assertEquals("+$20,00", Money.formatSigned(2_000))
+    }
 }
