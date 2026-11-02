@@ -178,6 +178,7 @@ la salida real en la mano.
   Transferencias (el tipo se elige en la hoja “+” del FAB), “Retiro en cajero” se agregó
   como quinta acción de esa hoja. Historial gana etiqueta y chip de filtro. No se añadió
   notificación de ritmo: el estado vive solo en la tarjeta del Resumen.
+- Nuevo gasto/ingreso exige descripción al crear; reembolsos, transferencias y ediciones de movimientos antiguos la dejan opcional.
 
 ### Otras
 

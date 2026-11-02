@@ -7,6 +7,26 @@ Las entradas marcadas **no publicada** nunca llegaron a salir: no hay etiqueta
 de Git ni `VERSION_NAME` que las respalde. Su trabajo se recoge dentro de la
 versión publicada que sí lo incorporó.
 
+## [0.16.0] - 2026-11-02
+
+Etiqueta `v0.16.0` · commit `5eb8b1b` ("feat: presupuestos con mes actual, resumen asignado, deshacer y ayuda en montos")
+
+### Añadido
+- **Concepto obligatorio (U1)**: al crear un gasto o un ingreso hay que escribir de qué es; transferencias, reembolsos y la edición de movimientos antiguos lo dejan opcional.
+- **Conceptos recientes**: con el campo vacío se sugieren los 4 conceptos usados recientemente del mismo tipo para aplicarlos con un toque.
+- **Presupuestos (U2)**: chip "Ir al mes actual" al navegar a otro mes; resumen "Asignado a categorías… / Sin asignar…" (o "Excede el total por…" en rojo); deshacer al eliminar un presupuesto de categoría o el total del mes; deshacer al copiar del mes anterior.
+- **Ayuda en montos**: los diálogos de presupuesto explican que 1500 = $15,00 y que el total del mes es independiente de las categorías.
+
+### Cambiado
+- El campo de concepto queda siempre visible, debajo del monto y sobre las categorías; se retiró el chip "+ Nota".
+- Se retiró el aviso "Última usada" de cuentas y categorías.
+- El panel numérico se oculta mientras el teclado del sistema está abierto, para no duplicar espacio.
+
+### Pruebas
+- 237 pruebas unitarias en verde (`./gradlew :app:testDebugUnitTest`); instrumentadas: 65 en verde (emulador `CampusTest`, API 36).
+
+---
+
 ## [0.15.2] - 2026-11-02
 
 Etiqueta `v0.15.2` · commit `23e9a3a` ("fix: texto repetido en cierre estimado")

@@ -70,6 +70,7 @@ class FinanceUiTest {
         // Cuenta y categoría ya elegidas: este test se centra en el teclado y el guardado.
         vm.onAccountChange(1L)
         vm.onCategoryChange(1L)
+        vm.onDescriptionChange("Comida")
 
         setFormContent(vm) { done = true }
 
@@ -162,6 +163,7 @@ class FinanceUiTest {
         val vm = formViewModel(repo)
         vm.onAccountChange(1L)
         vm.onCategoryChange(1L)
+        vm.onDescriptionChange("Comida")
         setFormContent(vm)
 
         composeRule.onNodeWithText("Seguir añadiendo").performClick()

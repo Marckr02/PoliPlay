@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Notas de la versión actual para el diálogo "Novedades" (v10, 0.15.2).
+    <!-- Notas de la versión actual para el diálogo "Novedades" (v10, 0.16.0).
          Texto plano, escrito para el usuario (sin etiquetas ni nombres de clases).
          Se actualiza en cada lanzamiento; el historial completo está en CHANGELOG.md. -->
 
     <string-array name="release_notes_current">
-        <item>Se corrigió el porcentaje del medidor de presupuesto, que se mostraba multiplicado por 100.</item>
-        <item>Los íconos de la barra de estado ahora se ven bien con el tema que elijas en la app.</item>
-        <item>Los montos negativos se muestran como -$20,00 y las transferencias ya no cuentan como gasto en el total del día.</item>
-        <item>Las transferencias muestran cuenta de origen y destino.</item>
-        <item>Pequeños arreglos de textos en Nuevo gasto y Cierre estimado.</item>
+        <item>Nuevo gasto e ingreso: ahora escribes de qué es el movimiento (por ejemplo "Almuerzo") y verás tus conceptos recientes para elegirlos con un toque.</item>
+        <item>Se quitó el aviso "Última usada" de las cuentas y categorías.</item>
+        <item>Presupuestos: botón para volver al mes actual, resumen de lo asignado frente al total y opción de deshacer.</item>
     </string-array>
 </resources>
