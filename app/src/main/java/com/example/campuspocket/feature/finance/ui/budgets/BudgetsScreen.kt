@@ -42,7 +42,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.campuspocket.R
 import com.example.campuspocket.core.navigation.LocalSnackbarHost
+import com.example.campuspocket.core.navigation.showUndoSnackbar
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import com.example.campuspocket.core.designsystem.MoneyText
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
@@ -77,12 +79,16 @@ fun BudgetsScreen(
     viewModel: BudgetsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val onDeleteBudget = rememberBudgetDeletionHandler(viewModel)
+    val onDeleteMonthlyBudget = rememberMonthlyBudgetDeletionHandler(viewModel)
 
     LazyColumn(modifier = modifier.fillMaxWidth()) {
         budgetItems(
             state = state,
             viewModel = viewModel,
-            onManageCategories = onManageCategories
+            onManageCategories = onManageCategories,
+            onDeleteBudget = onDeleteBudget,
+            onDeleteMonthlyBudget = onDeleteMonthlyBudget
         )
     }
 }
@@ -94,7 +100,9 @@ fun BudgetsScreen(
 fun LazyListScope.budgetItems(
     state: BudgetsUiState,
     viewModel: BudgetsViewModel,
-    onManageCategories: () -> Unit
+    onManageCategories: () -> Unit,
+    onDeleteBudget: (GetMonthSummary.CategoryRow) -> Unit = { viewModel.deleteBudget(it.categoryId) },
+    onDeleteMonthlyBudget: () -> Unit = { viewModel.deleteMonthlyBudget() }
 ) {
     item(key = "budget_month", contentType = "month") {
         Row(
@@ -120,6 +128,23 @@ fun LazyListScope.budgetItems(
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = stringResource(R.string.calendar_next_month)
+                )
+            }
+        }
+    }
+
+    if (!state.semesterMode && !state.isCurrentMonth) {
+        item(key = "budget_go_current", contentType = "action") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CampusChip(
+                    label = stringResource(R.string.budget_go_current_month),
+                    selected = false,
+                    onClick = viewModel::goToCurrentMonth
                 )
             }
         }
@@ -182,6 +207,7 @@ fun LazyListScope.budgetItems(
             val snackbarHost = LocalSnackbarHost.current
             val coroutineScope = rememberCoroutineScope()
             val resources = LocalContext.current.resources
+            val undoLabel = stringResource(R.string.snackbar_undo)
             CampusButton(
                 text = stringResource(R.string.budget_copy_previous),
                 onClick = {
@@ -200,7 +226,13 @@ fun LazyListScope.budgetItems(
                             else ->
                                 resources.getString(R.string.budget_copy_done_categories, result.categoriesCopied, source)
                         }
-                        snackbarHost.showSnackbar(message)
+                        if (result.categoriesCopied > 0 || result.totalCopied) {
+                            if (snackbarHost.showUndoSnackbar(message, undoLabel)) {
+                                viewModel.undoCopy(result)
+                            }
+                        } else {
+                            snackbarHost.showSnackbar(message)
+                        }
                     }
                 },
                 style = CampusButtonStyle.SECONDARY,
@@ -239,10 +271,44 @@ fun LazyListScope.budgetItems(
                     },
                     onDelete = if (state.monthlyBudgetCents != null) {
                         {
-                            viewModel.deleteMonthlyBudget()
+                            onDeleteMonthlyBudget()
                             showTotalBudgetDialog = false
                         }
                     } else null
+                )
+            }
+        }
+
+        val monthlyTotal = state.monthlyBudgetCents
+        if (monthlyTotal != null && state.totalBudgetCents > 0L) {
+            item(key = "budget_assigned_summary", contentType = "summary") {
+                val assigned = state.totalBudgetCents
+                val diff = monthlyTotal - assigned
+                Text(
+                    text = if (diff >= 0L) {
+                        stringResource(
+                            R.string.budget_assigned_summary,
+                            formatMoneyOrHidden(assigned),
+                            formatMoneyOrHidden(monthlyTotal),
+                            formatMoneyOrHidden(diff)
+                        )
+                    } else {
+                        stringResource(
+                            R.string.budget_assigned_over,
+                            formatMoneyOrHidden(assigned),
+                            formatMoneyOrHidden(monthlyTotal),
+                            formatMoneyOrHidden(-diff)
+                        )
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (diff >= 0L) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
                 )
             }
         }
@@ -267,7 +333,7 @@ fun LazyListScope.budgetItems(
             BudgetRowItem(
                 row = row,
                 onSave = { cents -> viewModel.saveBudget(row.categoryId, cents) },
-                onDelete = { viewModel.deleteBudget(row.categoryId) }
+                onDelete = { onDeleteBudget(row) }
             )
         }
     }
@@ -291,7 +357,7 @@ fun LazyListScope.budgetItems(
             BudgetRowItem(
                 row = row,
                 onSave = { cents -> viewModel.saveBudget(row.categoryId, cents) },
-                onDelete = { viewModel.deleteBudget(row.categoryId) }
+                onDelete = { onDeleteBudget(row) }
             )
         }
     }
@@ -306,6 +372,55 @@ fun LazyListScope.budgetItems(
                 message = stringResource(R.string.empty_budgets_message),
                 iconRes = R.drawable.ic_wallet
             )
+        }
+    }
+}
+
+/**
+ * Elimina el presupuesto de la categoría y ofrece deshacer. Vive en la pantalla
+ * (no en el ítem) porque al borrar la fila cambia de sección y su scope se cancelaría.
+ */
+@Composable
+internal fun rememberBudgetDeletionHandler(
+    viewModel: BudgetsViewModel,
+    scope: CoroutineScope = rememberCoroutineScope()
+): (GetMonthSummary.CategoryRow) -> Unit {
+    val snackbarHost = LocalSnackbarHost.current
+    val message = stringResource(R.string.budget_deleted_snackbar)
+    val undoLabel = stringResource(R.string.snackbar_undo)
+    return { row ->
+        val previous = row.budgetCents
+        if (previous != null) {
+            val month = viewModel.yearMonth.value
+            viewModel.deleteBudget(row.categoryId)
+            scope.launch {
+                if (snackbarHost.showUndoSnackbar(message, undoLabel)) {
+                    viewModel.restoreBudget(month, row.categoryId, previous)
+                }
+            }
+        }
+    }
+}
+
+/** Igual que [rememberBudgetDeletionHandler], para el presupuesto total del mes. */
+@Composable
+internal fun rememberMonthlyBudgetDeletionHandler(
+    viewModel: BudgetsViewModel,
+    scope: CoroutineScope = rememberCoroutineScope()
+): () -> Unit {
+    val snackbarHost = LocalSnackbarHost.current
+    val message = stringResource(R.string.budget_total_deleted_snackbar)
+    val undoLabel = stringResource(R.string.snackbar_undo)
+    return {
+        val previous = viewModel.uiState.value.monthlyBudgetCents
+        if (previous != null) {
+            val month = viewModel.yearMonth.value
+            viewModel.deleteMonthlyBudget()
+            scope.launch {
+                if (snackbarHost.showUndoSnackbar(message, undoLabel)) {
+                    viewModel.restoreMonthlyBudget(month, previous)
+                }
+            }
         }
     }
 }
@@ -413,7 +528,13 @@ private fun MonthlyBudgetEditDialog(
                 prefix = "$",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = { Text(stringResource(R.string.budget_amount_hint)) },
                 modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = stringResource(R.string.budget_total_independent_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (onDelete != null) {
                 CampusButton(
@@ -533,6 +654,7 @@ private fun BudgetEditDialog(
                 prefix = "$",
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = { Text(stringResource(R.string.budget_amount_hint)) },
                 modifier = Modifier.fillMaxWidth()
             )
             if (onDelete != null) {

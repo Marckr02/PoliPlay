@@ -134,4 +134,83 @@ class BudgetsViewModelTest {
         assertEquals(YearMonth.of(2026, 7), result.sourceMonth)
         assertTrue(result.totalCopied)
     }
+
+    @Test
+    fun `ir al mes actual vuelve al mes del reloj`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(
+            accounts = listOf(testAccount(id = 1)),
+            categories = listOf(testCategory(id = 1, kind = CategoryKind.EXPENSE))
+        )
+        val viewModel = BudgetsViewModel(repo, fixedClock)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isCurrentMonth)
+
+        viewModel.nextMonth()
+        advanceUntilIdle()
+        assertEquals(YearMonth.of(2026, 11), viewModel.uiState.value.yearMonth)
+        assertTrue(!viewModel.uiState.value.isCurrentMonth)
+
+        viewModel.goToCurrentMonth()
+        advanceUntilIdle()
+        assertEquals(YearMonth.of(2026, 10), viewModel.uiState.value.yearMonth)
+        assertTrue(viewModel.uiState.value.isCurrentMonth)
+    }
+
+    @Test
+    fun `restaurar un presupuesto lo vuelve a dejar en el repositorio`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(
+            accounts = listOf(testAccount(id = 1)),
+            categories = listOf(testCategory(id = 1, kind = CategoryKind.EXPENSE))
+        )
+        val viewModel = BudgetsViewModel(repo, fixedClock)
+        advanceUntilIdle()
+
+        viewModel.restoreBudget(YearMonth.of(2026, 10), 1, 5_000)
+        advanceUntilIdle()
+
+        assertEquals(5_000L, repo.getBudget("2026-10", 1)!!.amountCents)
+    }
+
+    @Test
+    fun `restaurar el presupuesto total lo vuelve a dejar en el repositorio`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(
+            accounts = listOf(testAccount(id = 1)),
+            categories = listOf(testCategory(id = 1, kind = CategoryKind.EXPENSE))
+        )
+        val viewModel = BudgetsViewModel(repo, fixedClock)
+        advanceUntilIdle()
+
+        viewModel.restoreMonthlyBudget(YearMonth.of(2026, 10), 75_000)
+        advanceUntilIdle()
+
+        assertEquals(75_000L, repo.getMonthlyBudget("2026-10")!!.amountCents)
+    }
+
+    @Test
+    fun `deshacer la copia borra solo lo copiado`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(
+            accounts = listOf(testAccount(id = 1)),
+            categories = listOf(
+                testCategory(id = 1, kind = CategoryKind.EXPENSE),
+                testCategory(id = 2, kind = CategoryKind.EXPENSE)
+            )
+        )
+        repo.upsertBudget("2026-09", 1, 20_000)
+        repo.upsertBudget("2026-09", 2, 10_000)
+        repo.upsertMonthlyBudget("2026-09", 100_000)
+        repo.upsertBudget("2026-10", 2, 15_000)
+
+        val viewModel = BudgetsViewModel(repo, fixedClock)
+        advanceUntilIdle()
+        val result = viewModel.copyFromPreviousMonth()
+        assertEquals(listOf(1L), result.copiedCategoryIds)
+        assertEquals(20_000L, repo.getBudget("2026-10", 1)!!.amountCents)
+
+        viewModel.undoCopy(result)
+
+        assertNull(repo.getBudget("2026-10", 1))
+        assertEquals(15_000L, repo.getBudget("2026-10", 2)!!.amountCents)
+        assertNull(repo.getMonthlyBudget("2026-10"))
+    }
 }

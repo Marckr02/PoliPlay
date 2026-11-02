@@ -51,6 +51,8 @@ import com.example.campuspocket.feature.finance.data.TransactionType
 import com.example.campuspocket.feature.finance.ui.accounts.AccountsViewModel
 import com.example.campuspocket.feature.finance.ui.budgets.BudgetsViewModel
 import com.example.campuspocket.feature.finance.ui.budgets.budgetItems
+import com.example.campuspocket.feature.finance.ui.budgets.rememberBudgetDeletionHandler
+import com.example.campuspocket.feature.finance.ui.budgets.rememberMonthlyBudgetDeletionHandler
 import com.example.campuspocket.feature.finance.ui.history.HistoryViewModel
 import com.example.campuspocket.feature.finance.ui.history.historyItems
 import com.example.campuspocket.feature.finance.ui.payments.PaymentsView
@@ -323,11 +325,15 @@ private fun financeTabContent(
     FinanceTab.BUDGETS -> {
         val viewModel: BudgetsViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
+        val onDeleteBudget = rememberBudgetDeletionHandler(viewModel, paymentsUndoScope)
+        val onDeleteMonthlyBudget = rememberMonthlyBudgetDeletionHandler(viewModel, paymentsUndoScope)
         val content: LazyListScope.() -> Unit = {
             budgetItems(
                 state = state,
                 viewModel = viewModel,
-                onManageCategories = onManageCategories
+                onManageCategories = onManageCategories,
+                onDeleteBudget = onDeleteBudget,
+                onDeleteMonthlyBudget = onDeleteMonthlyBudget
             )
         }
         content

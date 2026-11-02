@@ -30,7 +30,9 @@ data class BudgetsUiState(
     /** Presupuesto total independiente del mes; null si no está definido. */
     val monthlyBudgetCents: Long? = null,
     /** Ritmo del presupuesto total; null si no hay presupuesto o el mes es futuro. */
-    val pace: MonthPace? = null
+    val pace: MonthPace? = null,
+    /** true si el mes visible es el actual. */
+    val isCurrentMonth: Boolean = true
 ) {
     val totalBudgetCents: Long get() = rows.sumOf { it.budgetCents ?: 0L }
     val totalSpentCents: Long get() = rows.sumOf { it.netSpentCents }
@@ -41,7 +43,9 @@ data class CopyBudgetsResult(
     /** Mes de donde se copió; null si no hay presupuestos en los últimos 12 meses. */
     val sourceMonth: YearMonth?,
     val categoriesCopied: Int,
-    val totalCopied: Boolean
+    val totalCopied: Boolean,
+    val targetMonth: YearMonth,
+    val copiedCategoryIds: List<Long> = emptyList()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -107,7 +111,8 @@ class BudgetsViewModel @Inject constructor(
                         isLoading = false,
                         semesterMode = false,
                         monthlyBudgetCents = monthlyBudget,
-                        pace = pace
+                        pace = pace,
+                        isCurrentMonth = month == currentMonth
                     )
                 } else {
                     val months = GetMonthSummary.semesterMonths(month, null)
@@ -138,6 +143,7 @@ class BudgetsViewModel @Inject constructor(
 
     fun previousMonth() { _yearMonth.value = _yearMonth.value.minusMonths(1) }
     fun nextMonth() { _yearMonth.value = _yearMonth.value.plusMonths(1) }
+    fun goToCurrentMonth() { _yearMonth.value = YearMonth.from(LocalDate.now(clock)) }
     fun toggleSemesterMode() { _semesterMode.value = !_semesterMode.value }
 
     fun saveBudget(categoryId: Long, amountCents: Long) {
@@ -152,6 +158,12 @@ class BudgetsViewModel @Inject constructor(
         }
     }
 
+    fun restoreBudget(yearMonth: YearMonth, categoryId: Long, amountCents: Long) {
+        viewModelScope.launch {
+            financeRepository.upsertBudget(yearMonth.toString(), categoryId, amountCents)
+        }
+    }
+
     /** Presupuesto total del mes (independiente de las categorías, sin arrastre). */
     fun saveMonthlyBudget(amountCents: Long) {
         if (amountCents <= 0L) return
@@ -163,6 +175,12 @@ class BudgetsViewModel @Inject constructor(
     fun deleteMonthlyBudget() {
         viewModelScope.launch {
             financeRepository.deleteMonthlyBudget(_yearMonth.value.toString())
+        }
+    }
+
+    fun restoreMonthlyBudget(yearMonth: YearMonth, amountCents: Long) {
+        viewModelScope.launch {
+            financeRepository.upsertMonthlyBudget(yearMonth.toString(), amountCents)
         }
     }
 
@@ -183,7 +201,12 @@ class BudgetsViewModel @Inject constructor(
         val source = generateSequence(current.minusMonths(1)) { it.minusMonths(1) }
             .take(12)
             .firstOrNull { it.toString() in categoryBudgetMonths || it.toString() in totalBudgetMonths }
-            ?: return CopyBudgetsResult(sourceMonth = null, categoriesCopied = 0, totalCopied = false)
+            ?: return CopyBudgetsResult(
+                sourceMonth = null,
+                categoriesCopied = 0,
+                totalCopied = false,
+                targetMonth = current
+            )
         val sourceKey = source.toString()
 
         val activeExpenseIds = financeRepository.observeActiveCategories().first()
@@ -202,6 +225,19 @@ class BudgetsViewModel @Inject constructor(
             financeRepository.upsertMonthlyBudget(currentKey, sourceTotal.amountCents)
             totalCopied = true
         }
-        return CopyBudgetsResult(source, toCopy.size, totalCopied)
+        return CopyBudgetsResult(
+            sourceMonth = source,
+            categoriesCopied = toCopy.size,
+            totalCopied = totalCopied,
+            targetMonth = current,
+            copiedCategoryIds = toCopy.map { it.categoryId }
+        )
+    }
+
+    /** Revierte exactamente lo que copió [copyFromPreviousMonth]. */
+    suspend fun undoCopy(result: CopyBudgetsResult) {
+        val key = result.targetMonth.toString()
+        result.copiedCategoryIds.forEach { financeRepository.deleteBudget(key, it) }
+        if (result.totalCopied) financeRepository.deleteMonthlyBudget(key)
     }
 }

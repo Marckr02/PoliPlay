@@ -233,6 +233,13 @@
     <string name="budget_copy_done_both">Se copiaron el presupuesto total y %1$d presupuestos por categoría de %2$s</string>
     <string name="budget_copy_nothing_new">Este mes ya tiene todo lo que había en %1$s</string>
     <string name="budget_copy_no_source">No hay presupuestos en los últimos 12 meses para copiar</string>
+    <string name="budget_go_current_month">Ir al mes actual</string>
+    <string name="budget_assigned_summary">Asignado a categorías: %1$s de %2$s · Sin asignar: %3$s</string>
+    <string name="budget_assigned_over">Asignado a categorías: %1$s de %2$s · Excede el total por %3$s</string>
+    <string name="budget_deleted_snackbar">Presupuesto eliminado</string>
+    <string name="budget_total_deleted_snackbar">Presupuesto total eliminado</string>
+    <string name="budget_amount_hint">Escribe el monto con centavos: 1500 = $15,00</string>
+    <string name="budget_total_independent_hint">El total del mes es independiente de los presupuestos por categoría.</string>
     <string name="budgets_monthly">Con presupuesto</string>
     <string name="budgets_no_budget">Sin presupuesto</string>
     <string name="budget_exceeded">Excedido</string>
