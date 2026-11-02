@@ -52,7 +52,7 @@ El release está firmado con el keystore local `keystore.jks` (alias `campuspock
 ## Respaldo (exportar / restaurar)
 
 - Ajustes → Respaldo → **Exportar datos** abre el selector de archivos y escribe `campuspocket-AAAA-MM-DD.json`.
-- **Importar datos** lee el JSON (versionado: `formatVersion` 1 y `dbVersion` 4; se aceptan respaldos v2/v3 y se normalizan al esquema actual; una versión superior se rechaza). El respaldo incluye las 14 tablas, entre ellas `monthly_budgets` y el subtipo de retiro.
+- **Importar datos** lee el JSON (versionado: `formatVersion` 1 y `dbVersion` 6; se aceptan respaldos v2 a v5 y se normalizan al esquema actual; una versión superior se rechaza). El respaldo incluye las 17 tablas, entre ellas `monthly_budgets` y el subtipo de retiro.
 - El archivo **no está cifrado**: guárdalo en lugar seguro.
 
 Hecho por y para un solo usuario. No se sube nada a la nube.

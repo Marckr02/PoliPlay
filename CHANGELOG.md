@@ -7,6 +7,22 @@ Las entradas marcadas **no publicada** nunca llegaron a salir: no hay etiqueta
 de Git ni `VERSION_NAME` que las respalde. Su trabajo se recoge dentro de la
 versión publicada que sí lo incorporó.
 
+## [0.15.1] - 2026-11-01
+
+Etiqueta `v0.15.1` · commit `8e1b58d` ("fix: re-bloqueo biométrico al volver a primer plano")
+
+### Corregido
+- **Dock (T1)**: ocupaba toda la pantalla al iniciar; ahora mide solo su franja. Prueba de regresión dentro de `Scaffold`.
+- **Presupuestos (T2)**: un mes nuevo lista todas las categorías de gasto para asignar montos; "Copiar del mes anterior" copia también el presupuesto total, busca hasta 12 meses atrás y no pisa lo existente.
+- **Migración 5→6 (T3)**: la tabla `grades` coincide con la entidad (`tipo`, `score`, `maxScore`, `date`); evita el fallo de validación al actualizar desde v5.
+- **Respaldo (T4)**: incluye calificaciones, subtareas, plantillas de movimientos y repetición de tareas; `dbVersion` 6; se siguen aceptando respaldos 2 a 5.
+- **Bloqueo (T5)**: se vuelve a pedir autenticación al regresar a la app; sin `runBlocking` en el hilo principal.
+
+### Pruebas
+- 222 pruebas unitarias en verde (`./gradlew :app:testDebugUnitTest`); instrumentadas: 65 en verde (emulador `CampusTest`, API 36).
+
+---
+
 ## [0.15.0] - 2026-11-01
 
 Fases 3 y 4 del plan de auditoría v10 (C1–C7, D1–D8). Sin cambios de lógica de negocio, de base de datos ni de rutas.

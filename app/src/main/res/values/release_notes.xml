@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Notas de la versión actual para el diálogo "Novedades" (v10, 0.15.0).
+    <!-- Notas de la versión actual para el diálogo "Novedades" (v10, 0.15.1).
          Texto plano, escrito para el usuario (sin etiquetas ni nombres de clases).
          Se actualiza en cada lanzamiento; el historial completo está en CHANGELOG.md. -->
 
     <string-array name="release_notes_current">
-        <item>Mejoras visuales y limpieza del sistema de diseño: los colores, bordes de notas pastel y la barra de navegación respetan la paleta editorial en modo claro y oscuro.</item>
-        <item>Animaciones adaptativas: todas las animaciones se detienen cuando activas la opción "Reducir animaciones" en los ajustes de accesibilidad de tu dispositivo.</item>
-        <item>Formatos unificados de fecha y moneda: las fechas y montos se muestran de forma consistente con el formato ecuatoriano (es-EC).</item>
-        <item>Menús desplegables integrados: los menús de acciones de notas, pagos y movimientos ahora siguen el estilo visual limpio de la aplicación.</item>
-        <item>Navegación y calendario adaptativo: el calendario mensual se ajusta automáticamente según la pantalla sin alturas rígidas ni bloqueos.</item>
+        <item>La barra de navegación inferior vuelve a ocupar solo su franja en la parte baja de la pantalla.</item>
+        <item>Presupuestos: ahora puedes definir presupuestos por categoría en un mes nuevo y copiar del mes anterior también el presupuesto total.</item>
+        <item>Las copias de seguridad ahora incluyen calificaciones, subtareas y plantillas de movimientos.</item>
+        <item>El bloqueo con huella o credencial se vuelve a pedir al regresar a la app.</item>
+        <item>Se corrigió un error que podía impedir abrir la app al actualizar desde versiones anteriores.</item>
     </string-array>
 </resources>

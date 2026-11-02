@@ -115,6 +115,7 @@ la salida real en la mano.
 - **v3 → v4 (Fase 8).** `transactions.subtype` nullable (sin tocar filas viejas) y tabla
   `monthly_budgets` (`id`, `yearMonth` TEXT, `amountCents` INTEGER) con índice único por
   `yearMonth`. `MigrationTest` cubre la migración real 3→4.
+- MIGRATION_5_6 corregida para coincidir con la entidad grades (0.15.1).
 - Nota histórica del desarrollo: `app/schemas/1.json` se regeneró durante la limpieza y
   ya no refleja el primer v1 instalado en el dispositivo; por eso el usuario desinstala una
   vez antes de probar. El `MigrationTest` NO usa ese `1.json`: crea la "v1 antigua" con DDL
@@ -190,8 +191,8 @@ la salida real en la mano.
 - `allowBackup = false` (el respaldo propio en JSON llega en la Fase 7).
 ### Respaldo (Fase 4.5, adelanto de la 7)
 - **Ajustes real** (ya no placeholder): "Exportar datos" (SAF `CreateDocument`, aviso de "no cifrado" antes) e "Importar datos" (SAF `OpenDocument`). Fecha del último respaldo en DataStore (`last_backup_at`).
-- **Formato JSON versionado** (`core/backup`): `formatVersion` 1, `dbVersion` 4, `exportedAt` (ISO) y las **14 tablas con sus ids**, incluido `monthly_budgets` y `transactions.subtype`. `kotlinx-serialization` (plugin con la misma versión de Kotlin, `json 1.8.1` — se fuerza 1.8.1 también en release).
-- **Importar = todo-o-nada**: valida formato y versión ANTES de tocar nada; confirmación del usuario; borrado e inserción en UNA transacción de Room con `PRAGMA defer_foreign_keys` (las FKs se verifican al commit; si falla, se revierte). Un archivo inválido deja todo intacto. Se aceptan `dbVersion` 2 y 3: v2 deriva `anchorDayOfMonth`; v3 deja `subtype = null` y `monthly_budgets` vacío. Una versión superior se rechaza.
+- **Formato JSON versionado** (`core/backup`): `formatVersion` 1, `dbVersion` 6, `exportedAt` (ISO) y las **17 tablas con sus ids**, incluido `monthly_budgets` y `transactions.subtype`. `kotlinx-serialization` (plugin con la misma versión de Kotlin, `json 1.8.1` — se fuerza 1.8.1 también en release).
+- **Importar = todo-o-nada**: valida formato y versión ANTES de tocar nada; confirmación del usuario; borrado e inserción en UNA transacción de Room con `PRAGMA defer_foreign_keys` (las FKs se verifican al commit; si falla, se revierte). Un archivo inválido deja todo intacto. Se aceptan `dbVersion` 2 a 5: v2 deriva `anchorDayOfMonth`; v3 a v5 se normalizan al esquema actual con las tablas nuevas vacías. Una versión superior se rechaza.
 - Pruebas: JVM ida/vuelta (`BackupJsonTest`, `BackupVersioningTest`) + instrumentada `BackupManagerTest` (exportar→borrar→importar idéntico, incluido retiro y presupuesto total; inválido no cambia nada).
 - **Regla operativa nueva**: las instrumentadas se ejecutan en el teléfono SOLO con confirmación explícita del usuario (pueden sobreescribir sus datos al reinstalar).
 
