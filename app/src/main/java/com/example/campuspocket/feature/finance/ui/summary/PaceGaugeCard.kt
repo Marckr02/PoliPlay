@@ -36,10 +36,10 @@ import com.example.campuspocket.core.designsystem.ShapeHero
 import com.example.campuspocket.core.designsystem.components.BentoCard
 import com.example.campuspocket.core.designsystem.components.CampusTextButton
 import com.example.campuspocket.core.designsystem.components.PaceGauge
-import com.example.campuspocket.core.designsystem.components.formatGaugePercent
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.designsystem.ShapeCard
+import com.example.campuspocket.core.util.CampusFormats
 import com.example.campuspocket.feature.finance.domain.MonthPace
 import java.time.format.TextStyle
 import java.util.Locale
@@ -67,8 +67,8 @@ internal fun PaceGaugeCard(
         dark -> ext.gaugeFill
         else -> ext.mint
     }
-    val percent = formatGaugePercent(pace.realPct.toFloat())
-    val expectedPercent = formatGaugePercent(pace.expectedPct.toFloat())
+    val percent = CampusFormats.percentValue(pace.realPct)
+    val expectedPercent = CampusFormats.percentValue(pace.expectedPct)
     val accessibility = stringResource(
         R.string.finance_pace_accessibility,
         "$percent %",

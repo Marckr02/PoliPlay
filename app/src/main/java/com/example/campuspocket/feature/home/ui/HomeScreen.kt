@@ -63,12 +63,12 @@ import com.example.campuspocket.core.designsystem.components.PaceGauge
 import com.example.campuspocket.core.designsystem.components.PriorityTag
 import com.example.campuspocket.core.designsystem.components.PrivacyToggleButton
 import com.example.campuspocket.core.designsystem.components.RoundIconButton
-import com.example.campuspocket.core.designsystem.components.formatGaugePercent
 import com.example.campuspocket.core.designsystem.extended
 import com.example.campuspocket.core.designsystem.ShapeCard
 import com.example.campuspocket.core.designsystem.ShapeHero
 import com.example.campuspocket.core.preferences.CampusModule
 import com.example.campuspocket.core.preferences.UserPreferences
+import com.example.campuspocket.core.util.CampusFormats
 import com.example.campuspocket.core.util.Money
 import com.example.campuspocket.feature.academic.domain.model.Task
 import com.example.campuspocket.feature.academic.ui.TimeText
@@ -741,8 +741,8 @@ private fun FinanceSummaryCard(
         }
         Spacer(Modifier.weight(1f))
         if (pace != null) {
-            val spentPercent = formatGaugePercent(pace.realPct.toFloat())
-            val expectedPercent = formatGaugePercent(pace.expectedPct.toFloat())
+            val spentPercent = CampusFormats.percentValue(pace.realPct)
+            val expectedPercent = CampusFormats.percentValue(pace.expectedPct)
             val gaugeDescription = stringResource(
                 R.string.finance_pace_accessibility,
                 "$spentPercent %",

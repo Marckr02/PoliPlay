@@ -33,4 +33,9 @@ object CampusFormats {
 
     fun percent(fraction: Float): String =
         String.format(LOCALE_EC, "%.1f", fraction * 100f).replace('.', ',')
+
+    /** Recibe un porcentaje ya multiplicado por 100 (p. ej. 4.3 = "4,3"). */
+    fun percentValue(percent: java.math.BigDecimal): String =
+        String.format(LOCALE_EC, "%.1f", percent.setScale(1, java.math.RoundingMode.HALF_UP))
+            .replace('.', ',')
 }
