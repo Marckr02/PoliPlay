@@ -8,12 +8,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +28,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.campuspocket.core.designsystem.CampusTheme
 import com.example.campuspocket.core.designsystem.LocalPrivacyMode
 import com.example.campuspocket.core.designsystem.MotionKeyHolder
+import com.example.campuspocket.core.designsystem.components.CampusButton
 import com.example.campuspocket.core.navigation.CampusNavHost
 import com.example.campuspocket.core.notifications.ReminderReceiver
 import com.example.campuspocket.core.preferences.ThemeMode
@@ -75,6 +82,7 @@ class MainActivity : FragmentActivity() {
         }
 
         setContent {
+            val locked by LockInterceptor.locked.collectAsStateWithLifecycle()
             // null = aún no llegó la primera lectura de DataStore (evita parpadeos).
             val preferences by userPreferencesRepository.preferences
                 .collectAsStateWithLifecycle(initialValue = null)
@@ -95,21 +103,38 @@ class MainActivity : FragmentActivity() {
                         !prefs.onboardingCompleted -> OnboardingScreen(
                             onFinished = { pendingImportUri.value = it }
                         )
-                        else -> CompositionLocalProvider(LocalPrivacyMode provides prefs.hideAmounts) {
-                            CampusNavHost(
-                                preferences = prefs,
-                                pendingTaskId = pendingTaskId,
-                                onPendingTaskHandled = { pendingTaskId.value = -1L },
-                                pendingRoute = pendingRoute,
-                                onPendingRouteHandled = { pendingRoute.value = null },
-                                pendingImportUri = pendingImportUri,
-                                onPendingImportHandled = { pendingImportUri.value = null },
-                                onToggleAmountsPrivacy = {
-                                    lifecycleScope.launch {
-                                        userPreferencesRepository.setHideAmounts(!prefs.hideAmounts)
+                        else -> if (locked) {
+                            // Bloqueado: no se compone el NavHost; solo el botón de desbloqueo.
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(Modifier.fillMaxSize().weight(1f))
+                                CampusButton(
+                                    text = stringResource(R.string.lock_unlock),
+                                    onClick = { LockInterceptor.showPrompt(this@MainActivity) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(20.dp)
+                                )
+                            }
+                        } else {
+                            CompositionLocalProvider(LocalPrivacyMode provides prefs.hideAmounts) {
+                                CampusNavHost(
+                                    preferences = prefs,
+                                    pendingTaskId = pendingTaskId,
+                                    onPendingTaskHandled = { pendingTaskId.value = -1L },
+                                    pendingRoute = pendingRoute,
+                                    onPendingRouteHandled = { pendingRoute.value = null },
+                                    pendingImportUri = pendingImportUri,
+                                    onPendingImportHandled = { pendingImportUri.value = null },
+                                    onToggleAmountsPrivacy = {
+                                        lifecycleScope.launch {
+                                            userPreferencesRepository.setHideAmounts(!prefs.hideAmounts)
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
@@ -118,9 +143,14 @@ class MainActivity : FragmentActivity() {
 
         // Bloqueo opcional al entrar: si el usuario lo activó en Ajustes, el prompt se
         // muestra aquí; la política real vive en LockInterceptor, registrada en CampusApp.
-        if (LockChecker.enabled(applicationContext)) {
-            LockInterceptor.showPrompt(this)
+        lifecycleScope.launch {
+            if (LockChecker.enabled(applicationContext)) LockInterceptor.showPrompt(this@MainActivity)
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        LockInterceptor.maybeLock(this)
     }
 
     override fun onNewIntent(intent: Intent) {

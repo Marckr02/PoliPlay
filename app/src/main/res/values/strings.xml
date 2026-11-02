@@ -460,6 +460,7 @@
     <string name="settings_security">Seguridad</string>
     <string name="settings_biometric_lock">Bloqueo al entrar</string>
     <string name="settings_lock_unsupported">Este dispositivo no tiene bloqueo de pantalla ni huella; no se puede activar.</string>
+    <string name="lock_unlock">Desbloquear</string>
     <string name="settings_lock_timeout">Bloquear al salir tras</string>
     <string name="settings_lock_immediately">Inmediato</string>
     <string name="settings_lock_1min">1 min</string>

@@ -12,13 +12,14 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.example.campuspocket.core.preferences.PreferenceKeys
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
 /**
  * Bloqueo al pasar a segundo plano (credencial del dispositivo o biometría fuerte).
@@ -34,36 +35,42 @@ object LockInterceptor {
     @Volatile private var wentBackgroundAt: Long = 0
     @Volatile private var unlockedUntil: Long = 0
 
-    fun register(context: Context) {
+    /** `true` mientras la app está bloqueada: el contenido no debe mostrarse. */
+    val locked = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    fun register(@Suppress("UNUSED_PARAMETER") context: Context) {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStop(owner: LifecycleOwner) { wentBackgroundAt = System.currentTimeMillis() }
-            override fun onStart(owner: LifecycleOwner) { maybeLock(context) }
         })
     }
 
-    /** Expira: Sistema busca alfeizar si app pasó a background y volvió. */
+    /** Da 60 s de gracia tras un desbloqueo correcto. */
     fun unlockedNow() { unlockedUntil = System.currentTimeMillis() + 60_000 }
 
-    private fun maybeLock(context: Context) {
+    /** Se llama desde MainActivity.onStart: pide autenticación si venimos de segundo plano. */
+    fun maybeLock(activity: FragmentActivity) {
         if (wentBackgroundAt == 0L) return
         val now = System.currentTimeMillis()
         if (unlockedUntil >= now) return
-        runBlocking {
+        activity.lifecycleScope.launch {
             val prefs = EntryPointAccessors
-                .fromApplication(context.applicationContext, DsEntryPoint::class.java)
+                .fromApplication(activity.applicationContext, DsEntryPoint::class.java)
                 .dataStore().data.first()
-            if (prefs[PreferenceKeys.LOCK_ENABLED] != true) return@runBlocking
+            if (prefs[PreferenceKeys.LOCK_ENABLED] != true) return@launch
             val timeoutSeconds = prefs[PreferenceKeys.LOCK_TIMEOUT_SECONDS] ?: 0
-            if (now >= wentBackgroundAt + timeoutSeconds * 1000L && context is FragmentActivity) {
-                showPrompt(context)
-            }
+            if (now >= wentBackgroundAt + timeoutSeconds * 1000L) showPrompt(activity)
         }
     }
 
     fun showPrompt(activity: FragmentActivity) {
+        locked.value = true
         val executor = ContextCompat.getMainExecutor(activity)
         val prompt = BiometricPrompt(activity, executor, object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) { unlockedNow() }
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                locked.value = false
+                unlockedNow()
+            }
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) { /* sigue bloqueado */ }
         })
         val builder = BiometricPrompt.PromptInfo.Builder().setTitle("CampusPocket").setSubtitle("Desbloquear")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
