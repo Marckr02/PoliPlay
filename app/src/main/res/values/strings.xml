@@ -182,6 +182,7 @@
     <string name="finance_expense">Gasto</string>
     <string name="finance_income">Ingreso</string>
     <string name="finance_transfer">Transferencia</string>
+    <string name="finance_transfer_short">Transfer.</string>
     <string name="finance_refund">Reembolso</string>
     <string name="finance_payment">Pago</string>
     <string name="finance_available_to_spend">Disponible para gastar</string>

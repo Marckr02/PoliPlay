@@ -911,7 +911,7 @@ fun TransactionTypeSelector(
     ) {
         types.forEach { type ->
             CampusChip(
-                label = stringResource(transactionTypeLabelRes(type)),
+                label = stringResource(transactionTypeSelectorLabelRes(type)),
                 selected = type == selectedType,
                 onClick = { onTypeChange(type) },
                 role = Role.RadioButton,
@@ -926,6 +926,12 @@ internal fun transactionTypeLabelRes(type: TransactionType): Int = when (type) {
     TransactionType.INCOME -> R.string.finance_income
     TransactionType.TRANSFER -> R.string.finance_transfer
     TransactionType.REFUND -> R.string.finance_refund
+}
+
+/** Etiqueta corta para el selector de tipo: "Transferencia" no cabe en 4 chips. */
+internal fun transactionTypeSelectorLabelRes(type: TransactionType): Int = when (type) {
+    TransactionType.TRANSFER -> R.string.finance_transfer_short
+    else -> transactionTypeLabelRes(type)
 }
 
 @Composable
