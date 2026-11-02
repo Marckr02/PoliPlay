@@ -318,7 +318,7 @@ fun CampusNavHost(
                         .padding(innerPadding)
                         .padding(
                             bottom = if (showDock && currentDestination?.route != FinanceDestinations.HOME) {
-                                68.dp
+                                DockMetrics.ContentBottomClearance
                             } else {
                                 0.dp
                             }
@@ -402,7 +402,7 @@ fun CampusNavHost(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .navigationBarsPadding()
-                        .padding(end = 22.dp, bottom = 93.dp),
+                        .padding(end = 22.dp, bottom = DockMetrics.ContextActionBottomOffset),
                     enter = fadeIn(tween(motion.ms(180))),
                     exit = fadeOut(tween(motion.ms(120)))
                 ) {
@@ -419,7 +419,7 @@ fun CampusNavHost(
                     hostState = snackbarHostState,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = if (showDock) 176.dp else 28.dp)
+                        .padding(bottom = if (showDock) DockMetrics.SnackbarBottomOffset else 28.dp)
                         .imePadding()
                 )
             }
