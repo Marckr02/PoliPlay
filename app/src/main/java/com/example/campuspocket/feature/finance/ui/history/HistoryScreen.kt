@@ -60,6 +60,7 @@ import com.example.campuspocket.core.designsystem.formatMoneyOrHidden
 import com.example.campuspocket.core.designsystem.formatMoneyOrHiddenSigned
 import com.example.campuspocket.feature.finance.data.TransactionSubtype
 import com.example.campuspocket.feature.finance.data.TransactionType
+import com.example.campuspocket.feature.finance.domain.DayNet
 import com.example.campuspocket.feature.finance.domain.model.Transaction
 import com.example.campuspocket.feature.finance.ui.accounts.transactionTypeLabelRes
 import java.time.Instant
@@ -305,12 +306,7 @@ private fun DayGroupHeader(
         today.minusDays(1) -> stringResource(R.string.history_yesterday)
         else -> DAY_HEADER_FORMATTER.format(day).uppercase(SPANISH)
     }
-    val netCents = transactions.sumOf { tx ->
-        when (tx.type) {
-            TransactionType.INCOME, TransactionType.REFUND -> tx.amountCents
-            else -> -tx.amountCents
-        }
-    }
+    val netCents = DayNet.netCents(transactions)
 
     Row(
         modifier = Modifier
@@ -326,11 +322,13 @@ private fun DayGroupHeader(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.semantics { heading() }
         )
-        Text(
-            text = formatMoneyOrHiddenSigned(netCents),
-            style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
-            color = if (netCents >= 0) ext.success else MaterialTheme.colorScheme.error
-        )
+        if (DayNet.hasTotal(transactions)) {
+            Text(
+                text = formatMoneyOrHiddenSigned(netCents),
+                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
+                color = if (netCents >= 0) ext.success else MaterialTheme.colorScheme.error
+            )
+        }
     }
 }
 
