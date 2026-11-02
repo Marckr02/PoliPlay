@@ -353,7 +353,7 @@ private fun HistoryTransactionCard(
         TransactionType.REFUND -> ext.lavender to ext.onLavender
     }
     val accountsLabel = if (
-        tx.subtype == TransactionSubtype.RETIRO_CAJERO &&
+        (tx.subtype == TransactionSubtype.RETIRO_CAJERO || tx.type == TransactionType.TRANSFER) &&
         targetAccountName.isNotBlank()
     ) {
         "$accountName → $targetAccountName"
