@@ -120,6 +120,7 @@ class TransactionFormViewModelTest {
         vm.onAmountChange("1000") // $10,00
         vm.onAccountChange(1)
         vm.onCategoryChange(2)
+        vm.onDescriptionChange("Prueba")
         vm.save()
         advanceUntilIdle()
 
@@ -268,6 +269,7 @@ class TransactionFormViewModelTest {
             vm.onAmountChange("1234")
             vm.onAccountChange(1)
             vm.onCategoryChange(1)
+            vm.onDescriptionChange("Prueba")
             vm.save()
             advanceUntilIdle()
 
@@ -309,6 +311,135 @@ class TransactionFormViewModelTest {
         assertEquals(35_000L, pace?.spentCents)
         assertEquals("Efectivo", vm.monthlyImpact.value.accountName)
         assertEquals(-35_000L, vm.monthlyImpact.value.accountAfterCents)
+    }
+
+    @Test
+    fun `gasto nuevo sin descripcion muestra error y no se guarda`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(accounts, categories)
+        val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+        advanceUntilIdle()
+
+        vm.onAmountChange("1000")
+        vm.onAccountChange(1)
+        vm.onCategoryChange(1)
+        vm.save()
+        advanceUntilIdle()
+
+        assertEquals(TransactionError.MISSING_DESCRIPTION, vm.uiState.value.error)
+        assertTrue(repo.insertedTransactions.isEmpty())
+        assertFalse(vm.uiState.value.saved)
+    }
+
+    @Test
+    fun `gasto nuevo con descripcion se guarda`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(accounts, categories)
+        val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+        advanceUntilIdle()
+
+        vm.onAmountChange("1000")
+        vm.onAccountChange(1)
+        vm.onCategoryChange(1)
+        vm.onDescriptionChange("Almuerzo")
+        vm.save()
+        advanceUntilIdle()
+
+        assertEquals("Almuerzo", repo.insertedTransactions.single().description)
+        assertTrue(vm.uiState.value.saved)
+    }
+
+    @Test
+    fun `transferencia sin descripcion se guarda`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(accounts, categories)
+        val vm = viewModel(TransactionType.TRANSFER, repository = repo)
+        advanceUntilIdle()
+
+        vm.onAmountChange("2000")
+        vm.onAccountChange(1)
+        vm.onTargetAccountChange(2)
+        vm.save()
+        advanceUntilIdle()
+
+        val saved = repo.insertedTransactions.single()
+        assertEquals(TransactionType.TRANSFER, saved.type)
+        assertNull(saved.description)
+        assertTrue(vm.uiState.value.saved)
+    }
+
+    @Test
+    fun `editar un movimiento antiguo sin descripcion se guarda`() = runTest(testDispatcher) {
+        val existing = testExpense(
+            id = 9, accountId = 1, categoryId = 1, amountCents = 2_500,
+            description = null, date = LocalDate.of(2026, 10, 3)
+        )
+        val repo = FakeFinanceRepository(accounts, categories, listOf(existing))
+        val vm = viewModel(TransactionType.EXPENSE, id = 9, repository = repo)
+        advanceUntilIdle()
+
+        vm.onAmountChange("3000")
+        vm.save()
+        advanceUntilIdle()
+
+        assertEquals(3_000L, repo.updatedTransactions.single().amountCents)
+        assertTrue(vm.uiState.value.saved)
+    }
+
+    @Test
+    fun `con el campo vacio sugiere las 4 descripciones recientes del mismo tipo`() =
+        runTest(testDispatcher) {
+            val history = listOf(
+                testExpense(
+                    id = 1, categoryId = 1, description = "Almuerzo",
+                    date = LocalDate.of(2026, 10, 1)
+                ).copy(createdAt = 100L),
+                testExpense(
+                    id = 2, categoryId = 1, description = "Bus",
+                    date = LocalDate.of(2026, 10, 2)
+                ).copy(createdAt = 200L),
+                testExpense(
+                    id = 3, categoryId = 1, description = "Café",
+                    date = LocalDate.of(2026, 10, 3)
+                ).copy(createdAt = 300L),
+                testExpense(
+                    id = 4, categoryId = 1, description = "Cine",
+                    date = LocalDate.of(2026, 10, 4)
+                ).copy(createdAt = 400L),
+                testExpense(
+                    id = 5, categoryId = 1, description = "Taxi",
+                    date = LocalDate.of(2026, 10, 5)
+                ).copy(createdAt = 500L),
+                testExpense(
+                    id = 6, categoryId = 1, description = "Taxi",
+                    date = LocalDate.of(2026, 10, 6)
+                ).copy(createdAt = 600L),
+                testIncome(
+                    id = 7, categoryId = 2,
+                    date = LocalDate.of(2026, 10, 7)
+                ).copy(createdAt = 700L, description = "Mesada")
+            )
+            val repo = FakeFinanceRepository(accounts, categories, history)
+            val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+            advanceUntilIdle()
+
+            val descriptions = vm.descriptionSuggestions.value.map { it.description }
+            assertEquals(listOf("Taxi", "Cine", "Café", "Bus"), descriptions)
+        }
+
+    @Test
+    fun `escribir en el campo limpia el error de descripcion`() = runTest(testDispatcher) {
+        val repo = FakeFinanceRepository(accounts, categories)
+        val vm = viewModel(TransactionType.EXPENSE, repository = repo)
+        advanceUntilIdle()
+
+        vm.onAmountChange("1000")
+        vm.onAccountChange(1)
+        vm.onCategoryChange(1)
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(TransactionError.MISSING_DESCRIPTION, vm.uiState.value.error)
+
+        vm.onDescriptionChange("Almuerzo")
+
+        assertNull(vm.uiState.value.error)
     }
 
     private companion object {

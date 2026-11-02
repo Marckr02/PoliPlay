@@ -135,19 +135,21 @@ class TransactionFormViewModel @Inject constructor(
         CategorySuggestion.analyze(txs, state.type, ZonedDateTime.now(clock))
     }.stateIn(viewModelScope, SharingStarted.Eagerly, CategoryHabits())
 
-    /** Descripciones anteriores que coinciden con la nota escrita (v6). */
+    /** Descripciones anteriores: coinciden con lo escrito o, si está vacío, las 4 más recientes (v6). */
     val descriptionSuggestions: StateFlow<List<Transaction>> = combine(transactions, _uiState) { txs, state ->
         val query = state.description.trim()
-        if (query.isEmpty() || state.type == TransactionType.TRANSFER) {
+        if (state.type == TransactionType.TRANSFER) {
             emptyList()
         } else {
             txs.asSequence()
                 .filter { it.type == state.type }
                 .filter { tx ->
                     val description = tx.description?.trim().orEmpty()
-                    description.isNotEmpty() &&
-                        description.contains(query, ignoreCase = true) &&
-                        !description.equals(query, ignoreCase = true)
+                    description.isNotEmpty() && (
+                        query.isEmpty() ||
+                            (description.contains(query, ignoreCase = true) &&
+                                !description.equals(query, ignoreCase = true))
+                        )
                 }
                 .distinctBy { it.description!!.trim().lowercase() }
                 .sortedByDescending { it.createdAt }
@@ -505,8 +507,10 @@ class TransactionFormViewModel @Inject constructor(
     }
 
     fun onDescriptionChange(value: String) {
-        _uiState.value = _uiState.value.copy(
+        val current = _uiState.value
+        _uiState.value = current.copy(
             description = value,
+            error = if (current.error == TransactionError.MISSING_DESCRIPTION) null else current.error,
             hasUnsavedChanges = true
         )
     }
@@ -546,6 +550,12 @@ class TransactionFormViewModel @Inject constructor(
         if (state.saved || state.deleted) return
         if (state.amountCents <= 0) {
             _uiState.value = state.copy(error = TransactionError.AMOUNT_NOT_POSITIVE)
+            return
+        }
+        val requiresDescription = !state.isEditing &&
+            (state.type == TransactionType.EXPENSE || state.type == TransactionType.INCOME)
+        if (requiresDescription && state.description.isBlank()) {
+            _uiState.value = state.copy(error = TransactionError.MISSING_DESCRIPTION)
             return
         }
         isSaving = true

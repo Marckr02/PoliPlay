@@ -14,7 +14,8 @@ enum class TransactionError {
     TRANSFER_SAME_ACCOUNT,
     MISSING_TARGET_ACCOUNT,
     MISSING_CATEGORY,
-    WRONG_CATEGORY_KIND
+    WRONG_CATEGORY_KIND,
+    MISSING_DESCRIPTION
 }
 
 /** Reglas de negocio puras de las transacciones. */

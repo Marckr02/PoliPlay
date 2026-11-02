@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -119,6 +121,8 @@ fun TransactionFormScreen(
     viewModel: TransactionFormViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Con el teclado del sistema abierto se oculta el panel numérico para no duplicar espacio.
+    val imeVisible = WindowInsets.isImeVisible
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val accountBalances by viewModel.accountBalances.collectAsStateWithLifecycle()
     val categories by viewModel.validCategories.collectAsStateWithLifecycle()
@@ -234,6 +238,13 @@ fun TransactionFormScreen(
                     impact = impact
                 )
 
+                DescriptionSection(
+                    state = state,
+                    suggestions = descriptionSuggestions,
+                    onDescriptionChange = viewModel::onDescriptionChange,
+                    onApplySuggestion = viewModel::applyDescriptionSuggestion
+                )
+
                 if (state.type != TransactionType.TRANSFER) {
                     CategorySection(
                         categories = categories,
@@ -246,7 +257,6 @@ fun TransactionFormScreen(
                             showCategorySheet = true
                         }
                     )
-                    if (state.usesLastCategory) LastUsedLabel()
                 }
 
                 if (state.type == TransactionType.REFUND) {
@@ -267,7 +277,7 @@ fun TransactionFormScreen(
                         } else {
                             null
                         },
-                        lastUsed = state.usesLastAccount,
+                        lastUsed = false,
                         onSelect = viewModel::onAccountChange,
                         onMore = { accountSheet = AccountSheetTarget.SOURCE }
                     )
@@ -296,7 +306,7 @@ fun TransactionFormScreen(
                         } else {
                             null
                         },
-                        lastUsed = state.usesLastAccount,
+                        lastUsed = false,
                         onSelect = viewModel::onAccountChange,
                         onMore = { accountSheet = AccountSheetTarget.SOURCE }
                     )
@@ -310,11 +320,7 @@ fun TransactionFormScreen(
 
                 ExtrasSection(
                     state = state,
-                    suggestions = descriptionSuggestions,
-                    onToggleDescription = viewModel::onToggleDescription,
-                    onToggleKeepAdding = viewModel::onToggleKeepAdding,
-                    onDescriptionChange = viewModel::onDescriptionChange,
-                    onApplySuggestion = viewModel::applyDescriptionSuggestion
+                    onToggleKeepAdding = viewModel::onToggleKeepAdding
                 )
 
                 if (state.isEditing && state.type != TransactionType.TRANSFER) {
@@ -363,12 +369,14 @@ fun TransactionFormScreen(
                 }
             }
 
-            TransactionKeypadPanel(
-                amountDigits = state.amountCents.toString(),
-                onAmountChange = viewModel::onAmountChange,
-                onSave = viewModel::save,
-                saveEnabled = state.amountCents > 0 && !state.saved
-            )
+            if (!imeVisible) {
+                TransactionKeypadPanel(
+                    amountDigits = state.amountCents.toString(),
+                    onAmountChange = viewModel::onAmountChange,
+                    onSave = viewModel::save,
+                    saveEnabled = state.amountCents > 0 && !state.saved
+                )
+            }
         }
     }
 
@@ -855,13 +863,49 @@ private fun DateSection(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ExtrasSection(
+private fun DescriptionSection(
     state: TransactionFormUiState,
     suggestions: List<Transaction>,
-    onToggleDescription: () -> Unit,
-    onToggleKeepAdding: (Boolean) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onApplySuggestion: (Transaction) -> Unit
+) {
+    val label = when (state.type) {
+        TransactionType.EXPENSE -> R.string.transaction_description_expense
+        TransactionType.INCOME -> R.string.transaction_description_income
+        else -> R.string.transaction_description_optional
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CampusTextField(
+            value = state.description,
+            onValueChange = onDescriptionChange,
+            label = stringResource(label),
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (state.error == TransactionError.MISSING_DESCRIPTION) {
+            ErrorText(R.string.transaction_error_missing_description)
+        }
+        if (suggestions.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                suggestions.forEach { suggestion ->
+                    val chipLabel = suggestion.description.orEmpty().let {
+                        if (it.length > 28) it.take(27) + "…" else it
+                    }
+                    CampusChip(label = chipLabel, selected = false, onClick = { onApplySuggestion(suggestion) })
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ExtrasSection(
+    state: TransactionFormUiState,
+    onToggleKeepAdding: (Boolean) -> Unit
 ) {
     val view = LocalView.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -871,14 +915,6 @@ private fun ExtrasSection(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             CampusChip(
-                label = stringResource(R.string.transaction_add_note),
-                selected = state.showDescription,
-                onClick = {
-                    Haptics.tick(view)
-                    onToggleDescription()
-                }
-            )
-            CampusChip(
                 label = stringResource(R.string.transaction_keep_adding),
                 selected = state.keepAdding,
                 onClick = {
@@ -886,38 +922,6 @@ private fun ExtrasSection(
                     onToggleKeepAdding(!state.keepAdding)
                 }
             )
-        }
-
-        if (state.showDescription) {
-            CampusTextField(
-                value = state.description,
-                onValueChange = onDescriptionChange,
-                label = stringResource(R.string.transaction_description),
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (suggestions.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.transaction_description_suggestions),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    suggestions.forEach { suggestion ->
-                        val label = suggestion.description.orEmpty().let {
-                            if (it.length > 28) it.take(27) + "…" else it
-                        }
-                        CampusChip(
-                            label = label,
-                            selected = false,
-                            onClick = { onApplySuggestion(suggestion) }
-                        )
-                    }
-                }
-            }
         }
     }
 }
