@@ -7,6 +7,23 @@ Las entradas marcadas **no publicada** nunca llegaron a salir: no hay etiqueta
 de Git ni `VERSION_NAME` que las respalde. Su trabajo se recoge dentro de la
 versión publicada que sí lo incorporó.
 
+## [0.15.2] - 2026-11-02
+
+Etiqueta `v0.15.2` · commit `23e9a3a` ("fix: texto repetido en cierre estimado")
+
+### Corregido
+- Medidor de presupuesto: el porcentaje se mostraba multiplicado por 100 (430,0 % en vez de 4,3 %) en Finanzas e Inicio.
+- Barra de estado: los íconos siguen el tema elegido en la app, no solo el del sistema.
+- Nuevo gasto: la etiqueta de transferencia ya no se corta.
+- Montos negativos se muestran como -$20,00.
+- El total del día ya no cuenta las transferencias como gasto; la transferencia muestra origen y destino.
+- Cierre estimado: se evita repetir "Aún faltan datos".
+
+### Pruebas
+- 227 pruebas unitarias en verde (`./gradlew :app:testDebugUnitTest`); instrumentadas: 65 en verde (emulador `CampusTest`, API 36).
+
+---
+
 ## [0.15.1] - 2026-11-01
 
 Etiqueta `v0.15.1` · commit `8e1b58d` ("fix: re-bloqueo biométrico al volver a primer plano")
